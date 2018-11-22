@@ -52,6 +52,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPoint;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.geom.PrecisionModel;
@@ -303,15 +304,46 @@ public class GeoUtil {
         	SimpleFeatureSource source = store.getFeatureSource();
         	SimpleFeatureCollection featureCollection = source.getFeatures();
         	SimpleFeatureIterator features = featureCollection.features();
-        	ArrayList<Polygon> geometries = new ArrayList<>();
+        	ArrayList<Geometry> geometries = new ArrayList<>();
         	int pointCount = 0;
+        	String basicGeometryType = null;
         	while (features.hasNext() && pointCount < threshold) {
         		SimpleFeature feature = features.next();
-        		MultiPolygon multipolygon = (MultiPolygon) feature.getDefaultGeometry();
-        		for (int i = 0; i < multipolygon.getNumGeometries(); i++) {
-        			Polygon p = (Polygon) multipolygon.getGeometryN(i);
+        		Geometry featureGeometry = (Geometry) feature.getDefaultGeometry();
+        		String featureGeometryType = featureGeometry.getGeometryType();
+        		String featureBasicGeometryType = getBasicGeometryType(featureGeometryType);
+        		if (basicGeometryType != null && !basicGeometryType.equals(featureBasicGeometryType)) {
+        			throw new Exception ("Heterogeneous feature geometries");
+        		}
+        		basicGeometryType = featureBasicGeometryType;
+        		if (featureGeometryType.equals("Polygon")) {
+        			Polygon p = (Polygon) featureGeometry;
         			pointCount+=p.getCoordinates().length;
-        			geometries.add((Polygon) multipolygon.getGeometryN(i));
+        			geometries.add(p);
+        		}
+        		else if (featureGeometryType.equals("MultiPolygon")) {
+        			MultiPolygon multipolygon = (MultiPolygon) featureGeometry;
+	        		for (int i = 0; i < multipolygon.getNumGeometries(); i++) {
+	        			Polygon polygon = (Polygon) multipolygon.getGeometryN(i);
+	        			pointCount+=polygon.getCoordinates().length;
+	        			geometries.add(polygon);
+	        		}
+        		}
+        		else if (featureGeometryType.equals("Point")) {
+	        		com.vividsolutions.jts.geom.Point point = (com.vividsolutions.jts.geom.Point) featureGeometry;
+	        		pointCount++;
+        			geometries.add(point);
+        		}
+        		else if (featureGeometryType.equals("MultiPoint")) {
+        			MultiPoint multiPoint = (MultiPoint) featureGeometry;
+	        		for (int i = 0; i < multiPoint.getNumGeometries(); i++) {
+	        			com.vividsolutions.jts.geom.Point point = (com.vividsolutions.jts.geom.Point) multiPoint.getGeometryN(i);
+	        			pointCount++;
+	        			geometries.add(point);
+	        		}
+        		}
+        		else {
+        			throw new Exception("Unsupported geometry");
         		}
         	}
         	features.close();
@@ -319,10 +351,17 @@ public class GeoUtil {
         		throw new Exception("Geometry contains more points than allowed threshold " + threshold );
         	}
         	GeometryFactory gf = new GeometryFactory();
-        	MultiPolygon multipolygon = gf.createMultiPolygon(geometries.toArray(new Polygon[] {}));
-        	multipolygon.setSRID(geometries.get(0).getSRID());
+        	Geometry combinedGeometry = null;
+        	if (basicGeometryType.equals("Polygon")) {
+        		combinedGeometry = gf.createMultiPolygon(geometries.toArray(new Polygon[] {}));
+        		combinedGeometry.setSRID(geometries.get(0).getSRID());
+        	}
+        	else if (basicGeometryType.equals("Point")) {
+        		combinedGeometry = gf.createMultiPoint(geometries.toArray(new com.vividsolutions.jts.geom.Point[] {}));
+        		combinedGeometry.setSRID(geometries.get(0).getSRID());
+        	}
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        	new GeometryJSON(16).write(multipolygon, baos);
+        	new GeometryJSON(16).write(combinedGeometry, baos);
         	return OBJECT_MAPPER.readValue(baos.toByteArray(), GeoJsonObject.class);
     	}
     	catch(Exception e) {
@@ -335,7 +374,18 @@ public class GeoUtil {
     	}
 	}
 
-    private static CoordinateReferenceSystem getCrs(Path file) throws IOException {
+    private static String getBasicGeometryType(String geometryType) {
+		if(geometryType.equals("Polygon") || geometryType.equals("MultiPolygon")){
+			return "Polygon";
+		}
+		
+		if(geometryType.equals("Point") || geometryType.equals("MultiPoint")){
+			return "Point";
+		}
+		return null;
+	}
+
+	private static CoordinateReferenceSystem getCrs(Path file) throws IOException {
         // General metadata
         DataStore dataStore = DataStoreFinder.getDataStore(ImmutableMap.of("url", file.toUri().toURL()));
         if (dataStore != null) {
