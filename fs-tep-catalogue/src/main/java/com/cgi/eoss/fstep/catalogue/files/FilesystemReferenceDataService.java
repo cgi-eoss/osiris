@@ -74,7 +74,8 @@ public class FilesystemReferenceDataService implements ReferenceDataService {
         properties.put("fstepUrl", uri);
         // TODO Get the proper MIME type
         properties.put("resourceMimeType", "application/unknown");
-        properties.put("resourceSize", Files.size(dest));
+        long filesize = Files.size(dest);
+		properties.put("resourceSize", filesize);
         properties.put("resourceChecksum", "sha256=" + MoreFiles.asByteSource(dest).hash(Hashing.sha256()));
         
         String startTime = (String) userProperties.remove("startTime");
@@ -140,6 +141,7 @@ public class FilesystemReferenceDataService implements ReferenceDataService {
         fstepFile.setOwner(owner);
         fstepFile.setType(FstepFile.Type.REFERENCE_DATA);
         fstepFile.setFilename(referenceDataBasedir.relativize(dest).toString());
+        fstepFile.setFilesize(filesize);
         return fstepFile;
     }
 
