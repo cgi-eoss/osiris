@@ -1,8 +1,0 @@
-.breadcrumb a {
-    color: black;
-}
-
-.breadcrumb li.is-active a {
-    font-weight: bold;
-    color: white;
-}

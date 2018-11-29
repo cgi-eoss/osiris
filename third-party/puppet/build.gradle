@@ -1,4 +1,4 @@
-group 'com.cgi.eoss.fs-tep'
+group 'com.cgi.eoss.osiris'
 version '0.1.0'
 
 apply plugin: 'base'

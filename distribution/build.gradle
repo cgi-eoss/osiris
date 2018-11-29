@@ -1,8 +1,8 @@
 import java.nio.file.Files
 import java.nio.file.Paths
 
-group 'com.cgi.eoss.fs-tep'
-version '1.2.0-SNAPSHOT'
+group 'com.cgi.eoss.osiris'
+version '0.1.0-SNAPSHOT'
 
 apply plugin: 'base'
 
@@ -13,7 +13,6 @@ configurations {
 
 dependencies {
     packages project(path: ':fs-tep-portal', configuration: 'pkg')
-    packages project(path: ':fs-tep-ui', configuration: 'pkg')
     packages project(path: ':fs-tep-server', configuration: 'pkg')
     packages project(path: ':fs-tep-serviceregistry', configuration: 'pkg')
     packages project(path: ':fs-tep-worker', configuration: 'pkg')

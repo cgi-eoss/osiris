@@ -4,7 +4,7 @@ buildscript {
     }
 }
 
-group 'com.cgi.eoss.fs-tep'
+group 'com.cgi.eoss.osiris'
 version '2.4'
 
 apply plugin: 'base'
