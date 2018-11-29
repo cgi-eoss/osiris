@@ -85,6 +85,11 @@ task buildDist(type: Sync) {
     }
 }
 
+task collectRpms(type: Sync) {
+    into "${rootDir}/.rpms"
+    from configurations.packages
+}
+
 sonarqube {
     skipProject = true
 }

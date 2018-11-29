@@ -52,7 +52,7 @@ spec:
         stage('buildDist') {
             steps {
                 container('osiris-build') {
-                    sh "gradle --parallel --configure-on-demand buildDist -pdistribution"
+                    sh "gradle --parallel --configure-on-demand buildDist collectRpms -pdistribution"
                 }
             }
         }
@@ -83,7 +83,7 @@ spec:
                         sh """
                             cd .rpms
                             for rpm in * ; do
-                              curl -v --user '${NEXUS_USERPASS}' --upload-file \${rpm} https://nexus.observing.earth/repository/yum-osiris/${branch}/\${rpm}
+                              curl -v --user '${NEXUS_USERPASS}' --upload-file \${rpm} https://nexus.observing.earth/repository/yum-osiris/\${BRANCH_NAME}/\${rpm}
                             done
                         """
                     }
