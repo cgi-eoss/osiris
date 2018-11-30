@@ -55,7 +55,11 @@ define(['../../osirismodules', 'ol'], function (osirismodules, ol) {
         };
 
         this.fitExtent = function(extent) {
-            map.getView().fit(extent, map.getSize());
+            let mapSize = map.getSize();
+            if (mapSize.some(d => !d)) {
+                mapSize = [1000, 1000];
+            }
+            map.getView().fit(extent, mapSize);
         };
 
         this.setBackgroundLayer = function(layer) {

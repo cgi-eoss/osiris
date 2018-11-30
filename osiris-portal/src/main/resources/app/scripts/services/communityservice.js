@@ -39,7 +39,7 @@ define(['../osirismodules'], function (osirismodules) {
                     resolve(response.data.permissions);
                 }).
                 catch(function (error) {
-                    MessageService.addError('Could not get ' + item.name + ' shared groups', error);
+                    MessageService.addError('Could not get ' + type + ' ' + getItemName(item) + ' shared groups', error);
                     reject();
                 });
             });

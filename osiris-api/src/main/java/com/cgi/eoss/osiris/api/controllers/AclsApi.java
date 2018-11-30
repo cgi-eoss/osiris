@@ -9,6 +9,7 @@ import com.cgi.eoss.osiris.model.Group;
 import com.cgi.eoss.osiris.model.Job;
 import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.Project;
+import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.UserEndpoint;
 import com.cgi.eoss.osiris.model.UserMount;
@@ -196,6 +197,22 @@ public class AclsApi {
         return OsirisAccessControlList.builder()
                 .entityId(jobConfig.getId())
                 .permissions(getOsirisPermissions(new ObjectIdentityImpl(JobConfig.class, jobConfig.getId())))
+                .build();
+    }
+    
+    @PostMapping("/systematicProcessing/{systematicProcessingId}")
+    @PreAuthorize("hasAnyRole('CONTENT_AUTHORITY', 'ADMIN') or hasPermission(#systematicProcessing, 'administration')")
+    public void setSystematicProcessingAcl(@ModelAttribute("systematicProcessingId") SystematicProcessing systematicProcessing, @RequestBody OsirisAccessControlList acl) {
+        Preconditions.checkArgument(systematicProcessing.getId().equals(acl.getEntityId()), "ACL subject entity ID mismatch: URL %s vs BODY %s", systematicProcessing.getId(), acl.getEntityId());
+        setAcl(new ObjectIdentityImpl(SystematicProcessing.class, systematicProcessing.getId()), systematicProcessing.getOwner(), acl.getPermissions());
+    }
+
+    @GetMapping("/systematicProcessing/{systematicProcessingId}")
+    @PreAuthorize("hasAnyRole('CONTENT_AUTHORITY', 'ADMIN') or hasPermission(#systematicProcessing, 'administration')")
+    public OsirisAccessControlList getSystematicProcessingAcls(@ModelAttribute("systematicProcessingId") SystematicProcessing systematicProcessing) {
+        return OsirisAccessControlList.builder()
+                .entityId(systematicProcessing.getId())
+                .permissions(getOsirisPermissions(new ObjectIdentityImpl(SystematicProcessing.class, systematicProcessing.getId())))
                 .build();
     }
 
