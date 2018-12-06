@@ -67,7 +67,7 @@ configurations { pkg }
 artifacts { pkg buildRpm }
 
 ospackage {
-    packageName 'fs-tep-zoomanager'
+    packageName 'osiris-zoomanager'
     version getRpmVersion(project.version).version
     release getRpmVersion(project.version).release
     arch NOARCH

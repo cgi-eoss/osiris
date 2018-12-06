@@ -142,7 +142,7 @@ task stageApp(type: Sync) {
         into 'scripts'
         include '**/*'
     }
-    from("${projectDir}/src/main/resources/app/scripts/fstepConfig.js") {
+    from("${projectDir}/src/main/resources/app/scripts/osirisConfig.js") {
         into 'scripts'
     }
     from("${projectDir}/src/main/resources/app") {
@@ -169,24 +169,24 @@ buildRpm.dependsOn stageApp
 buildDeb.dependsOn stageApp
 
 ospackage {
-    packageName 'fs-tep-portal'
+    packageName 'osiris-portal'
     version getRpmVersion(project.version).version
     release getRpmVersion(project.version).release
     arch NOARCH
     os LINUX
 
-    into '/var/www/html/fs-tep'
+    into '/var/www/html/osiris'
 
     from("${buildDir}/staging") {
         user 'root'
         include '**'
-        exclude 'scripts/fstepConfig.js'
+        exclude 'scripts/osirisConfig.js'
     }
 
     from("${buildDir}/staging") {
         user 'root'
         fileType CONFIG | NOREPLACE
-        include 'scripts/fstepConfig.js'
+        include 'scripts/osirisConfig.js'
     }
 }
 

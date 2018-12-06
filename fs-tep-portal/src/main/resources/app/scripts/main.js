@@ -38,7 +38,7 @@ require.config({
         shp: 'vendor/shpjs/shp',
 
         // FS-TEP modules
-        fstepConfig: 'fstepConfig',
+        osirisConfig: 'osirisConfig',
         moduleloader: 'moduleloader',
         app: 'app'
     },
@@ -73,7 +73,7 @@ require.config({
         codemirror: { exports: 'codemirror' },
         uiCodeMirror: { deps: ['angular', 'codemirror'], exports: 'uiCodeMirror' },
         // x2js: { exports: 'x2js' },
-        fstepConfig: { exports: 'fstepConfig' }
+        osirisConfig: { exports: 'osirisConfig' }
     },
     config: {
         moment: { noGlobal: true }

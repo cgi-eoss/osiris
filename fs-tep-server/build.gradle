@@ -51,7 +51,7 @@ configurations { pkg }
 artifacts { pkg buildRpm }
 
 ospackage {
-    packageName 'fs-tep-server'
+    packageName 'osiris-server'
     version getRpmVersion(project.version).version
     release getRpmVersion(project.version).release
     arch NOARCH

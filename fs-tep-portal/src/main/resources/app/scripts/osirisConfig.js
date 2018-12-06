@@ -1,5 +1,5 @@
 'use strict';
-define('fstepConfig', [], function () {
+define('osirisConfig', [], function () {
   return {
     fstepUrl: "https://fsdev.eoss-cloud.it/",
     fstepPortalUrl: "https://foodsecurity-tep.eo.esa.int/",

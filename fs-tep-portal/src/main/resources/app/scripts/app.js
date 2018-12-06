@@ -10,7 +10,7 @@
 require(['bootstrap']);
 
 define([
-    'fstepConfig',
+    'osirisConfig',
     'angular',
     'ngRoute',
     'ngMaterial',
@@ -33,7 +33,7 @@ define([
     'ngFileUpload',
     'uiCodeMirror',
     'moduleloader'
-], function (fstepConfig) {
+], function (osirisConfig) {
     'use strict';
 
     var app = angular.module('fstepApp', ['app.fstepmodules', 'ngRoute', 'ngMaterial', 'ngAnimate', 'ngAria', 'ngSanitize', 'ngMessages',
@@ -42,13 +42,13 @@ define([
 
     /* jshint -W117  */
     app.constant('fstepProperties', {
-        'FSTEP_URL': fstepConfig.fstepUrl,
-        'FSTEP_PORTAL_URL': fstepConfig.fstepPortalUrl,
-        'URL': fstepConfig.apiUrl,
-        'URLv2': fstepConfig.apiUrlv2,
-        'SSO_URL': fstepConfig.ssoUrl,
-        'ANALYST_URL': fstepConfig.analystUrl,
-        'MAPBOX_URL': "https://api.mapbox.com/styles/v1/mapbox/streets-v8/tiles/{z}/{x}/{y}?access_token=" + fstepConfig.mapboxToken
+        'FSTEP_URL': osirisConfig.fstepUrl,
+        'FSTEP_PORTAL_URL': osirisConfig.fstepPortalUrl,
+        'URL': osirisConfig.apiUrl,
+        'URLv2': osirisConfig.apiUrlv2,
+        'SSO_URL': osirisConfig.ssoUrl,
+        'ANALYST_URL': osirisConfig.analystUrl,
+        'MAPBOX_URL': "https://api.mapbox.com/styles/v1/mapbox/streets-v8/tiles/{z}/{x}/{y}?access_token=" + osirisConfig.mapboxToken
     });
     /* jshint +W117 */
 

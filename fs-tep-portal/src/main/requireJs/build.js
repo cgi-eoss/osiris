@@ -4,7 +4,7 @@
     name: "app",
     include: ["requireLib"],
     paths: {
-        fstepConfig: "empty:" // this is loaded manually, and managed (by Puppet) outside the requireJs context
+        osirisConfig: "empty:" // this is loaded manually, and managed (by Puppet) outside the requireJs context
     },
     preserveLicenseComments: false,
     optimize: "closure",

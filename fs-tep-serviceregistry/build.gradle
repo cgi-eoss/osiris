@@ -37,7 +37,7 @@ configurations { pkg }
 artifacts { pkg buildRpm }
 
 ospackage {
-    packageName 'fs-tep-serviceregistry'
+    packageName 'osiris-serviceregistry'
     version getRpmVersion(project.version).version
     release getRpmVersion(project.version).release
     arch NOARCH

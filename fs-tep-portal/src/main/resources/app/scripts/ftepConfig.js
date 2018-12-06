@@ -1,5 +1,5 @@
 'use strict';
-define('fstepConfig', [], function () {
+define('osirisConfig', [], function () {
   return {
     fstepUrl: "http://158.234.90.212:8080",
     apiUrl: "http://158.234.90.212:8080/secure/api/v1.0",
