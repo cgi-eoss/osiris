@@ -1,2 +1,2 @@
 # Make application jar immutable
-chattr +i /var/fs-tep/zoomanager/fs-tep-zoomanager.jar
+chattr +i /var/osiris/zoomanager/fs-tep-zoomanager.jar

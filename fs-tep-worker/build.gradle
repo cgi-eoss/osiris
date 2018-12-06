@@ -88,13 +88,13 @@ ospackage {
     arch NOARCH
     os LINUX
 
-    user 'fstep'
-    permissionGroup 'fstep'
+    user 'osiris'
+    permissionGroup 'osiris'
 
     preInstall file('src/ospackage/preinst.sh')
     postInstall file('src/ospackage/postinst.sh')
 
-    into('/var/fs-tep/worker') {
+    into('/var/osiris/worker') {
         from("${buildDir}/libs") {
             include '*-bin.jar'
             rename('fs-tep-worker-.*\\-bin.jar', 'fs-tep-worker.jar')

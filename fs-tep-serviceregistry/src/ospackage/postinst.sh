@@ -1,2 +1,2 @@
 # Make application jar immutable
-chattr +i /var/fs-tep/serviceregistry/fs-tep-serviceregistry.jar
+chattr +i /var/osiris/serviceregistry/fs-tep-serviceregistry.jar

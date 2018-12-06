@@ -73,13 +73,13 @@ ospackage {
     arch NOARCH
     os LINUX
 
-    user 'fstep'
-    permissionGroup 'fstep'
+    user 'osiris'
+    permissionGroup 'osiris'
 
     preInstall file('src/ospackage/preinst.sh')
     postInstall file('src/ospackage/postinst.sh')
 
-    into('/var/fs-tep/zoomanager') {
+    into('/var/osiris/zoomanager') {
         from("${buildDir}/libs") {
             include '*-bin.jar'
             rename('fs-tep-zoomanager-.*\\-bin.jar', 'fs-tep-zoomanager.jar')

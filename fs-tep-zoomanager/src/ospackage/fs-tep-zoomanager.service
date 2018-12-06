@@ -4,8 +4,8 @@ After=syslog.target
 After=network.target
 
 [Service]
-User=fstep
-ExecStart=/var/fs-tep/zoomanager/fs-tep-zoomanager.jar
+User=osiris
+ExecStart=/var/osiris/zoomanager/fs-tep-zoomanager.jar
 SuccessExitStatus=143
 
 [Install]
