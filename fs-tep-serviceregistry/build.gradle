@@ -62,7 +62,7 @@ ospackage {
     }
 
     into('/usr/lib/systemd/system') {
-        from 'src/ospackage/fs-tep-serviceregistry.service'
+        from 'src/ospackage/osiris-serviceregistry.service'
         addParentDirs false
     }
 }

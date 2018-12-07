@@ -107,7 +107,7 @@ ospackage {
     }
 
     into('/usr/lib/systemd/system') {
-        from 'src/ospackage/fs-tep-worker.service'
+        from 'src/ospackage/osiris-worker.service'
         addParentDirs false
     }
 }

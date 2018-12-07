@@ -98,7 +98,7 @@ ospackage {
     }
 
     into('/usr/lib/systemd/system') {
-        from 'src/ospackage/fs-tep-zoomanager.service'
+        from 'src/ospackage/osiris-zoomanager.service'
         addParentDirs false
     }
 }
