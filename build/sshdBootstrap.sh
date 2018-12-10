@@ -11,12 +11,12 @@ if [ ! -d /var/run/sshd ]; then
   mkdir /var/run/sshd && chmod 0755 /var/run/sshd
 fi
 
-/usr/sbin/usermod -u $1 fstep
-/usr/sbin/groupmod -g $2 fstep
+/usr/sbin/usermod -u $1 osiris
+/usr/sbin/groupmod -g $2 osiris
 if [ ! $(getent group $3) ]; then
    /usr/sbin/groupadd -g $3 docker
 fi
-/usr/bin/gpasswd -a fstep $(getent group $3 | awk -F: '{print $1}')
+/usr/bin/gpasswd -a osiris $(getent group $3 | awk -F: '{print $1}')
 
 shift 3
 

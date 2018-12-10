@@ -59,10 +59,10 @@ ENV GRADLE_HOME /opt/gradle-${GRADLE_VERSION}
 ENV PATH=${GRADLE_HOME}/bin:${PATH}
 
 # Set up user and environment for interactive usage
-RUN adduser -d /home/fstep -m fstep && echo "fstep" | passwd fstep --stdin
+RUN adduser -d /home/osiris -m osiris && echo "osiris" | passwd osiris --stdin
 RUN ssh-keygen -t rsa -b 4096 -P "" -f /etc/ssh/ssh_host_rsa_key
 RUN echo -e "export PATH=$PATH\nexport LD_LIBRARY_PATH=$LD_LIBRARY_PATH\nexport PERL5LIB=$PERL5LIB\nexport PYTHONPATH=$PYTHONPATH\nexport M2_HOME=$M2_HOME\nexport JAVA_HOME=$JAVA_HOME" >>/etc/profile.d/dockerenv.sh
-RUN echo -e "fstep ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/01_fstep
+RUN echo -e "osiris ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers.d/01_osiris
 
-# The script allows the uid of the fstep user to be modified prior to launching sshd
+# The script allows the uid of the osiris user to be modified prior to launching sshd
 ADD sshdBootstrap.sh /usr/sbin/sshdBootstrap.sh

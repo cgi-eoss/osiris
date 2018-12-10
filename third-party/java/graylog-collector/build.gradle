@@ -26,7 +26,7 @@ ospackage {
     packageDescription 'Graylog Collector'
     url 'https://github.com/graylog-labs/collector/'
     license 'GNU General Public License v3.0'
-    vendor 'FS-TEP'
+    vendor 'OSIRIS'
 
     requires('java-1.8.0-openjdk-headless')
 

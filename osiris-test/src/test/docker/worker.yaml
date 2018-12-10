@@ -1,0 +1,5 @@
+---
+classes:
+  - osiris::worker
+
+docker::manage_service: false

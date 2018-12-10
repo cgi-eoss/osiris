@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc";
+
+service OsirisServiceLauncher {
+    rpc LaunchService (OsirisServiceParams) returns (stream OsirisServiceResponse);
+    rpc ListWorkers (ListWorkersParams) returns (WorkersList);
+    rpc StopService (StopServiceParams) returns (StopServiceResponse);
+}
+
+service OsirisJobLauncher {
+	rpc BuildService (BuildServiceParams) returns (BuildServiceResponse);
+    rpc SubmitJob (OsirisServiceParams) returns (OsirisJobResponse);
+    rpc CancelJob (CancelJobParams) returns (CancelJobResponse);
+    rpc StopJob (StopServiceParams) returns (StopServiceResponse);
+    rpc RelaunchFailedJob (RelaunchFailedJobParams) returns (RelaunchFailedJobResponse);
+    
+}
+
+message BuildServiceParams {
+    string userId = 1;
+    string serviceId = 2;
+    string buildFingerprint = 3;
+}
+
+message BuildServiceResponse {
+   
+}
+
+message OsirisServiceParams {
+    string jobId = 1;
+    string userId = 2;
+    string serviceId = 3;
+    repeated JobParam inputs = 4;
+    string jobConfigLabel = 5;
+    string jobParent = 6;
+}
+
+message OsirisServiceResponse {
+    message JobOutputs {
+        repeated JobParam outputs = 1;
+    }
+    oneof Payload {
+        Job job = 1;
+        JobOutputs jobOutputs = 2;
+    }
+}
+
+message OsirisJobResponse {
+        Job job = 1;
+}
+
+message ListWorkersParams {
+}
+
+message WorkersList {
+    repeated Worker workers = 1;
+}
+
+message Worker {
+    string host = 1;
+    int32 port = 2;
+    string environment = 3;
+}
+
+message StopServiceParams {
+    Job job = 1;
+}
+
+message StopServiceResponse {
+}
+
+message CancelJobParams {
+    Job job = 1;
+}
+
+message RelaunchFailedJobParams {
+    Job job = 1;
+}
+
+message CancelJobResponse {
+   
+}
+
+message RelaunchFailedJobResponse {
+
+}

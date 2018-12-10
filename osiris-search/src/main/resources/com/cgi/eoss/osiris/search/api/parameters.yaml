@@ -1,0 +1,194 @@
+---
+catalogue:
+  title: 'Catalogue'
+  type: 'catalogue'
+  allowed:
+    values:
+      - value: 'SATELLITE'
+        title: 'Satellite'
+        description: 'Satellite products'
+      - value: 'REF_DATA'
+        title: 'Reference'
+        description: 'User-uploaded reference and in situ data'
+      - value: 'OSIRIS_PRODUCTS'
+        title: 'OSIRIS Products'
+        description: 'All pre-processed data'
+      - value: 'CLMS_DATA'
+        title: 'Copernicus Land Monitoring Service'
+        description: 'Collections and products of the CLMS'
+collection:
+  title: 'Collection'
+  type: 'dynamic'
+  allowed: 
+    values: ''
+  onlyIf:
+    'catalogue':
+      - 'OSIRIS_PRODUCTS'
+
+clmscollection:
+  title: 'Collection'
+  type: 'dynamic'
+  allowed: 
+    values: ''
+  onlyIf:
+    'catalogue':
+      - 'CLMS_DATA'
+
+owner:
+  title: 'Owner'
+  type: 'text'
+  onlyIf:
+    'catalogue':
+      - 'REF_DATA'
+      - 'OSIRIS_PRODUCTS'
+
+mission:
+  title: 'Collection'
+  type: 'select'
+  defaultValue: 'sentinel2'
+  allowed:
+    values:
+      - value: 'sentinel1'
+        title: 'Sentinel-1'
+      - value: 'sentinel2'
+        title: 'Sentinel-2'
+      - value: 'sentinel3'
+        title: 'Sentinel-3'
+      - value: 'landsat'
+        title: 'Landsat'
+      - value: 'envisat'
+        title: 'Envisat MERIS L1B'
+  onlyIf:
+    'catalogue':
+      - 'SATELLITE'
+
+s2ProcessingLevel:
+  title: 'Processing level'
+  type: 'select'
+  defaultValue: ''
+  allowed:
+    values:
+      - value: ''
+        title: ''
+      - value: 'L1C'
+        title: 'L1C'
+      - value: 'L2A'
+        title: 'L2A'
+  onlyIf:
+    'mission':
+      - 'sentinel2'
+
+productDate:
+  title: 'Product date'
+  type: 'daterange'
+  description: 'UTC'
+  defaultValue:
+    - '-3'
+    - '0'
+  optional: 'true'
+    
+jobDate:
+  title: 'Job date'
+  type: 'daterange'
+  description: 'UTC'
+  defaultValue:
+    - '-3'
+    - '0'
+  onlyIf:
+    'catalogue':
+      - 'OSIRIS_PRODUCTS'
+  optional: 'true'
+      
+publicationDate:
+  title: 'Publication date'
+  type: 'daterange'
+  description: 'UTC'
+  defaultValue:
+    - '-3'
+    - '0'
+  onlyIf:
+    'catalogue':
+      - 'REF_DATA'      
+  optional: 'true'    
+
+aoi:
+  title: 'AOI'
+  type: 'polygon'
+  description: 'WKT polygon'
+
+identifier:
+  title: 'Identifier'
+  type: 'text'
+  description: 'Product identifier string'
+
+platform:
+  title: 'Platform'
+  type: 'select'
+  defaultValue: 'Landsat-8'
+  allowed:
+    values:
+      - value: 'Landsat-5'
+        title: 'Landsat-5'
+        onlyIf:
+          'mission':
+            - 'landsat'
+      - value: 'Landsat-7'
+        title: 'Landsat-7'
+        onlyIf:
+          'mission':
+            - 'landsat'
+      - value: 'Landsat-8'
+        title: 'Landsat-8'
+        onlyIf:
+          'mission':
+            - 'landsat'
+  onlyIf:
+    'mission':
+      - 'landsat'
+
+maxCloudCover:
+  title: 'Cloud Coverage'
+  type: 'int'
+  description: 'Maximum (%)'
+  defaultValue: 10
+  allowed:
+    min: 0
+    max: 100
+  onlyIf:
+    'mission':
+      - 'sentinel2'
+      - 'landsat'
+
+s1ProductType:
+  title: 'Product type'
+  type: 'select'
+  defaultValue: 'GRD'
+  allowed:
+    values:
+      - value: 'GRD'
+        title: 'GRD'
+      - value: 'OCN'
+        title: 'OCN'
+      - value: 'SLC'
+        title: 'SLC'
+      - value: 'RAW'
+        title: 'RAW'
+  onlyIf:
+    'mission':
+      - 'sentinel1'
+
+orbitDirection:
+  title: 'Orbit direction'
+  type: 'select'
+  defaultValue: 'ascending'
+  allowed:
+    values:
+      - value: 'ascending'
+        title: 'ASCENDING'
+      - value: 'descending'
+        title: 'DESCENDING'
+      - value: ''
+        title: ''
+  onlyIf:
+    'mission':
+      - 'sentinel1'

@@ -12,11 +12,11 @@ configurations {
 }
 
 dependencies {
-    packages project(path: ':fs-tep-portal', configuration: 'pkg')
-    packages project(path: ':fs-tep-server', configuration: 'pkg')
-    packages project(path: ':fs-tep-serviceregistry', configuration: 'pkg')
-    packages project(path: ':fs-tep-worker', configuration: 'pkg')
-    packages project(path: ':fs-tep-zoomanager', configuration: 'pkg')
+    packages project(path: ':osiris-portal', configuration: 'pkg')
+    packages project(path: ':osiris-server', configuration: 'pkg')
+    packages project(path: ':osiris-serviceregistry', configuration: 'pkg')
+    packages project(path: ':osiris-worker', configuration: 'pkg')
+    packages project(path: ':osiris-zoomanager', configuration: 'pkg')
     packages project(path: ':third-party/pkg', configuration: 'pkg')
     packages project(path: ':third-party/resto', configuration: 'pkg')
 

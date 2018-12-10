@@ -1,6 +1,6 @@
-[submodule "third-party/puppet/cgieoss-fstep"]
-	path = third-party/puppet/cgieoss-fstep
-	url = https://github.com/cgi-eoss/puppet-fstep.git
+[submodule "third-party/puppet/cgieoss-osiris"]
+	path = third-party/puppet/cgieoss-osiris
+	url = https://github.com/cgi-eoss/puppet-osiris.git
 	branch = development
 [submodule "third-party/cxx/zoo-project/src"]
 	path = third-party/cxx/zoo-project/src

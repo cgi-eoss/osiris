@@ -1,0 +1,25 @@
+{
+  "name": "osirisoutput",
+  "model": "RestoModel_Osiris_Output",
+  "status": "public",
+  "licenseId": "unlicensed",
+  "rights":{
+    "download": 1,
+    "visualize":0
+  },
+  "osDescription": {
+    "en": {
+      "ShortName": "osirisref",
+      "LongName": "Osiris Reference Data",
+      "Description": "This collection contains product created by OSIRIS platfrom Data",
+      "Tags": "osiris reference data",
+      "Developer": "AA",
+      "Contact": "user@mail.com",
+      "Query": "OSIRIS",
+      "Attribution": "AAA"
+    }
+  },
+  "propertiesMapping":{
+    "productType": "OsirisProduct"
+  }
+}

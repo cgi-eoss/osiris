@@ -1,0 +1,25 @@
+{
+  "name": "osirisinput",
+  "model": "RestoModel_Osiris_Input",
+  "status": "public",
+  "licenseId": "unlicensed",
+  "rights":{
+    "download": 1,
+    "visualize":0
+  },
+  "osDescription": {
+    "en": {
+      "ShortName": "osiris_input",
+      "LongName": "Osiris Input Data",
+      "Description": "This collection contains external data used in OSIRIS processing",
+      "Tags": "osiris input data",
+      "Developer": "AA",
+      "Contact": "user@mail.com",
+      "Query": "OSIRIS",
+      "Attribution": "AAA"
+    }
+  },
+  "propertiesMapping":{
+    "productType": "OsirisInputProduct"
+  }
+}

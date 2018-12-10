@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc.worker";
+
+service OsirisWorker {
+    rpc PrepareEnvironment (JobInputs) returns (JobEnvironment);
+    rpc PrepareInputs (JobInputs) returns (JobEnvironment);
+    rpc PrepareDockerImage (DockerImageConfig) returns (PrepareDockerImageResponse);
+    rpc LaunchContainer (JobDockerConfig) returns (LaunchContainerResponse);
+    rpc ExecuteServiceCmd (ServiceCmd) returns (ServiceCmdResponse);
+    rpc GetPortBindings (Job) returns (PortBindings);
+    rpc StopContainer (Job) returns (StopContainerResponse);
+    rpc WaitForContainerExit (ExitParams) returns (ContainerExitCode);
+    rpc WaitForContainerExitWithTimeout (ExitWithTimeoutParams) returns (ContainerExitCode);
+    rpc ListOutputFiles (ListOutputFilesParam) returns (OutputFileList);
+    rpc GetOutputFile (GetOutputFileParam) returns (stream FileStream);
+    rpc CleanUp (Job) returns (CleanUpResponse);
+}
+
+message JobSpec {
+	Service service = 1;
+	Job job = 2;
+	repeated JobParam inputs = 3;
+	bool hasTimeout = 4;
+	int32 timeoutValue = 5;
+	repeated string exposedPorts = 6;
+	repeated string userBinds = 7;
+	ResourceRequest resourceRequest = 8;
+	map<string, string> environmentVariables = 9;
+}
+
+message ResourceRequest{
+	int32 storage = 1;
+}
+
+message JobInputs {
+    Job job = 1;
+    repeated JobParam inputs = 2;
+}
+
+message JobEvent{
+	JobEventType jobEventType = 1;
+}
+enum JobEventType{
+	DATA_FETCHING_STARTED = 0;
+	DATA_FETCHING_COMPLETED = 1;
+	PROCESSING_STARTED = 2;
+}
+
+message JobError{
+	string errorDescription = 1;
+}
+
+message ContainerExit {
+    int32 exitCode = 1;
+    JobEnvironment jobEnvironment = 2;
+}
+
+message JobEnvironment {
+    string workingDir = 1;
+    string inputDir = 2;
+    string outputDir = 3;
+}
+
+message JobDockerConfig {
+    Job job = 1;
+    string serviceName = 2;
+    string dockerImage = 3;
+    repeated string binds = 4;
+    repeated string ports = 5;
+    map<string, string> environmentVariables = 6;
+}
+
+
+message DockerImageConfig {
+    string serviceName = 1;
+    string dockerImage = 2;
+}
+
+message LaunchContainerResponse {
+}
+
+message ServiceCmd {
+    Job job = 1;
+    string command = 2;
+}
+
+message ServiceCmdResponse {
+}
+
+message PortBindings {
+    repeated PortBinding bindings = 1;
+}
+
+message PortBinding {
+    string portDef = 1;
+    Binding binding = 2;
+}
+
+message Binding {
+    string ip = 1;
+    int32 port = 2;
+}
+
+message StopContainerResponse {
+}
+
+message ExitParams {
+    Job job = 1;
+}
+
+message ExitWithTimeoutParams {
+    Job job = 1;
+    int32 timeout = 2;
+}
+
+message ContainerExitCode {
+    int32 exitCode = 1;
+}
+
+message ListOutputFilesParam {
+    Job job = 1;
+    string outputsRootPath = 2;
+}
+
+message OutputFileList {
+    repeated OutputFileItem items = 1;
+}
+
+message OutputFileItem {
+    string relativePath = 1;
+}
+
+message GetOutputFileParam {
+    Job job = 1;
+    string path = 2;
+}
+
+message PrepareDockerImageResponse {
+}
+
+message CleanUpResponse {
+}

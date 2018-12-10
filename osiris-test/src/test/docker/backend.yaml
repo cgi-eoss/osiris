@@ -1,0 +1,7 @@
+---
+classes:
+  - osiris::db
+  - osiris::server
+  - osiris::wps
+
+osiris::db::trust_local_network: true

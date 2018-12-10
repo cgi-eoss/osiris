@@ -1,0 +1,8 @@
+---
+classes:
+  - osiris::proxy
+  - osiris::drupal
+  - osiris::webapp
+
+osiris::drupal::init_db: false
+osiris::drupal::enable_cron: false

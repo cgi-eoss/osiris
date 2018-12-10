@@ -1,8 +1,0 @@
----
-classes:
-  - fstep::proxy
-  - fstep::drupal
-  - fstep::webapp
-
-fstep::drupal::init_db: false
-fstep::drupal::enable_cron: false

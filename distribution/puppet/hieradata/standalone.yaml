@@ -1,67 +1,67 @@
 ---
-# Uncomment the FS-TEP classes desired. See the cgieoss-fstep module for
+# Uncomment the OSIRIS classes desired. See the cgieoss-osiris module for
 # available configuration of these classes.
 classes:
   - base
-#  - fstep::db
-#  - fstep::drupal
-#  - fstep::geoserver
-#  - fstep::monitor
-#  - fstep::monitor::graylog_collector
-#  - fstep::proxy
-#  - fstep::resto
-#  - fstep::server
-#  - fstep::webapp
-#  - fstep::worker
-#  - fstep::wps
-#  - fstep::broker
-#  - fstep::ui
+#  - osiris::db
+#  - osiris::drupal
+#  - osiris::geoserver
+#  - osiris::monitor
+#  - osiris::monitor::graylog_collector
+#  - osiris::proxy
+#  - osiris::resto
+#  - osiris::server
+#  - osiris::webapp
+#  - osiris::worker
+#  - osiris::wps
+#  - osiris::broker
+#  - osiris::ui
 # MANDATORY PARAMETER. The example here should work for Vagrant environments
-#fstep::repo::location: file:///vagrant/.dist/repo
+#osiris::repo::location: file:///vagrant/.dist/repo
 
 # Uncomment and change to your local IP/port if using the webapp
-#fstep::globals::base_url: 'http://192.168.x.y:8080'
+#osiris::globals::base_url: 'http://192.168.x.y:8080'
 
-# Uncomment and change these depending on how each FS-TEP component can resolve the others
+# Uncomment and change these depending on how each OSIRIS component can resolve the others
 # e.g. this allows running some components outside the managed configuration
-#fstep::globals::hosts_override:
-#  fstep-db:
+#osiris::globals::hosts_override:
+#  osiris-db:
 #    ip: 127.0.0.1
-#  fstep-drupal:
+#  osiris-drupal:
 #    ip: 127.0.0.1
-#  fstep-geoserver:
+#  osiris-geoserver:
 #    ip: 127.0.0.1
-#  fstep-monitor:
+#  osiris-monitor:
 #    ip: 127.0.0.1
-#  fstep-proxy:
+#  osiris-proxy:
 #    ip: 127.0.0.1
-#  fstep-resto:
+#  osiris-resto:
 #    ip: 127.0.0.1
-#  fstep-server:
+#  osiris-server:
 #    ip: 127.0.0.1
-#  fstep-webapp:
+#  osiris-webapp:
 #    ip: 127.0.0.1
-#  fstep-worker:
+#  osiris-worker:
 #    ip: 127.0.0.1
-#  fstep-wps:
+#  osiris-wps:
 #    ip: 127.0.0.1
-#  fstep-broker:
+#  osiris-broker:
 #    ip: 127.0.0.1  
-#  fstep-ui:
+#  osiris-ui:
 #    ip: 127.0.0.1  
 
-# Note that fstep::workers are self-registering with the fstep::server but the remoting IP can be controlled:
-#fstep::server::custom_config_properties:
+# Note that osiris::workers are self-registering with the osiris::server but the remoting IP can be controlled:
+#osiris::server::custom_config_properties:
 #  'eureka.instance.ipAddress': '127.0.0.1'
 #  'eureka.instance.preferIpAddress': 'true'
-#fstep::zoomanager::custom_config_properties:
+#osiris::zoomanager::custom_config_properties:
 #  'eureka.instance.ipAddress': '127.0.0.1'
 #  'eureka.instance.preferIpAddress': 'true'
-#fstep::worker::custom_config_properties:
+#osiris::worker::custom_config_properties:
 #  'eureka.instance.ipAddress': '127.0.0.1'
 #  'eureka.instance.preferIpAddress': 'true'
 
-# Other useful parameters in a test environment; for full documentation see the cgieoss-fstep module:
-#fstep::server::api_security_mode: 'DEVELOPMENT_BECOME_ANY_USER'
-#fstep::server::geoserver_url: 'http://fstep-geoserver:9080/geoserver/'
-#fstep::server::resto_url: 'http://fstep-resto/'
+# Other useful parameters in a test environment; for full documentation see the cgieoss-osiris module:
+#osiris::server::api_security_mode: 'DEVELOPMENT_BECOME_ANY_USER'
+#osiris::server::geoserver_url: 'http://osiris-geoserver:9080/geoserver/'
+#osiris::server::resto_url: 'http://osiris-resto/'

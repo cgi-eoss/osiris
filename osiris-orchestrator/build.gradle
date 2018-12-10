@@ -1,0 +1,35 @@
+group 'com.cgi.eoss.osiris'
+version '0.1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'jacoco'
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile project(':osiris-catalogue')
+    compile project(':osiris-costing')
+    compile project(':osiris-logging')
+    compile project(':osiris-model')
+    compile project(':osiris-persistence')
+    compile project(':osiris-queues')
+    compile project(':osiris-rpc')
+    compile project(':osiris-security')
+    compile project(':osiris-search')
+    
+
+    compile 'org.awaitility:awaitility'
+    compile 'org.jooq:jool'
+    compile 'org.lognet:grpc-spring-boot-starter'
+    compile 'org.springframework:spring-context'
+    compile 'org.springframework.boot:spring-boot-starter-log4j2'
+    compile 'org.springframework.cloud:spring-cloud-starter-eureka'
+    compile 'org.springframework.cloud:spring-cloud-starter-zuul'
+
+    testCompile 'junit:junit'
+    testCompile 'com.squareup.okhttp3:mockwebserver'
+    testCompile 'org.hamcrest:hamcrest-junit'
+    testCompile 'org.hsqldb:hsqldb'
+    testCompile 'org.mockito:mockito-core'
+    testCompile 'org.springframework:spring-test'
+}

@@ -23,10 +23,10 @@ ospackage {
     release '5'
     arch X86_64
     os LINUX
-    packageDescription 'Resto Earth Observation products search engine (with FS-TEP modifications)'
+    packageDescription 'Resto Earth Observation products search engine (with OSIRIS modifications)'
     url 'https://github.com/jjrom/resto'
     license 'Apache License 2.0'
-    vendor 'FS-TEP'
+    vendor 'OSIRIS'
 
     user 'root'
 
