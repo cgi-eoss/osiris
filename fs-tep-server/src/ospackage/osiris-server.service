@@ -1,11 +1,11 @@
 [Unit]
-Description=FS-TEP Zoo Manager
+Description=Osiris Server
 After=syslog.target
 After=network.target
 
 [Service]
 User=osiris
-ExecStart=/var/osiris/zoomanager/fs-tep-zoomanager.jar
+ExecStart=/var/osiris/server/osiris-server.jar
 SuccessExitStatus=143
 
 [Install]

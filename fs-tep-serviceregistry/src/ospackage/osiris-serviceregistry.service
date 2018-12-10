@@ -1,11 +1,11 @@
 [Unit]
-Description=FS-TEP Service Registry
+Description=Osiris Service Registry
 After=syslog.target
 After=network.target
 
 [Service]
 User=osiris
-ExecStart=/var/osiris/serviceregistry/fs-tep-serviceregistry.jar
+ExecStart=/var/osiris/serviceregistry/osiris-serviceregistry.jar
 SuccessExitStatus=143
 
 [Install]

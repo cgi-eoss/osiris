@@ -14,6 +14,6 @@ if ! id -G -n osiris | grep -qF osiris ; then
 fi
 
 # Make application binary mutable if it already exists (i.e. this is a package upgrade)
-if test -f /var/osiris/worker/fs-tep-worker.jar ; then
-    chattr -i /var/osiris/worker/fs-tep-worker.jar
+if test -f /var/osiris/worker/osiris-worker.jar ; then
+    chattr -i /var/osiris/worker/osiris-worker.jar
 fi

@@ -14,6 +14,6 @@ if ! id -G -n osiris | grep -qF osiris ; then
 fi
 
 # Make application binary mutable if it already exists (i.e. this is a package upgrade)
-if test -f /var/osiris/serviceregistry/fs-tep-serviceregistry.jar ; then
-    chattr -i /var/osiris/serviceregistry/fs-tep-serviceregistry.jar
+if test -f /var/osiris/serviceregistry/osiris-serviceregistry.jar ; then
+    chattr -i /var/osiris/serviceregistry/osiris-serviceregistry.jar
 fi

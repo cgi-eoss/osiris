@@ -82,7 +82,7 @@ ospackage {
     into('/var/osiris/zoomanager') {
         from("${buildDir}/libs") {
             include '*-bin.jar'
-            rename('fs-tep-zoomanager-.*\\-bin.jar', 'fs-tep-zoomanager.jar')
+            rename('fs-tep-zoomanager-.*\\-bin.jar', 'osiris-zoomanager.jar')
             fileMode 0500
         }
 

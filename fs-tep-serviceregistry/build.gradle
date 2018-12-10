@@ -52,7 +52,7 @@ ospackage {
     into('/var/osiris/serviceregistry') {
         from("${buildDir}/libs") {
             include '*-bin.jar'
-            rename('fs-tep-serviceregistry-.*\\-bin.jar', 'fs-tep-serviceregistry.jar')
+            rename('fs-tep-serviceregistry-.*\\-bin.jar', 'osiris-serviceregistry.jar')
             fileMode 0500
         }
 

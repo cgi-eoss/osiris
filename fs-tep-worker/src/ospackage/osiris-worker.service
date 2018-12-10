@@ -1,11 +1,11 @@
 [Unit]
-Description=FS-TEP Server
+Description=Osiris Worker
 After=syslog.target
 After=network.target
 
 [Service]
 User=osiris
-ExecStart=/var/osiris/server/fs-tep-server.jar
+ExecStart=/var/osiris/worker/osiris-worker.jar
 SuccessExitStatus=143
 
 [Install]

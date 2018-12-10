@@ -14,6 +14,6 @@ if ! id -G -n osiris | grep -qF osiris ; then
 fi
 
 # Make application binary mutable if it already exists (i.e. this is a package upgrade)
-if test -f /var/osiris/zoomanager/fs-tep-zoomanager.jar ; then
-    chattr -i /var/osiris/zoomanager/fs-tep-zoomanager.jar
+if test -f /var/osiris/zoomanager/osiris-zoomanager.jar ; then
+    chattr -i /var/osiris/zoomanager/osiris-zoomanager.jar
 fi

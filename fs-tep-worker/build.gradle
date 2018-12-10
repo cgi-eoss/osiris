@@ -97,7 +97,7 @@ ospackage {
     into('/var/osiris/worker') {
         from("${buildDir}/libs") {
             include '*-bin.jar'
-            rename('fs-tep-worker-.*\\-bin.jar', 'fs-tep-worker.jar')
+            rename('fs-tep-worker-.*\\-bin.jar', 'osiris-worker.jar')
             fileMode 0500
         }
 
