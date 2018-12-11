@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.security;
 
+import com.cgi.eoss.osiris.api.security.basic.HttpBasicRequestHeaderAuthenticationFilter;
 import com.cgi.eoss.osiris.security.OsirisUserDetailsService;
 import com.cgi.eoss.osiris.security.OsirisWebAuthenticationDetailsSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,20 +18,21 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
-@ConditionalOnProperty(value = "osiris.api.security.mode", havingValue = "SSO")
 @EnableWebSecurity
 @EnableGlobalAuthentication
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class ApiSecurityConfig {
-
     @Bean
-    public WebSecurityConfigurerAdapter webSecurityConfigurerAdapter(
+    @ConditionalOnProperty(value = "osiris.api.security.mode", havingValue = "SSO")
+    public WebSecurityConfigurerAdapter ssoWebSecurityConfigurerAdapter(
             @Value("${osiris.api.security.username-request-header:REMOTE_USER}") String usernameRequestHeader,
             @Value("${osiris.api.security.email-request-header:REMOTE_EMAIL}") String emailRequestHeader) {
         return new WebSecurityConfigurerAdapter() {
@@ -58,6 +60,38 @@ public class ApiSecurityConfig {
                 httpSecurity
                         .sessionManagement()
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+            }
+        };
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "osiris.api.security.mode", havingValue = "HTTP_BASIC")
+    public WebSecurityConfigurerAdapter httpBasicWebSecurityConfigurerAdapter() {
+        return new WebSecurityConfigurerAdapter() {
+            @Override
+            protected void configure(HttpSecurity httpSecurity) throws Exception {
+                // Extracts (pre-authenticated) HTTP Basic auth information from the request headers
+                HttpBasicRequestHeaderAuthenticationFilter filter = new HttpBasicRequestHeaderAuthenticationFilter();
+                filter.setAuthenticationManager(authenticationManager());
+                filter.setAuthenticationDetailsSource(new OsirisWebAuthenticationDetailsSource(""));
+
+                // Handles any authentication exceptions, and translates to a simple 403
+                // There is no login redirection as we are expecting pre-auth
+                ExceptionTranslationFilter exceptionTranslationFilter = new ExceptionTranslationFilter(new Http403ForbiddenEntryPoint());
+
+                httpSecurity
+                        .addFilterBefore(exceptionTranslationFilter, RequestHeaderAuthenticationFilter.class)
+                        .addFilter(filter)
+                        .authorizeRequests()
+                        .anyRequest().authenticated();
+                httpSecurity
+                        .csrf().disable();
+                httpSecurity
+                        .cors();
+                httpSecurity
+                        .sessionManagement()
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
             }
         };
     }

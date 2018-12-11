@@ -4,6 +4,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 public class OsirisWebAuthenticationDetailsSource extends WebAuthenticationDetailsSource {
 
@@ -16,7 +17,7 @@ public class OsirisWebAuthenticationDetailsSource extends WebAuthenticationDetai
 
     public WebAuthenticationDetails buildDetails(HttpServletRequest context) {
         OsirisWebAuthenticationDetails details = new OsirisWebAuthenticationDetails(context);
-        details.setUserEmail(context.getHeader(emailRequestHeader));
+        Optional.ofNullable(context.getHeader(emailRequestHeader)).ifPresent(details::setUserEmail);
         return details;
     }
 
