@@ -61,7 +61,7 @@ Vagrant.configure('2') do |config|
     #
     # Configure the local environment by editing distribution/puppet/hieradata/standalone.local.yaml
     #
-    osiris.puppet_install.puppet_version = '4.10.4'
+    osiris.puppet_install.puppet_version = '5.5.7'
 
     # Install r10k to pull in the dependency modules
     osiris.vm.provision 'shell', inline: <<EOF
