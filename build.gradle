@@ -38,10 +38,8 @@ allprojects {
 
     dependencyManagement {
         imports {
-            mavenBom 'org.springframework:spring-framework-bom:4.3.10.RELEASE'
-            mavenBom 'org.springframework.cloud:spring-cloud-dependencies:Dalston.SR2'
-            mavenBom 'org.springframework.data:spring-data-releasetrain:Ingalls-SR6'
-            mavenBom 'org.springframework.security:spring-security-bom:4.2.3.RELEASE'
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:1.5.18.RELEASE'
+            mavenBom 'org.springframework.cloud:spring-cloud-dependencies:Dalston.SR5'
         }
 
         dependencies {
@@ -144,7 +142,7 @@ allprojects {
             dependency 'org.projectlombok:lombok:1.16.18'
             dependency 'org.seleniumhq.selenium:selenium-java:3.6.0'
             dependency 'org.apache.activemq:activemq-pool:5.14.5'
-            dependencySet(group: 'org.springframework.boot', version: '1.5.6.RELEASE') {
+            dependencySet(group: 'org.springframework.boot', version: '1.5.18.RELEASE') {
                 entry 'spring-boot'
                 entry 'spring-boot-autoconfigure'
                 entry 'spring-boot-configuration-processor'
@@ -159,7 +157,6 @@ allprojects {
                 entry 'spring-boot-starter-activemq'
                 entry('spring-boot-starter-web') { exclude 'org.springframework.boot:spring-boot-starter-tomcat' }
             }
-            dependency 'org.springframework.hateoas:spring-hateoas:0.23.0.RELEASE'
             dependencySet(group: 'org.testcontainers', version: '1.4.2') {
                 entry 'selenium'
                 entry 'testcontainers'
@@ -190,7 +187,7 @@ def depVersions = [
         querydslPlugin               : '1.0.9',
         shadowPlugin                 : '2.0.1',
         shadowLog4j2TransformerPlugin: '2.1.1',
-        springBootPlugin             : '1.5.6.RELEASE'
+        springBootPlugin             : '1.5.18.RELEASE'
 ]
 
 ext.pl = [
