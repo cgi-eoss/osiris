@@ -3,14 +3,13 @@ package com.cgi.eoss.osiris.orchestrator.service;
 import com.cgi.eoss.osiris.costing.CostingService;
 import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.SystematicProcessing;
-import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.SystematicProcessing.Status;
+import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
-import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
-import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
-import com.cgi.eoss.osiris.rpc.OsirisServiceResponse;
 import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
+import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
+import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
 import com.cgi.eoss.osiris.search.api.SearchFacade;
 import com.cgi.eoss.osiris.search.api.SearchParameters;
 import com.cgi.eoss.osiris.search.api.SearchResults;
@@ -23,14 +22,16 @@ import lombok.extern.log4j.Log4j2;
 import okhttp3.HttpUrl;
 import org.geojson.Feature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,34 +40,40 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
- * Service for autoscaling the number of worker nodes based on queue length
+ * Service to schedule systematic processing activities
  * </p>
  */
 @Log4j2
 @Service
-@ConditionalOnProperty(name="osiris.server.systematicscheduler.enabled", havingValue="true", matchIfMissing = false)
+@ConditionalOnProperty(name="osiris.orchestrator.systematic.enabled", havingValue="true")
 public class SystematicProcessingScheduler {
 
-    SearchFacade searchFacade;
-    SystematicProcessingDataService systematicProcessingDataService;
-    private LocalServiceLauncher localServiceLauncher;
-    private CostingService costingService;
-
-    private static final long SYSTEMATIC_PROCESSING_CHECK_RATE_MS = 60 * 60 * 1000L;
+    private final SearchFacade searchFacade;
+    private final SystematicProcessingDataService systematicProcessingDataService;
+    private final LocalServiceLauncher localServiceLauncher;
+    private final CostingService costingService;
 
     @Autowired
-    public SystematicProcessingScheduler(SystematicProcessingDataService systematicProcessingDataService, SearchFacade searchFacade,
-            LocalServiceLauncher localServiceLauncher, CostingService costingService) {
+    public SystematicProcessingScheduler(SystematicProcessingDataService systematicProcessingDataService,
+                                         SearchFacade searchFacade,
+                                         LocalServiceLauncher localServiceLauncher,
+                                         CostingService costingService,
+                                         TaskScheduler taskScheduler,
+                                         @Value("${osiris.orchestrator.systematic.checkPeriod:3600000}") long checkPeriod) {
         this.systematicProcessingDataService = systematicProcessingDataService;
         this.searchFacade = searchFacade;
         this.localServiceLauncher = localServiceLauncher;
         this.costingService = costingService;
+        LOG.info("Scheduling systematic processing updates every {}ms", checkPeriod);
+        taskScheduler.scheduleAtFixedRate(this::updateSystematicProcessings, checkPeriod);
     }
 
-    @Scheduled(fixedRate = SYSTEMATIC_PROCESSING_CHECK_RATE_MS, initialDelay = 10000L)
-    public void updateSystematicProcessings() {
+    private void updateSystematicProcessings() {
         List<SystematicProcessing> activeSystematicProcessings = systematicProcessingDataService.findByStatus(Status.ACTIVE);
         List<SystematicProcessing> blockedSystematicProcessings = systematicProcessingDataService.findByStatus(Status.BLOCKED);
+
+        LOG.info("Updating {} active and {} blocked systematic processing activities",
+                activeSystematicProcessings.size(), blockedSystematicProcessings.size());
         
         for (SystematicProcessing activeSystematicProcessing : activeSystematicProcessings) {
             updateSystematicProcessing(activeSystematicProcessing);
@@ -83,16 +90,19 @@ public class SystematicProcessingScheduler {
         }
     }
 
-    public void updateSystematicProcessing(SystematicProcessing systematicProcessing) {
+    private void updateSystematicProcessing(SystematicProcessing systematicProcessing) {
+        LOG.debug("Updating systematic processing {}", systematicProcessing.getId());
+
         ListMultimap<String, String> queryParameters = systematicProcessing.getSearchParameters();
-        queryParameters.replaceValues("publishedAfter", Arrays.asList(new String[] {
-                ZonedDateTime.of(systematicProcessing.getLastUpdated(), ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}));
-        queryParameters.replaceValues("publishedBefore", Arrays.asList(new String[] {ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}));
-        queryParameters.replaceValues("sortOrder", Arrays.asList(new String[] {"ascending"}));
-        queryParameters.replaceValues("sortParam", Arrays.asList(new String[] {"published"}));
+        queryParameters.replaceValues("publishedAfter",
+                Collections.singletonList(ZonedDateTime.of(systematicProcessing.getLastUpdated(), ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)));
+        queryParameters.replaceValues("publishedBefore",
+                Collections.singletonList(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)));
+        queryParameters.replaceValues("sortOrder", Collections.singletonList("ascending"));
+        queryParameters.replaceValues("sortParam", Collections.singletonList("published"));
         int page = 0;
         HttpUrl requestUrl = new HttpUrl.Builder().scheme("http").host("local").build();
-        SearchResults results = null;
+        SearchResults results;
         JobConfig configTemplate = systematicProcessing.getParentJob().getConfig();
         try {
             do {
@@ -101,7 +111,7 @@ public class SystematicProcessingScheduler {
                     String url = feature.getProperties().get("osirisUrl").toString();
                     Multimap<String, String> inputs = ArrayListMultimap.create();
                     inputs.putAll(configTemplate.getInputs());
-                    inputs.replaceValues(configTemplate.getSystematicParameter(), Arrays.asList(new String[] {url}));
+                    inputs.replaceValues(configTemplate.getSystematicParameter(), Collections.singletonList(url));
                     configTemplate.getInputs().put(configTemplate.getSystematicParameter(), url);
                     int jobCost = costingService.estimateSingleRunJobCost(configTemplate);
                     if (jobCost > systematicProcessing.getOwner().getWallet().getBalance()) {
@@ -189,7 +199,7 @@ public class SystematicProcessingScheduler {
 
     public class JobSubmissionException extends Exception {
 
-        public JobSubmissionException(Throwable t) {
+        JobSubmissionException(Throwable t) {
             super(t);
         }
 
