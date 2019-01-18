@@ -11,16 +11,16 @@ distribution/puppet/modules/
 distribution/config/
 init.gradle
 
-fs-tep-portal/src/main/resources/bower_components
-fs-tep-portal/src/main/resources/node_modules
-fs-tep-portal/src/main/resources/.tmp
-fs-tep-portal/src/main/resources/dist
-fs-tep-portal/src/main/resources/.bowerrc
-fs-tep-portal/src/main/resources/.sass-cache
-fs-tep-portal/src/main/resources/app/styles/**.css
+osiris-portal/src/main/resources/bower_components
+osiris-portal/src/main/resources/node_modules
+osiris-portal/src/main/resources/.tmp
+osiris-portal/src/main/resources/dist
+osiris-portal/src/main/resources/.bowerrc
+osiris-portal/src/main/resources/.sass-cache
+osiris-portal/src/main/resources/app/styles/**.css
 
-fs-tep-portal/src/main/resources/package.json
-fs-tep-portal/src/main/resources/bower.json
+osiris-portal/src/main/resources/package.json
+osiris-portal/src/main/resources/bower.json
 
 ########
 
