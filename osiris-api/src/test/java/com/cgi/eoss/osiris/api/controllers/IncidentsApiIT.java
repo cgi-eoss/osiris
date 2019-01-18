@@ -148,11 +148,19 @@ public class IncidentsApiIT {
         mockMvc.perform(post("/api/incidents/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\":\"New incident\",\"aoi\":\"newAoi\",\"type\":\"" + incidentType1Url +
-                        "\",\"startDate\":\"2018-01-01T00:00:00.000Z\",\"endDate\":\"2018-01-10T00:00:00.000Z\",\"owner\":\""
-                        + userUri(osirisAdmin) + "\"}")
+                        "\",\"startDate\":\"2018-01-01T00:00:00.000Z\",\"endDate\":\"2018-01-10T00:00:00.000Z\"}")
                 .header("REMOTE_USER", osirisAdmin.getName()))
                 .andExpect(status().isCreated());
 
+    }
+
+    @Test
+    public void testCreateNewIncidentType() throws Exception {
+        mockMvc.perform(post("/api/incidentTypes/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"New incident\",\"description\":\"some description\",\"iconId\":\"someIconId\"}")
+                .header("REMOTE_USER", osirisAdmin.getName()))
+                .andExpect(status().isCreated());
     }
 
     @Test
