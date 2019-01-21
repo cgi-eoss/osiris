@@ -30,6 +30,10 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
     void delete(@P("incident") Incident incident);
 
     @Override
+    @Query("select t from Incident t where t.owner=user")
+    Page<Incident> findByOwner(@Param("owner") User user, Pageable pageable);
+
+    @Override
     @Query("select t from Incident t where not t.owner=user")
     Page<Incident> findByNotOwner(@Param("owner") User user, Pageable pageable);
 

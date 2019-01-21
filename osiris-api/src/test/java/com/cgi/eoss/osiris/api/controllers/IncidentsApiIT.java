@@ -139,6 +139,20 @@ public class IncidentsApiIT {
     }
 
     @Test
+    public void testFindByOwner() throws Exception {
+        mockMvc.perform(get("/api/incidentTypes/search/findByOwner?owner=" + userUri(osirisAdmin))
+                .header("REMOTE_USER", osirisAdmin.getName()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1));
+
+        mockMvc.perform(get("/api/incidents/search/findByOwner")
+                .header("REMOTE_USER", osirisAdmin.getName())
+                .param("owner", userUri(osirisAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+    }
+
+    @Test
     public void testCreateNewIncident() throws Exception {
         String incidentType1Url = JsonPath.compile("$._links.self.href")
                 .read(mockMvc.perform(get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
