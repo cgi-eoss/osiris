@@ -3,6 +3,7 @@ package com.cgi.eoss.osiris.api.controllers;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.User;
+import com.cgi.eoss.osiris.model.projections.ShortIncident;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -13,9 +14,7 @@ import org.springframework.security.access.method.P;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import java.util.List;
-
-@RepositoryRestResource(path = "incidents", itemResourceRel = "incident", collectionResourceRel = "incidents")
+@RepositoryRestResource(path = "incidents", itemResourceRel = "incident", collectionResourceRel = "incidents", excerptProjection = ShortIncident.class)
 public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiCustom, PagingAndSortingRepository<Incident, Long> {
 
     @Override

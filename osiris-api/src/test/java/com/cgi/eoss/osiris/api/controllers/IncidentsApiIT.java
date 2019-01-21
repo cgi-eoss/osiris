@@ -174,7 +174,7 @@ public class IncidentsApiIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()))
-                .andExpect(jsonPath("$._embedded.incidents[0].description").value(incident1.getDescription()))
+                .andExpect(jsonPath("$._embedded.incidents[0].type.title").value(incidentType1.getTitle()))
                 .andExpect(jsonPath("$._embedded.incidents[0].aoi").value(incident1.getAoi()))
                 .andExpect(jsonPath("$._embedded.incidents[0].startDate").value(incident1.getStartDate().toString()))
                 .andExpect(jsonPath("$._embedded.incidents[0].endDate").value(incident1.getEndDate().toString()))
