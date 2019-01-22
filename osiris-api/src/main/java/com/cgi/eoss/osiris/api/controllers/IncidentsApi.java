@@ -10,9 +10,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.rest.core.annotation.RestResource;
 import org.springframework.security.access.method.P;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RepositoryRestResource(path = "incidents", itemResourceRel = "incident", collectionResourceRel = "incidents", excerptProjection = ShortIncident.class)
 public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiCustom, PagingAndSortingRepository<Incident, Long> {
@@ -30,11 +32,29 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
     void delete(@P("incident") Incident incident);
 
     @Override
+    @Query("select t from Incident t where t.owner=user")
+    Page<Incident> findByOwner(@Param("owner") User user, Pageable pageable);
+
+    @Override
     @Query("select t from Incident t where not t.owner=user")
     Page<Incident> findByNotOwner(@Param("owner") User user, Pageable pageable);
 
     @Override
     @Query("select i from Incident i where i.type=type")
     Page<Incident> findByType(@Param("type") IncidentType type, Pageable pageable);
-    
+
+    @Override
+    @RestResource(path="findByFilterOnly", rel="findByFilterOnly")
+    @Query("select t from Incident t where (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    Page<Incident> findByFilterOnly(@Param("filter") String filter, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
+
+    @Override
+    @RestResource(path = "findByFilterAndOwner", rel = "findByFilterAndOwner")
+    @Query("select t from Incident t where t.owner=:owner and (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    Page<Incident> findByFilterAndOwner(@Param("filter") String filter, @Param("owner") User user, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
+
+    @Override
+    @RestResource(path = "findByFilterAndNotOwner", rel = "findByFilterAndNotOwner")
+    @Query("select t from Incident t where not t.owner=:owner and (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    Page<Incident> findByFilterAndNotOwner(@Param("filter") String filter, @Param("owner") User user, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
 }

@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 public class IncidentsApiIT {
 
-    private static final JsonPath USER_HREF_JSONPATH = JsonPath.compile("$._links.self.href");
+    private static final JsonPath SELF_HREF_JSONPATH = JsonPath.compile("$._links.self.href");
 
     @Autowired
     private UserDataService userDataService;
@@ -139,6 +139,20 @@ public class IncidentsApiIT {
     }
 
     @Test
+    public void testFindByOwner() throws Exception {
+        mockMvc.perform(get("/api/incidentTypes/search/findByOwner?owner=" + userUri(osirisAdmin))
+                .header("REMOTE_USER", osirisAdmin.getName()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1));
+
+        mockMvc.perform(get("/api/incidents/search/findByOwner")
+                .header("REMOTE_USER", osirisAdmin.getName())
+                .param("owner", userUri(osirisAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+    }
+
+    @Test
     public void testCreateNewIncident() throws Exception {
         String incidentType1Url = JsonPath.compile("$._links.self.href")
                 .read(mockMvc.perform(get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
@@ -181,10 +195,53 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidents[0]._links.self.href").value(endsWith("/incidents/" + incident1.getId())));
     }
 
+    @Test
+    public void testFindIncidentByFilter() throws Exception {
+        mockMvc.perform(get("/api/incidents/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+
+        mockMvc.perform(get("/api/incidents/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "second"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident2.getTitle()));
+
+        mockMvc.perform(get("/api/incidents/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", userUri(osirisAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
+
+        String incidentType1Url = SELF_HREF_JSONPATH.read(mockMvc.perform(
+                get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
+                .andReturn().getResponse().getContentAsString());
+
+        mockMvc.perform(get("/api/incidents/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident").param("incidentType", incidentType1Url))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
+    }
+
+    @Test
+    public void testFindIncidentTypeByFilter() throws Exception {
+        mockMvc.perform(get("/api/incidentTypes/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(2));
+
+        mockMvc.perform(get("/api/incidentTypes/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "second"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidentTypes[0].title").value(incidentType2.getTitle()));
+
+        mockMvc.perform(get("/api/incidentTypes/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", userUri(osirisAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidentTypes[0].title").value(incidentType1.getTitle()));
+    }
+
     private String userUri(User user) throws Exception {
         String jsonResult = mockMvc.perform(
                 get("/api/users/" + user.getId()).header("REMOTE_USER", osirisAdmin.getName()))
                 .andReturn().getResponse().getContentAsString();
-        return USER_HREF_JSONPATH.read(jsonResult);
+        return SELF_HREF_JSONPATH.read(jsonResult);
     }
 }
