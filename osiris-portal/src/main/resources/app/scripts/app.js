@@ -127,12 +127,22 @@ define([
         $locationProvider.html5Mode(false);
       }]);
 
+
+
     /* Custom angular-material color theme */
     app.config(['$mdThemingProvider', function ($mdThemingProvider) {
+
+        var ogeoMap = $mdThemingProvider.extendPalette('indigo', {
+            '500': '#204589',
+            'A200': '#2958b0'
+        });
+
+        $mdThemingProvider.definePalette('ogeo', ogeoMap);
+
         $mdThemingProvider.theme('default')
-            .primaryPalette('teal', {
+            .primaryPalette('ogeo', {
             })
-            .accentPalette('orange', {
+            .accentPalette('ogeo', {
             })
             .warnPalette('red')
             .backgroundPalette('grey');
