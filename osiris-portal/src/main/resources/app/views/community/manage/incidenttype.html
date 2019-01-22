@@ -1,0 +1,42 @@
+<article id="incidentType-header">
+
+    <md-button class="close toolbar-button md-secondary"
+               ng-click="incidentTypeParams.selectedIncidentType = undefined"
+               uib-tooltip="Close"
+               tooltip-placement="top"
+               tooltip-trigger="mouseenter"
+               tooltip-append-to-body="true">
+        <i class="material-icons">close</i>
+    </md-button>
+
+    <md-button id="update-incidentType"
+               class="save-button md-fab md-mini right"
+               ng-click="refreshIncidentType()"
+               aria-label="Update IncidentType"
+               uib-tooltip="Update IncidentType"
+               tooltip-placement="top"
+               tooltip-trigger="mouseenter"
+               tooltip-append-to-body="true">
+            <i class="material-icons">update</i>
+    </md-button>
+
+    <section id="incidentType-title" class="row section-title">
+        <div class="col-xs-10 title-text">
+            <h2 ng-bind="incidentTypeParams.selectedIncidentType.title" />
+        </div>
+    </section>
+
+    <section class="sub-title">
+        <div ng-show="incidentTypeParams.selectedIncidentType.description" ng-bind="incidentTypeParams.selectedIncidentType.description" />
+        <div ng-show="!incidentTypeParams.selectedIncidentType.description" ng-bind="'No Description'" />
+    </section>
+
+</article>
+
+<article id="incidentType-workflow">
+    <section class="row section-title">
+        <div class="col-xs-11 title-text">
+            <h3>Default workflow template</h3>
+        </div>
+    </section>
+</article>

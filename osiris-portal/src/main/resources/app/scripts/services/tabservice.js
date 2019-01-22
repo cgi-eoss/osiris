@@ -14,7 +14,19 @@ define(['../osirismodules'], function (osirismodules) {
 
         var bottomNavTabs = { RESULTS: 0, DATABASKETS: 1, JOBS: 2, MESSAGES: 3 };
 
-        var communityTabs = { GROUPS: 0, PROJECTS: 1, DATABASKETS: 2, JOBS: 3, SYSTEMATICPROCS: 4, SERVICES: 5, SERVICETEMPLATES: 6, FILES: 7, COLLECTIONS: 8};
+        var communityTabs = {
+            GROUPS: 0,
+            PROJECTS: 1,
+            DATABASKETS: 2,
+            JOBS: 3,
+            SYSTEMATICPROCS: 4,
+            SERVICES: 5,
+            SERVICETEMPLATES: 6,
+            FILES: 7,
+            COLLECTIONS: 8,
+            INCIDENTS: 9,
+            INCIDENTTYPES: 10
+        };
 
         var explorerSideNavs = { SEARCH: 0, SERVICES: 1, WORKSPACE: 2 };
 

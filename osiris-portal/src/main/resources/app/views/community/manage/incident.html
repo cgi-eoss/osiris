@@ -1,0 +1,92 @@
+<article id="incident-header">
+
+    <md-button class="close toolbar-button md-secondary"
+               ng-click="incidentParams.selectedIncident = undefined"
+               uib-tooltip="Close"
+               tooltip-placement="top"
+               tooltip-trigger="mouseenter"
+               tooltip-append-to-body="true">
+        <i class="material-icons">close</i>
+    </md-button>
+
+    <md-button id="update-incident"
+               class="save-button md-fab md-mini right"
+               ng-click="addOrUpdateIncident()"
+               ng-disabled="createIncidentForm.$invalid"
+               aria-label="Update Incident"
+               uib-tooltip="Update Incident"
+               tooltip-placement="top"
+               tooltip-trigger="mouseenter"
+               tooltip-append-to-body="true">
+            <i class="material-icons">save</i>
+    </md-button>
+
+    <section id="incident-title" class="row section-title">
+        <div class="col-xs-10 title-text">
+            <h2 ng-if="incidentData.id" ng-bind="'Incident ' + incidentData.id" />
+            <h2 ng-if="!incidentData.id" ng-bind="'Create new incident'" />
+        </div>
+    </section>
+
+</article>
+<br><br>
+<article id="incident-details">
+    <section id="incident-update" class="sub-title row">
+        <div class="col-xs-12 col-md-6">
+            <form name="createIncidentForm">
+                <div class="row">
+                    <div class="col-xs-12 item-list">
+                        <md-input-container>
+                            <label>Incident type</label>
+                            <md-select ng-model="incidentData.type" md-autofocus aria-label="Incident Type" required>
+                                <md-option ng-repeat="type in incidentTypes" ng-value="type.id">
+                                    {{type.title}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-12 item-list">
+                        <md-input-container class="md-block" flex-gt-sm>
+                            <label>Name</label>
+                            <input ng-model="incidentData.title" type="text" aria-label="Item Name" maxlength="16" required>
+                        </md-input-container>
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-12 item-list">
+                        <md-input-container>
+                            <label>Description</label>
+                            <input ng-model="incidentData.description" />
+                        </md-input-container>
+                    </div>
+                </div>
+                <br>
+                <aoi-field value="incidentData.aoi" label="'Incident area:'" required="true"></aoi-field>
+                <br>
+                <div class="row">
+                    <div class="col-md-12 col-lg-6 no-padding date-container">
+                        <md-datepicker ng-required="true" ng-model="incidentData.startDate" md-placeholder="Start date" />
+                    </div>
+                    <div class="col-md-12 col-lg-6 no-padding date-container">
+                        <md-datepicker ng-required="true" ng-model="incidentData.endDate" md-placeholder="End date" />
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-xs-12 col-md-6">
+            <div id="map" ng-controller="MapCtrl" style="height: 40vh"></div>
+        </div>
+    </section>
+</article>
+
+<article id="incidentType-workflow">
+    <section class="row section-title">
+        <div class="col-xs-11 title-text">
+            <h3>Incident workflow</h3>
+        </div>
+    </section>
+</article>

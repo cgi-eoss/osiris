@@ -1,7 +1,9 @@
 <div class="row">
     <div class="col-xs-12 item-list">
         <md-input-container md-no-float>
-            <input ng-model="value" aria-label="{{title}}" />
+            <label ng-if="label">{{label}}</label>
+            <input ng-if="!required" ng-model="value" aria-label="{{title}}" />
+            <input ng-if="required" ng-model="value" aria-label="{{title}}" required/>
             <div class="hint" ng-show="true">{{description}}</div>
         </md-input-container>
 

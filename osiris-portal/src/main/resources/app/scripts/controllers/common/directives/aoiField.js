@@ -6,11 +6,12 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
             scope: {
                 label: '=',
                 description: '=',
-                value: '='
+                value: '=',
+                required: '='
             },
             restrict: 'E',
             link: function(scope, element, attrs) {
-                
+
                 scope.savedAoi = {
                     pagingData: {},
                     records: [],
@@ -53,7 +54,7 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                         .targetEvent($event)
                         .ok('Save')
                         .cancel('Cancel');
-                    
+
                     $mdDialog.show(saveDialog).then(function(name) {
                         if (name) {
                             aoiService.saveAoi(name, aoi.geometry).then(function() {
@@ -65,11 +66,11 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                                         .textContent('An area with the same name already exists. Overwrite?')
                                         .ok('Yes')
                                         .cancel('No');
-        
+
                                     $mdDialog.show(duplicateDialog).then(function() {
                                         aoiService.updateAoi(name, aoi.geometry);
                                     }, function() {
-        
+
                                     });
                                 }
                             });
@@ -89,9 +90,9 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
 
                 scope.editPolygonDialog = function($event, wkt) {
                     function EditPolygonController($scope, $mdDialog, MapService) {
-                        
+
                         $scope.polygon = { wkt: wkt, valid: false};
-                        
+
 
                         $scope.closeDialog = function() {
                             $mdDialog.hide();
@@ -165,7 +166,7 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                     scope.loadAoiDialog(null, scope.importAoi);
 
                 };
-                
+
                 element.find('#shpfile-in').bind('change', function(event) {
                     var file = event.target.files[0];
                     if (file) {
@@ -244,9 +245,9 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                     });
                 };
 
-                
+
                 scope.loadAoiDialog = function($event, aoiData) {
-                    
+
                     function LoadAoiController($scope, $mdDialog, AoiService, AoiLayerService) {
 
                         $scope.aoiData = aoiData;
@@ -273,7 +274,7 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                     });
                 };
 
-                
+
             },
             templateUrl: 'views/common/directives/aoiField.html'
         };

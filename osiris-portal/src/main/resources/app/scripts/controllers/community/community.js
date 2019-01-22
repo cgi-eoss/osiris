@@ -9,7 +9,7 @@
 
 define(['../../osirismodules'], function (osirismodules) {
 
-    osirismodules.controller('CommunityCtrl', ['$scope', 'CommunityService', 'GroupService', 'UserService', 'ProjectService', 'CollectionService', 'BasketService', 'JobService', 'SystematicService', 'ProductService', 'FileService', 'MessageService', 'TabService', 'CommonService', '$injector', function ($scope, CommunityService, GroupService, UserService, ProjectService, CollectionService, BasketService, JobService, SystematicService, ProductService, FileService, MessageService, TabService, CommonService, $injector) {
+    osirismodules.controller('CommunityCtrl', ['$scope', 'CommunityService', 'GroupService', 'UserService', 'ProjectService', 'CollectionService', 'IncidentService', 'IncidentTypeService', 'BasketService', 'JobService', 'SystematicService', 'ProductService', 'FileService', 'MessageService', 'TabService', 'CommonService', '$injector', function ($scope, CommunityService, GroupService, UserService, ProjectService, CollectionService, IncidentService, IncidentTypeService, BasketService, JobService, SystematicService, ProductService, FileService, MessageService, TabService, CommonService, $injector) {
 
         $scope.navInfo = TabService.navInfo.community;
         $scope.bottombarNavInfo = TabService.navInfo.bottombar;
@@ -17,6 +17,8 @@ define(['../../osirismodules'], function (osirismodules) {
         $scope.groupParams = GroupService.params.community;
         $scope.projectParams = ProjectService.params.community;
         $scope.collectionParams = CollectionService.params.community;
+        $scope.incidentParams = IncidentService.params.community;
+        $scope.incidentTypeParams = IncidentTypeService.params.community;
         $scope.basketParams = BasketService.params.community;
         $scope.jobParams = JobService.params.community;
         $scope.systematicParams = SystematicService.params.community;
@@ -112,7 +114,7 @@ define(['../../osirismodules'], function (osirismodules) {
         };
 
         $scope.hideContent = true;
-        var navbar, sidenav, groups, projects, collections, databaskets, jobs, systematicprocs, services, servicetemplates, files;
+        var navbar, sidenav, groups, projects, collections, incidents, incidentTypes, databaskets, jobs, systematicprocs, services, servicetemplates, files;
         $scope.finishLoading = function(component) {
             switch(component) {
                 case 'navbar':
@@ -129,6 +131,12 @@ define(['../../osirismodules'], function (osirismodules) {
                     break;
                 case 'collections':
                     collections = true;
+                    break;
+                case 'incidents':
+                    incidents = true;
+                    break;
+                case 'incidentTypes':
+                    incidentTypes = true;
                     break;
                 case 'databaskets':
                     databaskets = true;
@@ -150,7 +158,7 @@ define(['../../osirismodules'], function (osirismodules) {
                     break;
             }
 
-            if (navbar && sidenav && (groups || projects || collections || databaskets || jobs || systematicprocs || services || servicetemplates || files)) {
+            if (navbar && sidenav && (groups || projects || collections || incidents || incidentTypes || databaskets || jobs || systematicprocs || services || servicetemplates || files)) {
                 $scope.hideContent = false;
             }
         };

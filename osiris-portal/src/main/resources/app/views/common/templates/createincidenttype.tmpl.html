@@ -1,0 +1,33 @@
+<md-dialog id="item-dialog" aria-label="Create {{item}} dialog">
+    <h4>{{newItem.id ? 'Edit Incident type' : 'Add incident type'}}</h4>
+    <md-dialog-content>
+        <form name="createItemForm">
+            <div class="dialog-content-area">
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Title</label>
+                    <input ng-model="newItem.title" md-autofocus type="text" aria-label="Item Name" maxlength="16" required>
+                </md-input-container>
+                <br>
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Description</label>
+                    <textarea ng-model="newItem.description" />
+                </md-input-container>
+                <br>
+
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Icon</label>
+                    <md-select ng-model="newItem.iconId" aria-label="Icon" required>
+                        <md-option ng-repeat="(key, value) in iconsLibrary" ng-value="key">
+                            <img ng-if="value.path" ng-src="{{value.path}}" style="max-height:35px"/>{{value.title}}
+                        </md-option>
+                    </md-select>
+                </md-input-container>
+            </div>
+        </form>
+    </md-dialog-content>
+    <md-dialog-actions>
+        <md-button ng-if="newItem.id" ng-click="deleteIncident($event, newItem)" class="md-primary" has-permission="ADMIN" permission-source="{{newItem}}">Delete</md-button>
+        <md-button ng-click="addOrUpdateIncident()" ng-disabled="createItemForm.$invalid" class="md-primary">{{newItem.id ? 'Update' : 'Create'}}</md-button>
+        <md-button ng-click="closeDialog()" class="md-primary">Cancel</md-button>
+    </md-dialog-actions>
+</md-dialog>

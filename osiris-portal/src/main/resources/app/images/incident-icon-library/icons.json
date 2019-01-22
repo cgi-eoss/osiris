@@ -1,0 +1,14 @@
+{
+    "oildrop": {
+        "title": "Oil drop",
+        "path": "oildrop.png"
+    },
+    "hazard": {
+        "title": "Hazard",
+        "path": "hazard.png"
+    },
+    "warning": {
+        "title": "Warning",
+        "path": "warning.png"
+    }
+}

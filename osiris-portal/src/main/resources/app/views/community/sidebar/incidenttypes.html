@@ -1,0 +1,84 @@
+<md-toolbar md-scroll-shrink class="sidebar-subheader">
+    <div class="md-toolbar-tools">
+        <div class="col-xs-12">
+            <span>Incident Types</span>
+        </div>
+    </div>
+</md-toolbar>
+
+<section id="sidebar-list">
+
+    <section class="filter-list">
+            <ul class="list">
+
+                <md-input-container class="md-input-has-value">
+                    <label>Ownership</label>
+                    <md-radio-group ng-model="incidentTypeParams.selectedOwnershipFilter" ng-change="filter()">
+                        <md-radio-button ng-repeat="ownershipFilter in incidentTypeOwnershipFilters" ng-value="ownershipFilter">
+                            {{ownershipFilter.name}}
+                        </md-radio-button>
+                    </md-radio-group>
+                </md-input-container>
+            </ul>
+        </section>
+
+    <div class="row" ng-if="!incidentTypeParams.incidentTypes.length > 0">
+        <div class="col-md-12 no-padding">
+            <div class="note">No IncidentType found.</div>
+        </div>
+    </div>
+
+    <div class="item-list list" ng-if="incidentTypeParams.incidentTypes.length > 0">
+        <md-list-item class="md-3-line"
+                      ng-repeat="(key, incidentType) in incidentTypeParams.incidentTypes"
+                      ng-click="selectIncidentType(incidentType)"
+                      ng-class="{active: incidentType.id == incidentTypeParams.selectedIncidentType.id}">
+
+
+            <img class="md-avatar" ng-src="{{getIconPath(incidentType.iconId)}}"></img>
+
+            <div class="md-list-item-text" layout="column">
+                <h3 class="selectable" ng-bind="incidentType.title" />
+                <span><b>Owner:</b> <span ng-bind="incidentType.owner.name" /></span>
+            </div>
+
+            <md-button class="toolbar-button md-secondary"
+                       aria-label="IncidentType Info"
+                       uib-popover-template="'views/common/templates/incidentTypeinfo.tmpl.html'"
+                       popover-placement="right"
+                       popover-trigger="'mouseenter'"
+                       popover-append-to-body="true">
+                <i class="material-icons">info_outline</i>
+            </md-button>
+
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="editIncidentType($event, incidentType)"
+                        has-permission="WRITE" permission-source="{{incidentType}}"
+                        aria-label="Edit"
+                        uib-tooltip="Edit"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">create</i>
+            </md-button>
+
+        </md-list-item>
+
+        <div id="paging" osiris-paging="{{incidentTypeParams.pagingData}}"></div>
+
+    </div>
+
+</section>
+
+<section id="create-incidentType">
+    <md-button id="create-incidentType-button"
+               class="icon-button md-icon-button md-fab md-mini"
+               ng-click="createIncidentType($event)"
+               aria-label="Create New {{item}}"
+               uib-tooltip="Create New {{item}}"
+               tooltip-placement="top"
+               tooltip-trigger="mouseenter"
+               tooltip-append-to-body="true">
+        <i class="material-icons">add</i>
+    </md-button>
+</section>

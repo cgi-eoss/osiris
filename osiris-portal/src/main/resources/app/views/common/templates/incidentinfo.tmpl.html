@@ -1,0 +1,18 @@
+<table class="metadata">
+    <tr>
+        <td>Owner:</td>
+        <td ng-bind="incident.owner.name" />
+    </tr>
+    <tr>
+        <td>Type:</td>
+        <td ng-bind="incident.type.title" />
+    </tr>
+    <tr>
+        <td>Description:</td>
+        <td ng-bind="incident.description ? incident.description : 'No description'" />
+    </tr>
+    <tr>
+        <td>Access:</td>
+        <td ng-bind="incident.access.currentLevel" />
+    </tr>
+</table>
