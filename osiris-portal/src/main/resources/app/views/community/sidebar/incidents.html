@@ -16,6 +16,17 @@
                     <input ng-model="incidentParams.searchText" type="text" placeholder="Search" ng-keyup="filter()" aria-label="Incident Search Filter">
                 </md-input-container>
 
+                <md-input-container>
+                    <label>Incident type</label>
+                    <md-select ng-model="incidentParams.selectedTypeFilter" ng-change="filter()" aria-label="Incident Type">
+                        <md-optgroup label="Incident Type">
+                            <md-option ng-repeat="filter in incidentTypeFilters" ng-value="filter.id">
+                                {{filter.title}}
+                            </md-option>
+                        </md-optgroup>
+                    </md-select>
+                </md-input-container>
+
 
                 <md-input-container class="md-input-has-value">
                     <label>Ownership</label>

@@ -9,7 +9,7 @@
 
 define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJsonHalAdapter) {
 
-    osirismodules.service('IncidentService', ['$rootScope', '$http', 'osirisProperties', '$q', '$timeout', 'MessageService', 'UserService', 'TabService', 'CommunityService', 'FileService', 'traverson', function($rootScope, $http, osirisProperties, $q, $timeout, MessageService, UserService, TabService, CommunityService, FileService, traverson) {
+    osirismodules.service('IncidentService', ['$rootScope', '$http', 'osirisProperties', '$q', '$timeout', 'IncidentTypeService', 'MessageService', 'UserService', 'TabService', 'CommunityService', 'FileService', 'traverson', function($rootScope, $http, osirisProperties, $q, $timeout, IncidentTypeService, MessageService, UserService, TabService, CommunityService, FileService, traverson) {
 
         var self = this;
 
@@ -20,10 +20,30 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
 
         /** PRESERVE USER SELECTIONS **/
         this.dbOwnershipFilters = {
-            ALL_COLLECTIONS: {id: 0, name: 'All', searchUrl: ''},
-            MY_COLLECTIONS: {id: 1, name: 'Mine', searchUrl: 'search/findByOwner'},
-            SHARED_COLLECTIONS: {id: 2, name: 'Shared', searchUrl: 'search/findByNotOwner'}
+            ALL_INCIDENTS: {id: 0, name: 'All', searchUrl: 'search/findByFilterOnly'},
+            MY_INCIDENTS: {id: 1, name: 'Mine', searchUrl: 'search/findByFilterAndOwner'},
+            SHARED_INCIDENTS: {id: 2, name: 'Shared', searchUrl: 'search/findByFilterAndNotOwner'}
         };
+
+        var typeFilterAll = {
+            id: 'all',
+            title: 'All incident types'
+        };
+
+        this.getIncidentTypeFilters = function() {
+
+            return IncidentTypeService.getIncidentTypes().then(function(response) {
+                var types = response.data.map(function(type) {
+                    return {
+                        title: type.title,
+                        id: type._links.self.href
+                    };
+                });
+                types.unshift(typeFilterAll);
+
+                return types;
+            });
+        }
 
         this.params = {
             community: {
@@ -35,7 +55,8 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
                 searchText: '',
                 sharedGroups: undefined,
                 sharedGroupsSearchText: '',
-                selectedOwnershipFilter: self.dbOwnershipFilters.ALL_COLLECTIONS
+                selectedOwnershipFilter: self.dbOwnershipFilters.ALL_INCIDENTS,
+                selectedTypeFilter: 'all'
             }
         };
 
@@ -219,10 +240,14 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
         this.getIncidentsByFilter = function(page) {
             if (self.params[page]) {
                 var url = rootUri + '/incidents/' + self.params[page].selectedOwnershipFilter.searchUrl +
-                    '?sort=name';
+                    '?sort=name&filter=' + (self.params[page].searchText ? self.params[page].searchText : '');
 
-                if (self.params[page].selectedOwnershipFilter !== self.dbOwnershipFilters.ALL_COLLECTIONS) {
+                if (self.params[page].selectedOwnershipFilter !== self.dbOwnershipFilters.ALL_INCIDENTS) {
                     url += '&owner=' + UserService.params.activeUser._links.self.href;
+                }
+
+                if (self.params[page].selectedTypeFilter !== typeFilterAll.id) {
+                    url += '&incidentType=' + self.params[page].selectedTypeFilter;
                 }
                 self.params[page].pollingUrl = url;
 

@@ -11,6 +11,11 @@
     <section class="filter-list">
             <ul class="list">
 
+                <md-input-container>
+                    <label>Filter</label>
+                    <input ng-model="incidentTypeParams.searchText" type="text" placeholder="Search" ng-keyup="filter()" aria-label="Incident Type Search Filter">
+                </md-input-container>
+
                 <md-input-container class="md-input-has-value">
                     <label>Ownership</label>
                     <md-radio-group ng-model="incidentTypeParams.selectedOwnershipFilter" ng-change="filter()">
@@ -44,7 +49,7 @@
 
             <md-button class="toolbar-button md-secondary"
                        aria-label="IncidentType Info"
-                       uib-popover-template="'views/common/templates/incidentTypeinfo.tmpl.html'"
+                       uib-popover-template="'views/common/templates/incidenttypeinfo.tmpl.html'"
                        popover-placement="right"
                        popover-trigger="'mouseenter'"
                        popover-append-to-body="true">

@@ -29,6 +29,10 @@ define(['../../../osirismodules'], function (osirismodules) {
             }
         };
 
+        $scope.incidentTypeFilters = IncidentService.getIncidentTypeFilters().then(function(data) {
+            $scope.incidentTypeFilters = data;
+        });
+
         IncidentService.refreshIncidents("community");
 
         $scope.$on('poll.incidents', function (event, data) {

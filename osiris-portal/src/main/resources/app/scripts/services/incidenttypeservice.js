@@ -20,9 +20,9 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
 
         /** PRESERVE USER SELECTIONS **/
         this.dbOwnershipFilters = {
-            ALL_INCIDENT_TYPES: {id: 0, name: 'All', searchUrl: ''},
-            MY_INCIDENT_TYPES: {id: 1, name: 'Mine', searchUrl: 'search/findByOwner'},
-            SHARED_INCIDENT_TYPES: {id: 2, name: 'Shared', searchUrl: 'search/findByNotOwner'}
+            ALL_INCIDENT_TYPES: {id: 0, name: 'All', searchUrl: 'search/findByFilterOnly'},
+            MY_INCIDENT_TYPES: {id: 1, name: 'Mine', searchUrl: 'search/findByFilterAndOwner'},
+            SHARED_INCIDENT_TYPES: {id: 2, name: 'Shared', searchUrl: 'search/findByFilterAndNotOwner'}
         };
 
         this.params = {
