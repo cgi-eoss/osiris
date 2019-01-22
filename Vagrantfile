@@ -58,7 +58,7 @@ Vagrant.configure('2') do |config|
     end
 
     # Generate yum repo metadata
-    ftep.vm.provision 'shell', inline: <<EOF
+    osiris.vm.provision 'shell', inline: <<EOF
 [ -x /usr/bin/createrepo ] || yum install -y createrepo
 
 createrepo --output=/vagrant/.dist/repo /vagrant/.dist/repo
