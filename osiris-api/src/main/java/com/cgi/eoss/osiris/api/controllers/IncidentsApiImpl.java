@@ -4,8 +4,11 @@ import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.QIncident;
 import com.cgi.eoss.osiris.model.QUser;
+import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.dao.IncidentDao;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.google.common.base.Strings;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.NumberPath;
 import lombok.Getter;
@@ -40,10 +43,35 @@ public class IncidentsApiImpl extends BaseRepositoryApiImpl<Incident> implements
 
     @Override
     public Page<Incident> findByType(IncidentType type, Pageable pageable) {
-        return getFilteredResults(getFilterPredicate(type), pageable);
+        return getFilteredResults(getFilterPredicate(null, type), pageable);
     }
 
-    private Predicate getFilterPredicate(IncidentType type) {
-        return QIncident.incident.type.eq(type);
+    @Override
+    public Page<Incident> findByFilterOnly(String filter, IncidentType incidentType, Pageable pageable) {
+        return getFilteredResults(getFilterPredicate(filter, incidentType), pageable);
+    }
+
+    @Override
+    public Page<Incident> findByFilterAndOwner(String filter, User user, IncidentType incidentType, Pageable pageable) {
+        return getFilteredResults(getOwnerPath().eq(user).and(getFilterPredicate(filter, incidentType)), pageable);
+    }
+
+    @Override
+    public Page<Incident> findByFilterAndNotOwner(String filter, User user, IncidentType incidentType, Pageable pageable) {
+        return getFilteredResults(getOwnerPath().ne(user).and(getFilterPredicate(filter, incidentType)), pageable);
+    }
+
+    private Predicate getFilterPredicate(String filter, IncidentType incidentType) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (!Strings.isNullOrEmpty(filter)) {
+            builder.and(QIncident.incident.title.containsIgnoreCase(filter).or(QIncident.incident.description.containsIgnoreCase(filter)));
+        }
+
+        if (incidentType != null) {
+            builder.and(QIncident.incident.type.eq(incidentType));
+        }
+
+        return builder.getValue();
     }
 }
