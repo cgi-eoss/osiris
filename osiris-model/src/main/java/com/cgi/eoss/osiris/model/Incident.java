@@ -14,8 +14,11 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>Representation of a user-defined incident.</p>
@@ -80,6 +83,12 @@ public class Incident implements OsirisEntityWithOwner<Incident> {
      */
     @Column(name = "end_date", nullable = false)
     private Instant endDate;
+
+    /**
+     * <p>A set of {@link IncidentProcessing}s associated with this incident.</p>
+     */
+    @OneToMany(mappedBy = "incident", fetch = FetchType.LAZY)
+    private List<IncidentProcessing> incidentProcessings = new ArrayList<>();
 
     public Incident(User owner, IncidentType type, String title, String description, String aoi, Instant startDate, Instant endDate) {
         this.owner = owner;

@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -14,7 +15,11 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>Representation of a user-defined incident type.</p>
@@ -60,6 +65,14 @@ public class IncidentType implements OsirisEntityWithOwner<IncidentType> {
      */
     @Column(name = "icon_id")
     private String iconId;
+
+    /**
+     * <p>A set of {@link IncidentProcessingTemplate}s associated with this incident type, to be suggested for child instances.</p>
+     */
+    @OneToMany(mappedBy = "incidentType", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("title DESC")
+    private List<IncidentProcessingTemplate> incidentProcessingTemplates = new ArrayList<>();
+
 
     public IncidentType(User owner, String title, String description, String iconId) {
         this.owner = owner;

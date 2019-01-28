@@ -1,0 +1,130 @@
+package com.cgi.eoss.osiris.api.controllers;
+
+import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.Incident;
+import com.cgi.eoss.osiris.model.IncidentProcessing;
+import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor;
+import com.cgi.eoss.osiris.persistence.service.CollectionDataService;
+import com.cgi.eoss.osiris.persistence.service.IncidentProcessingDataService;
+import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
+import com.cgi.eoss.osiris.rpc.GrpcUtil;
+import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
+import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
+import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.rest.webmvc.BasePathAwareController;
+import org.springframework.data.rest.webmvc.RepositoryRestController;
+import org.springframework.hateoas.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/**
+ * <p>A {@link RepositoryRestController} for interacting with {@link Incident}s. Offers additional functionality over
+ * the standard CRUD-style {@link IncidentsApi}.</p>
+ */
+@RestController
+@BasePathAwareController
+@RequestMapping("/incidents")
+@Log4j2
+public class IncidentsApiExtension {
+
+    private static final String COLLECTION_INPUT = "collection";
+
+    private final OsirisSecurityService osirisSecurityService;
+    private final LocalServiceLauncher localServiceLauncher;
+    private final SystematicProcessingDataService systematicProcessingDataService;
+    private final CollectionDataService collectionDataService;
+    private final IncidentProcessingDataService incidentProcessingDataService;
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    public IncidentsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, SystematicProcessingDataService systematicProcessingDataService, CollectionDataService collectionDataService, IncidentProcessingDataService incidentProcessingDataService, ObjectMapper objectMapper) {
+        this.osirisSecurityService = osirisSecurityService;
+        this.localServiceLauncher = localServiceLauncher;
+        this.systematicProcessingDataService = systematicProcessingDataService;
+        this.collectionDataService = collectionDataService;
+        this.incidentProcessingDataService = incidentProcessingDataService;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * <p>Creates and launches Systematic Processing activities for any unprocessed
+     * {@link com.cgi.eoss.osiris.model.IncidentProcessing} associated with this incident.</p>
+     */
+    @PostMapping("/{incidentId}/process")
+    @PreAuthorize("hasAnyRole('CONTENT_AUTHORITY', 'ADMIN') or hasPermission(#incident, 'write')")
+    public ResponseEntity<Resource<Job>> process(@ModelAttribute("incidentId") Incident incident) {
+        try {
+            for (IncidentProcessing incidentProcessing : incident.getIncidentProcessings()) {
+                launchProcessing(incidentProcessing);
+            }
+            return ResponseEntity.ok().build();
+        } catch (JsonProcessingException e) {
+            LOG.error("Exception thrown during processing of Incident {}", incident.getId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private void launchProcessing(IncidentProcessing incidentProcessing) throws JsonProcessingException {
+        LOG.debug("Launching Systematic Processing for Incident Processing {}", incidentProcessing.getId());
+        ListMultimap<String, String> searchParameters = (ListMultimap<String, String>) mergeReplace(incidentProcessing.getTemplate().getSearchParameters(),
+                incidentProcessing.getSearchParameters());
+        // TODO: Allow the AOI and date range to be modified in some way here?
+        searchParameters.put("aoi", incidentProcessing.getIncident().getAoi());
+        searchParameters.put("productDateStart", incidentProcessing.getIncident().getStartDate().toString());
+        searchParameters.put("productDateEnd", incidentProcessing.getIncident().getEndDate().toString());
+        Multimap<String, String> inputs = mergeReplace(incidentProcessing.getTemplate().getFixedInputs(), incidentProcessing.getInputs());
+
+        Collection collection = new Collection(incidentProcessing.getIncident().getTitle() + "-" + incidentProcessing.getId(),
+                incidentProcessing.getOwner());
+        collection.setIdentifier("osiris" + UUID.randomUUID().toString().replaceAll("-", ""));
+        collectionDataService.save(collection);
+        incidentProcessing.setCollection(collection);
+
+        // Associate all outputs of this processing with the newly-created collection
+        Map<String, String> outputCollectionsMap = incidentProcessing.getTemplate().getService().getServiceDescriptor().getDataOutputs().stream()
+                .map(OsirisServiceDescriptor.Parameter::getId)
+                .collect(Collectors.toMap(Function.identity(), s -> collection.getIdentifier()));
+
+        inputs.put(COLLECTION_INPUT, objectMapper.writeValueAsString(outputCollectionsMap));
+
+        SystematicProcessingRequest.Builder grpcRequestBuilder = SystematicProcessingRequest.newBuilder()
+                .setUserId(osirisSecurityService.getCurrentUser().getName())
+                .setServiceId(incidentProcessing.getTemplate().getService().getName())
+                .addAllInput(GrpcUtil.mapToParams(inputs))
+                .addAllSearchParameter(GrpcUtil.mapToParams(searchParameters))
+                .setSystematicParameter(incidentProcessing.getTemplate().getSystematicInput());
+
+        long systematicProcessingId = localServiceLauncher.launchSystematicProcessing(grpcRequestBuilder.build()).getSystematicProcessingId();
+
+        LOG.info("Associated Systematic Processing {} with Incident Processing {}", systematicProcessingId, incidentProcessing.getId());
+        incidentProcessing.setSystematicProcessing(systematicProcessingDataService.getById(systematicProcessingId));
+        incidentProcessingDataService.save(incidentProcessing);
+    }
+
+    private Multimap<String, String> mergeReplace(Multimap<String, String> initialMap, Multimap<String, String> replacingMap) {
+        ListMultimap<String, String> replacedMap = ArrayListMultimap.create(initialMap);
+        for (String key : replacingMap.keys()) {
+            replacedMap.replaceValues(key, replacingMap.get(key));
+        }
+        return replacedMap;
+    }
+
+}

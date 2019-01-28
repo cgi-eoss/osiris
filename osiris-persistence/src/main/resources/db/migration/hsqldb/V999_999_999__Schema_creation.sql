@@ -483,8 +483,41 @@ CREATE INDEX osiris_user_endpoint_owner_idx
   last_updated TIMESTAMP WITHOUT TIME ZONE,
   search_parameters CLOB
   );  
-  
-  
+
+
+  --Add incident processings and templates
+
+create table osiris_incident_processing_templates (
+    id                  bigint              primary key,
+    owner               bigint              not null references osiris_users (uid),
+    title               varchar(255)        not null,
+    description         varchar(4096),
+    incident_type       bigint              not null references osiris_incident_types (id),
+    service             bigint              not null references osiris_services (id),
+    systematic_input    varchar(255)        not null,
+    fixed_inputs        clob,
+    search_parameters   clob
+);
+
+
+CREATE INDEX osiris_incident_processing_templates_owner_idx
+  ON osiris_incident_processing_templates (owner);
+
+create table osiris_incident_processings (
+    id                      bigint              primary key,
+    owner                   bigint              not null references osiris_users (uid),
+    template                bigint              not null references osiris_incident_processing_templates (id),
+    incident                bigint              not null references osiris_incidents (id),
+    systematic_processing   bigint              references osiris_systematic_processings (id),
+    inputs                  clob,
+    search_parameters       clob,
+    collection              bigint              references osiris_collections (id)
+);
+
+CREATE INDEX osiris_incident_processings_owner_idx
+  ON osiris_incident_processings (owner);
+
+
  --API keys
  
  CREATE TABLE osiris_api_keys (

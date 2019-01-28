@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static com.cgi.eoss.osiris.model.QSystematicProcessing.systematicProcessing;
 
@@ -49,6 +50,11 @@ public class JpaSystematicProcessingDataService extends AbstractJpaDataService<S
     @Override
     public List<SystematicProcessing> findByStatus(Status s) {
         return dao.findAll(systematicProcessing.status.eq(s));
+    }
+
+    @Override
+    public Optional<SystematicProcessing> findByParentJob(Job parentJob) {
+        return dao.findByParentJob(parentJob);
     }
 
     @Override
