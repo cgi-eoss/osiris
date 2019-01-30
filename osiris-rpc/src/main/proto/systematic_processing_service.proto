@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc";
+
+service SystematicProcessingService {
+    rpc Launch (SystematicProcessingRequest) returns (SystematicProcessingResponse);
+}
+
+message SystematicProcessingRequest {
+    string userId = 1;
+    string serviceId = 2;
+    string jobConfigLabel = 3;
+    repeated JobParam input = 4;
+    string systematicParameter = 5;
+    repeated JobParam searchParameter = 6;
+}
+
+message SystematicProcessingResponse {
+    int64 systematicProcessingId = 1;
+}
+

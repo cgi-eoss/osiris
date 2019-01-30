@@ -1,12 +1,12 @@
 package com.cgi.eoss.osiris.persistence.service;
 
-import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.Job;
 import com.cgi.eoss.osiris.model.Job.Status;
 import com.cgi.eoss.osiris.model.JobConfig;
+import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.User;
-import com.cgi.eoss.osiris.persistence.dao.OsirisEntityDao;
 import com.cgi.eoss.osiris.persistence.dao.JobDao;
+import com.cgi.eoss.osiris.persistence.dao.OsirisEntityDao;
 import com.google.common.base.Strings;
 import com.google.common.collect.Multimap;
 import com.querydsl.core.types.Predicate;
@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.cgi.eoss.osiris.model.QJob.job;
 
@@ -24,11 +25,8 @@ import static com.cgi.eoss.osiris.model.QJob.job;
 public class JpaJobDataService extends AbstractJpaDataService<Job> implements JobDataService {
 
     private final JobDao dao;
-
     private final JobConfigDataService jobConfigDataService;
-
     private final UserDataService userDataService;
-
     private final ServiceDataService serviceDataService;
 
     @Autowired
@@ -71,26 +69,33 @@ public class JpaJobDataService extends AbstractJpaDataService<Job> implements Jo
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter) {
+        return buildNew(extId, userId, serviceId, jobConfigLabel, inputs, systematicParameter, null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Job buildNew(String extId, String ownerId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, Job parentJob) {
-        User owner = userDataService.getByName(ownerId);
-        OsirisService service = serviceDataService.getByName(serviceId);
-
-        JobConfig config = new JobConfig(owner, service);
-        config.setLabel(Strings.isNullOrEmpty(jobConfigLabel) ? null : jobConfigLabel);
-        config.setInputs(inputs);
-        config.setParent(parentJob);
-
-        return buildNew(jobConfigDataService.save(config), extId, owner, parentJob);
+        return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, parentJob);
     }
     
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Job buildNew(String extId, String ownerId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs) {
-    		return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null);
+    		return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, null);
     }
 
-    private Job buildNew(JobConfig jobConfig, String extId, User owner, Job parentJob) {
-        return dao.save(new Job(jobConfig, extId, owner, parentJob));
+    private Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter, Job parentJob) {
+        User owner = userDataService.getByName(userId);
+        OsirisService service = serviceDataService.getByName(serviceId);
+
+        JobConfig config = new JobConfig(owner, service);
+        config.setLabel(Strings.isNullOrEmpty(jobConfigLabel) ? null : jobConfigLabel);
+        config.setInputs(inputs);
+        Optional.ofNullable(parentJob).ifPresent(config::setParent);
+        Optional.ofNullable(systematicParameter).ifPresent(config::setSystematicParameter);
+
+        return dao.save(new Job(jobConfigDataService.save(config), extId, owner, parentJob));
     }
     
     public Job reload(Long id) {

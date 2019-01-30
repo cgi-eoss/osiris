@@ -1,15 +1,19 @@
 package com.cgi.eoss.osiris.api.controllers;
 
-import java.io.IOException;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.JobConfig;
+import com.cgi.eoss.osiris.persistence.dao.JobDao;
+import com.cgi.eoss.osiris.rpc.GrpcUtil;
+import com.cgi.eoss.osiris.rpc.JobParam;
+import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
+import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
+import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
+import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
+import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.google.common.base.Strings;
+import io.grpc.stub.StreamObserver;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.BasePathAwareController;
 import org.springframework.data.rest.webmvc.RepositoryRestController;
@@ -21,29 +25,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.cgi.eoss.osiris.model.Job;
-import com.cgi.eoss.osiris.model.JobConfig;
-import com.cgi.eoss.osiris.model.SystematicProcessing;
-import com.cgi.eoss.osiris.persistence.dao.JobConfigDao;
-import com.cgi.eoss.osiris.persistence.dao.JobDao;
-import com.cgi.eoss.osiris.persistence.dao.SystematicProcessingDao;
-import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
-import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
-import com.cgi.eoss.osiris.rpc.OsirisServiceResponse;
-import com.cgi.eoss.osiris.rpc.GrpcUtil;
-import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
-import com.cgi.eoss.osiris.security.OsirisSecurityService;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import io.grpc.stub.StreamObserver;
+
 import javax.servlet.http.HttpServletRequest;
-import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>A {@link RepositoryRestController} for interacting with {@link JobConfig}s. Offers additional functionality over
@@ -58,16 +46,12 @@ public class JobConfigsApiExtension {
     private final OsirisSecurityService osirisSecurityService;
     private final LocalServiceLauncher localServiceLauncher;
     private final JobDao jobRepository;
-    private final SystematicProcessingDao systematicProcessingDao;
-    private final JobConfigDao jobConfigDao;
-    
+
     @Autowired
-    public JobConfigsApiExtension(OsirisSecurityService osirisSecurityService, ObjectMapper objectMapper, LocalServiceLauncher localServiceLauncher, JobDao jobRepository, SystematicProcessingDao systematicProcessingDao, JobConfigDao jobConfigDao) {
+    public JobConfigsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, JobDao jobRepository) {
         this.osirisSecurityService = osirisSecurityService;
         this.localServiceLauncher = localServiceLauncher;
         this.jobRepository = jobRepository;
-        this.systematicProcessingDao = systematicProcessingDao;
-        this.jobConfigDao = jobConfigDao;
     }
 
     /**
@@ -109,58 +93,31 @@ public class JobConfigsApiExtension {
 
     
     /**
-     * <p>Provides a direct interface to the service orchestrator, allowing users to launch job configurations without
-     * going via WPS.</p>
-     * <p>Service are launched asynchronously; the gRPC response is discarded.</p>
-     * @throws IOException 
-     * @throws JsonProcessingException 
-     * @throws JsonMappingException 
-     * @throws JsonParseException 
+     * <p>Launches a systematic processing job asynchronously, in a form similar to {@link #launch(JobConfig)}.</p>
      */
     @PostMapping("/launchSystematic")
     @PreAuthorize("hasAnyRole('CONTENT_AUTHORITY', 'ADMIN') or (#jobConfigTemplate.id == null) or hasPermission(#jobConfigTemplate, 'read')")
-    public ResponseEntity<Void> launchSystematic(HttpServletRequest request, @RequestBody JobConfig jobConfigTemplate) throws InterruptedException, JsonParseException, JsonMappingException, JsonProcessingException, IOException {
-        LOG.debug("Received new request for systematic processing");
-        
-        //Save the job config
-        osirisSecurityService.updateOwnerWithCurrentUser(jobConfigTemplate);
-        jobConfigDao.save(jobConfigTemplate);
-        
-        //Create "master" job
-        Job parentJob = new Job(jobConfigTemplate, UUID.randomUUID().toString(), osirisSecurityService.getCurrentUser());
-        jobRepository.save(parentJob);
-        
-        //Save the systematic processing
-        SystematicProcessing systematicProcessing = new SystematicProcessing();
-        systematicProcessing.setParentJob(parentJob);
-        osirisSecurityService.updateOwnerWithCurrentUser(systematicProcessing);
-        Map<String, String[]> requestParameters = request.getParameterMap();
-        ListMultimap<String, String> searchParameters = ArrayListMultimap.create(); 
-        for (Map.Entry<String, String[]> entry: requestParameters.entrySet()) {
-            searchParameters.putAll(entry.getKey(), Arrays.asList(entry.getValue()));
+    public ResponseEntity<Void> launchSystematic(HttpServletRequest request, @RequestBody JobConfig jobConfigTemplate) throws InterruptedException {
+
+        SystematicProcessingRequest.Builder grpcRequestBuilder = SystematicProcessingRequest.newBuilder()
+                .setUserId(osirisSecurityService.getCurrentUser().getName())
+                .setServiceId(jobConfigTemplate.getService().getName())
+                .addAllInput(GrpcUtil.mapToParams(jobConfigTemplate.getInputs()))
+                .setSystematicParameter(jobConfigTemplate.getSystematicParameter());
+
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        for (String key : parameterMap.keySet()) {
+            grpcRequestBuilder.addSearchParameter(JobParam.newBuilder()
+                    .setParamName(key)
+                    .addAllParamValue(Arrays.asList(parameterMap.get(key)))
+                    .build());
         }
-        
-        //Put the necessary parameters for systematic processing
-        searchParameters.put("sortOrder", "ascending");
-        searchParameters.put("sortParam", "updated");
-        
-        List<String> dateStartParam = searchParameters.get("productDateStart");
-        
-        String dateStart;
-        
-        if (dateStartParam != null && dateStartParam.size() > 0) {
-            dateStart = dateStartParam.get(0);
+
+        if (!Strings.isNullOrEmpty(jobConfigTemplate.getLabel())) {
+            grpcRequestBuilder.setJobConfigLabel(jobConfigTemplate.getLabel());
         }
-        else {
-            dateStart = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
-            searchParameters.put("productDateStart", dateStart);
-        }
-        
-        systematicProcessing.setLastUpdated(ZonedDateTime.parse(dateStart).toLocalDateTime());
-        
-        systematicProcessing.setSearchParameters(searchParameters);
-        systematicProcessingDao.save(systematicProcessing);
-        LOG.info("Systematic processing saved");
+
+        localServiceLauncher.launchSystematicProcessing(grpcRequestBuilder.build());
         
         return ResponseEntity.accepted().build();
     }

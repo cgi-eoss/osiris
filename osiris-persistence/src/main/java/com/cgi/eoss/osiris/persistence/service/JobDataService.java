@@ -1,8 +1,8 @@
 package com.cgi.eoss.osiris.persistence.service;
 
-import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.Job;
 import com.cgi.eoss.osiris.model.Job.Status;
+import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.User;
 import com.google.common.collect.Multimap;
 
@@ -20,6 +20,8 @@ public interface JobDataService extends
     List<Job> findByStatusAndGuiUrlNotNull(Status status);
 
     Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs);
+
+    Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter);
     
     Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, Job parentJob);
 

@@ -53,4 +53,9 @@ public class LocalServiceLauncher {
         OsirisJobLauncherGrpc.OsirisJobLauncherStub jobLauncher = OsirisJobLauncherGrpc.newStub(inProcessChannelBuilder.build());
         jobLauncher.buildService(buildServiceParams, responseObserver);
     }
+
+    public SystematicProcessingResponse launchSystematicProcessing(SystematicProcessingRequest request) {
+        SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub blockingStub = SystematicProcessingServiceGrpc.newBlockingStub(inProcessChannelBuilder.build());
+        return blockingStub.launch(request);
+    }
 }
