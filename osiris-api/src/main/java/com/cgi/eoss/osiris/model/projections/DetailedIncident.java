@@ -7,6 +7,7 @@ import org.springframework.data.rest.core.config.Projection;
 import org.springframework.hateoas.Identifiable;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * <p>Detailed representation of a Incident entity, for embedding in REST responses.</p>
@@ -20,6 +21,7 @@ public interface DetailedIncident extends Identifiable<Long> {
     String getAoi();
     Instant getStartDate();
     Instant getEndDate();
+    List<ShortIncidentProcessing> getIncidentProcessings();
     @Value("#{@osirisSecurityService.getCurrentAccess(T(com.cgi.eoss.osiris.model.Incident), target.id)}")
     OsirisAccess getAccess();
 
