@@ -40,6 +40,7 @@ define([
     './controllers/community/manage/servicetemplate',
     './controllers/community/manage/incidenttype',
     './controllers/community/manage/incident',
+    './controllers/community/manage/incidentprocessing',
 
     './controllers/developer/developer',
     './controllers/developer/manage/service',
@@ -70,6 +71,8 @@ define([
     './services/collectionservice',
     './services/incidenttypeservice',
     './services/incidentservice',
+    './services/processingtemplateservice',
+    './services/incidentprocessingservice',
     './services/projectservice',
     './services/productservice',
     './services/producttemplateservice',
@@ -88,6 +91,5 @@ define([
     './services/map/resultlayerservice',
     './services/map/basketlayerservice',
     './services/map/productlayerservice'
-
 
 ], function () {});

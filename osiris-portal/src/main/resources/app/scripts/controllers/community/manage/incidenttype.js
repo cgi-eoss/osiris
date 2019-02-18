@@ -10,7 +10,7 @@
 
 define(['../../../osirismodules'], function (osirismodules) {
 
-    osirismodules.controller('CommunityManageIncidentTypeCtrl', ['IncidentTypeService', 'FileService', 'CommunityService', '$scope', '$mdDialog', function (IncidentTypeService, FileService, CommunityService, $scope, $mdDialog) {
+    osirismodules.controller('CommunityManageIncidentTypeCtrl', ['IncidentTypeService', 'ProcessingTemplateService', 'CommunityService', '$scope', '$mdDialog', function (IncidentTypeService, ProcessingTemplateService, CommunityService, $scope, $mdDialog) {
 
         /* Get stored Databaskets & Files details */
         $scope.incidentTypeParams = IncidentTypeService.params.community;
@@ -38,6 +38,60 @@ define(['../../../osirismodules'], function (osirismodules) {
             return false;
         };
 
+
+       $scope.addProcessingTemplateDialog = function($event) {
+
+            var incidentType = $scope.incidentTypeParams.selectedIncidentType;
+            function AddProcessingTemplateController($scope, $mdDialog) {
+
+                $scope.incidentType = incidentType;
+
+                $scope.closeDialog = function(created) {
+                    if (created) {
+                        IncidentTypeService.refreshSelectedIncidentType('community');
+                    }
+                    $mdDialog.hide();
+                };
+            }
+            AddProcessingTemplateController.$inject = ['$scope', '$mdDialog'];
+            $mdDialog.show({
+                controller: AddProcessingTemplateController,
+                templateUrl: 'views/community/manage/incidentprocessing.html',
+                parent: angular.element(document.body),
+                targetEvent: $event,
+                clickOutsideToClose: false
+           });
+        };
+
+        $scope.editProcessingTemplateDialog = function($event, processingTemplate) {
+            var incidentType = $scope.incidentTypeParams.selectedIncidentType;
+            function EditrocessingTemplateController($scope, $mdDialog) {
+
+                $scope.incidentType = incidentType;
+                $scope.processingTemplateToEdit = processingTemplate;
+
+                $scope.closeDialog = function(updated) {
+                    if (updated) {
+                        IncidentTypeService.refreshSelectedIncidentType('community');
+                    }
+                    $mdDialog.hide();
+                };
+            }
+            EditrocessingTemplateController.$inject = ['$scope', '$mdDialog'];
+            $mdDialog.show({
+                controller: EditrocessingTemplateController,
+                templateUrl: 'views/community/manage/incidentprocessing.html',
+                parent: angular.element(document.body),
+                targetEvent: $event,
+                clickOutsideToClose: false
+           });
+        }
+
+        $scope.removeProcessingTemplate = function(processingTemplate) {
+            ProcessingTemplateService.removeProcessingTemplate(processingTemplate).then((function() {
+                IncidentTypeService.refreshSelectedIncidentType('community');
+            }))
+        }
 
         $scope.refreshIncidentType = function() {
             IncidentTypeService.refreshSelectedIncidentType('community');

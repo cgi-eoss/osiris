@@ -534,6 +534,15 @@
 .dynamic-form md-datepicker .md-datepicker-invalid .md-datepicker-input {
   background: #f2dede;
 }
+.dynamic-form md-input-container {
+  margin: 0;
+  width: 100%;
+  color: rgba(0, 0, 0, 0.7);
+}
+.dynamic-form md-input-container .hint {
+  font-size: 0.6rem;
+  color: rgba(0, 0, 0, 0.4);
+}
 .dynamic-form .search-input-button i {
   font-size: 1rem;
 }
@@ -819,9 +828,12 @@
   padding: 10px;
   width: 100%;
 }
+#community-container .community-item-container .item-list .md-list-item-text {
+  padding-left: 1rem;
+}
+#community-container .community-item-container .item-list h3,
 #community-container .community-item-container .item-list h4 {
   margin: 0;
-  padding-left: 1rem;
 }
 #community-container .community-item-container md-input-container {
   margin: 0;
@@ -1006,6 +1018,32 @@
   line-height: 1rem;
   margin: 0;
   padding: 0.3rem 0;
+}
+.processing-list md-list-item {
+  border-bottom: #d2d2d2 solid 1px;
+  padding: 5px 0px;
+}
+.processing-list md-list-item.is-disabled {
+  color: rgba(0, 0, 0, 0.4);
+}
+#processing-template-dlg md-content {
+  background: transparent;
+}
+#processing-template-dlg md-pagination-wrapper {
+  width: auto !important;
+}
+#processing-template-dlg md-autocomplete {
+  background-color: transparent;
+}
+#processing-template-dlg md-autocomplete md-autocomplete-wrap {
+  box-shadow: none;
+  border: none;
+  background-color: transparent;
+  -ms-flex-direction: row-reverse;
+      flex-direction: row-reverse;
+}
+#processing-template-dlg md-autocomplete md-autocomplete-wrap input {
+  margin-top: 4px;
 }
 
 @media (min-width: 1600px) and (max-width: 2399px) {

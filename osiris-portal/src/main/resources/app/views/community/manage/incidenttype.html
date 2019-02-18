@@ -36,7 +36,59 @@
 <article id="incidentType-workflow">
     <section class="row section-title">
         <div class="col-xs-11 title-text">
-            <h3>Default workflow template</h3>
+            <h3>Default processing templates</h3>
         </div>
+        <div class="col-xs-1 title-button">
+            <h3>
+                <md-button class="icon-button-accent toolbar-button md-secondar"
+                           ng-click="addProcessingTemplateDialog($event)"
+                           aria-label="Add processing template"
+                           uib-tooltip="Add processing template"
+                           tooltip-is-open="!incidentTypeParams.selectedIncidentType.incidentProcessingTemplates.length"
+                           tooltip-placement="top"
+                           tooltip-trigger="mouseenter"
+                           tooltip-append-to-body="true">
+                    <i class="material-icons">add_box</i>
+                </md-button>
+            </h3>
+        </div>
+    </section>
+
+    <section ng-if="!incidentTypeParams.selectedIncidentType.incidentProcessingTemplates.length">
+        No processing template defined. Click on the add button on the right to create one
+    </section>
+
+    <section class="item-list processing-list">
+        <md-list-item class="md-1-line" ng-repeat="processingTemplate in incidentTypeParams.selectedIncidentType.incidentProcessingTemplates">
+
+            <div class="md-avatar">
+                <i class="material-icons">settings_input_component</i>
+            </div>
+
+            <div class="md-list-item-text" layout="column">
+                <h3 ng-bind="processingTemplate.title" />
+                <span ng-bind="processingTemplate.description" />
+            </div>
+
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="editProcessingTemplateDialog($event, processingTemplate)"
+                        aria-label="Edit"
+                        uib-tooltip="Edit"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">create</i>
+            </md-button>
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="removeProcessingTemplate(processingTemplate)"
+                        aria-label="Remove"
+                        uib-tooltip="Remove"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">clear</i>
+            </md-button>
+
+        </md-list-item>
     </section>
 </article>

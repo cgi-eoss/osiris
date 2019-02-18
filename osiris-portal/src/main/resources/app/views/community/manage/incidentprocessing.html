@@ -1,0 +1,148 @@
+<md-dialog id="processing-template-dlg" ng-controller="IncidentProcessingCtrl">
+    <h4>Incident processing</h4>
+    <form name="editProcessingTemplate" class="dynamic-form">
+    <md-dialog-content style="width: 600px; height: 80vh">
+
+            <md-content class="md-padding">
+                <ng-container ng-if="!processingInstance">
+                <md-input-container  md-no-float>
+                    <div class="col-xs-12">
+                        <md-subheader class="md-accent md-subheader-title">
+                            <span>Name</span>
+                            <span class="required-asterisk">*</span>
+                        </md-subheader>
+                    </div>
+                    <div class="col-xs-12">
+                        <input ng-model="processingTemplate.title" md-autofocus type="text"
+                            aria-label="Processing template title" maxlength="64" required>
+                    </div>
+                </md-input-container>
+                <md-input-container  md-no-float>
+                    <div class="col-xs-12">
+                        <md-subheader class="md-accent md-subheader-title">
+                            <span>Description</span>
+                        </md-subheader>
+                    </div>
+                    <div class="col-xs-12">
+                        <textarea ng-model="processingTemplate.description"></textarea>
+                    </div>
+                </md-input-container>
+                </ng-container>
+                <md-tabs md-dynamic-height md-border-bottom style="margin-top: 20px;">
+                    <md-tab label="Processing configuration">
+                        <md-content class="md-padding">
+
+                            <md-input-container  md-no-float>
+                                <div class="col-xs-12">
+                                    <md-subheader class="md-accent md-subheader-title">
+                                        <span>Service</span>
+                                        <span class="required-asterisk">*</span>
+                                    </md-subheader>
+                                </div>
+                                <div class="col-xs-12">
+                                    <md-autocomplete required
+                                        ng-disabled="processingInstance"
+                                        md-input-name="service"
+                                        md-items="service in searchServices(serviceSearchExpression)"
+                                        md-search-text="serviceSearchExpression"
+                                        md-selected-item="processingTemplate.service"
+                                        md-item-text="service.name"
+                                        md-require-match="true"
+                                        md-no-asterisk="true"
+                                        md-min-length="0"
+                                        md-selected-item-change="onSelectedServiceChange(service)">
+                                        <md-item-template>
+                                            <span md-highlight-text="serviceSearchExpression"
+                                                md-highlight-flags="ig">{{service.name}}</span>
+                                        </md-item-template>
+                                        <md-not-found>
+                                            No service matching "{{serviceSearchExpression}}" found
+                                        </md-not-found>
+                                    </md-autocomplete>
+                                </div>
+                            </md-input-container>
+                                <div ng-show="isServiceDescriptionLoading" layout="row" layout-sm="column"
+                                    layout-align="space-around">
+                                    <md-progress-circular md-mode="indeterminate" md-diameter="40">
+                                    </md-progress-circular>
+                                </div>
+
+                                <div ng-if="processingTemplate.service && !isServiceDescriptionLoading">
+
+                                    <md-input-container class="row">
+                                        <div class="col-xs-12">
+                                            <md-subheader class="md-accent md-subheader-title">
+                                                <span>Data input parameter</span>
+                                            </md-subheader>
+                                        </div>
+                                        <div class="col-xs-12">
+                                            <md-select
+                                                ng-model="processingTemplate.systematicInput"
+                                                ng-disabled="processingInstance"
+                                                aria-label="Data input parameter"
+                                                required
+                                            >
+                                                <md-option
+                                                    ng-repeat="input in processingTemplate.serviceDetails.serviceDescriptor.dataInputs"
+                                                    ng-value="input.id">
+                                                    {{input.title}}
+                                                </md-option>
+                                            </md-select>
+                                        </div>
+                                    </md-input-container>
+
+                                    <div class="service-field"
+                                        ng-repeat="fieldDesc in processingTemplate.serviceDetails.serviceDescriptor.dataInputs">
+
+                                        <div class="input-container"
+                                            ng-if="fieldDesc.id != processingTemplate.systematicInput && fieldDesc.id !== 'aoi'">
+
+                                            <div class="col-xs-12">
+                                                <md-subheader class="md-accent">
+                                                    <span uib-tooltip="{{fieldDesc.title}}" tooltip-placement="top"
+                                                        tooltip-trigger="mouseenter"
+                                                        tooltip-append-to-body="true">{{fieldDesc.title}}</span>
+                                                    <span class="required-asterisk"
+                                                        ng-show="fieldDesc.minOccurs > 0">*</span>
+                                                </md-subheader>
+                                            </div>
+
+                                            <div class="row input-item">
+                                                <div class="col-xs-12" >
+                                                    <service-input
+                                                        ng-model="processingTemplate.serviceParams[fieldDesc.id]"
+                                                        ng-init="processingTemplate.serviceParams[fieldDesc.id] = getDefaultValue(fieldDesc)"
+                                                        default-attrs="{{fieldDesc.defaultAttrs}}"
+                                                        read-only="{{readOnly}}"
+                                                        ng-required="{{fieldDesc.minOccurs > 0}}" dnd-disable-if="true"
+                                                        description="{{fieldDesc.description}}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                        </md-content>
+                    </md-tab>
+                    <md-tab label="Input retrieval">
+                        <md-content class="md-padding">
+                            <div ng-show="isSearchParametersLoading" layout="row" layout-sm="column"
+                                layout-align="space-around">
+                                <md-progress-circular md-mode="indeterminate" md-diameter="40"></md-progress-circular>
+                            </div>
+                            <dynamic-form form-config="searchForm.config" api="searchForm.api"
+                                form-data="searchForm.data" read-only="readOnly"></dynamic-form>
+                        </md-content>
+                    </md-tab>
+                </md-tabs>
+            </md-content>
+
+    </md-dialog-content>
+    <md-dialog-actions>
+        <md-button ng-if="!readOnly" ng-click="updateIncidentProcessing()" ng-disabled="editProcessingTemplate.$invalid"
+            class="md-primary">Save</md-button>
+        <md-button ng-click="closeDialog()" class="md-primary">{{readOnly ? 'Close' : 'Cancel'}}</md-button>
+    </md-dialog-actions>
+    </form>
+</md-dialog>

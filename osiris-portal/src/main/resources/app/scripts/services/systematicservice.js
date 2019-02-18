@@ -29,7 +29,7 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                 pollingUrl: rootUri + '/systematicProcessings/?sort=id,DESC',
                 pollingRequestOptions: {},
                 pagingData: {},
-                selectedsystematicProcessing: undefined,
+                selectedSystematicProcessing: undefined,
                 searchText: '',
                 displayFilters: false,
                 sharedGroups: undefined,

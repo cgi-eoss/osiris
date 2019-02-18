@@ -38,7 +38,14 @@
                     <div class="col-xs-12 item-list">
                         <md-input-container>
                             <label>Incident type</label>
-                            <md-select ng-model="incidentData.type" md-autofocus aria-label="Incident Type" required>
+                            <md-select
+                                ng-model="incidentData.type"
+                                ng-change="onIncidentTypeChange(incidentData.type)"
+                                ng-disabled="incidentData.id"
+                                md-autofocus
+                                aria-label="Incident Type"
+                                required
+                            >
                                 <md-option ng-repeat="type in incidentTypes" ng-value="type.id">
                                     {{type.title}}
                                 </md-option>
@@ -65,14 +72,14 @@
                     </div>
                 </div>
                 <br>
-                <aoi-field value="incidentData.aoi" label="'Incident area:'" required="true"></aoi-field>
+                <aoi-field value="incidentData.aoi" label="'Incident area:'" required="true" read-only="!!incidentData.id"></aoi-field>
                 <br>
                 <div class="row">
                     <div class="col-md-12 col-lg-6 no-padding date-container">
-                        <md-datepicker ng-required="true" ng-model="incidentData.startDate" md-placeholder="Start date" />
+                        <md-datepicker ng-required="true" ng-disabled="incidentData.id" ng-model="incidentData.startDate" md-placeholder="Start date" />
                     </div>
                     <div class="col-md-12 col-lg-6 no-padding date-container">
-                        <md-datepicker ng-required="true" ng-model="incidentData.endDate" md-placeholder="End date" />
+                        <md-datepicker ng-required="true" ng-disabled="incidentData.id" ng-model="incidentData.endDate" md-placeholder="End date" />
                     </div>
                 </div>
             </form>
@@ -83,10 +90,72 @@
     </section>
 </article>
 
-<article id="incidentType-workflow">
+<article id="incident-workflow">
     <section class="row section-title">
         <div class="col-xs-11 title-text">
-            <h3>Incident workflow</h3>
+            <h3>Incident processing</h3>
         </div>
+    </section>
+
+    <section class="item-list processing-list">
+        <md-list-item class="md-1-line" ng-class="{'is-disabled': !processingTemplate.instance.active}" ng-repeat="processingTemplate in incidentData.processingTemplates">
+
+            <md-switch ng-if="!incidentData.id" ng-model="processingTemplate.instance.active">
+            </md-switch>
+
+            <div class="md-avatar">
+                <i class="material-icons">settings_input_component</i>
+            </div>
+
+            <div class="md-list-item-text" layout="column">
+                <h3 ng-bind="processingTemplate.title" />
+                <span ng-bind="processingTemplate.description" />
+            </div>
+
+            <div class="md-list-item-text">
+                <span><span><b>Service: </b></span><span ng-bind="processingTemplate.service.name"></span></span>
+            </div>
+
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="editProcessingTemplateDialog($event, processingTemplate)"
+                        ng-if="processingTemplate.instance.active && !incidentData.id"
+                        aria-label="Edit"
+                        uib-tooltip="Edit"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">create</i>
+            </md-button>
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="editProcessingTemplateDialog($event, processingTemplate)"
+                        ng-if="processingTemplate.instance.active && incidentData.id"
+                        aria-label="Info"
+                        uib-tooltip="Info"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">info</i>
+            </md-button>
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="goToSystematicProcessing(processingTemplate.instance.meta.systematicProcessing)"
+                        ng-if="processingTemplate.instance.meta && processingTemplate.instance.meta.systematicProcessing"
+                        aria-label="Open associated systematic processing"
+                        uib-tooltip="Open associated systematic processing"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">timer</i>
+            </md-button>
+            <md-button class="toolbar-button md-secondary"
+                        ng-click="goToProcessingCollection(processingTemplate.instance.meta.collection)"
+                        ng-if="processingTemplate.instance.meta && processingTemplate.instance.meta.collection"
+                        aria-label="Open output collection"
+                        uib-tooltip="Open output collection"
+                        tooltip-placement="top"
+                        tooltip-trigger="mouseenter"
+                        tooltip-append-to-body="true">
+                <i class="material-icons">collections</i>
+            </md-button>
+        </md-list-item>
     </section>
 </article>

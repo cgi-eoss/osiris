@@ -130,3 +130,41 @@
         }
     }
 }
+
+.processing-list {
+    md-list-item {
+        &.is-disabled {
+            color: rgba(0, 0, 0, 0.4);
+        }
+
+        .border(border-bottom, @bg);
+        padding: 5px 0px;
+    }
+}
+
+#processing-template-dlg {
+
+    md-content {
+        background: transparent
+    }
+    md-pagination-wrapper {
+        width: auto !important;
+    }
+
+    md-autocomplete {
+
+        background-color: transparent;
+
+        md-autocomplete-wrap {
+            box-shadow: none;
+            border: none;
+            background-color: transparent;
+            flex-direction: row-reverse;
+
+            input {
+                margin-top: 4px;
+            }
+        }
+    }
+}
+

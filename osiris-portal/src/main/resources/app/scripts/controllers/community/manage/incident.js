@@ -10,7 +10,7 @@
 
 define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, moment) {
 
-    osirismodules.controller('CommunityManageIncidentCtrl', ['IncidentService', 'IncidentTypeService', 'AoiService', 'MapService', 'CommunityService', '$scope', '$mdDialog', function (IncidentService, IncidentTypeService, AoiService, MapService, CommunityService, $scope, $mdDialog) {
+    osirismodules.controller('CommunityManageIncidentCtrl', ['IncidentService', 'IncidentTypeService', 'IncidentProcessingService', 'CollectionService', 'SystematicService', 'TabService', 'AoiService', 'MapService', 'CommunityService', '$scope', '$mdDialog', function (IncidentService, IncidentTypeService, IncidentProcessingService, CollectionService, SystematicService, TabService, AoiService, MapService, CommunityService, $scope, $mdDialog) {
 
         /* Get stored Databaskets & Files details */
         $scope.incidentParams = IncidentService.params.community;
@@ -66,8 +66,106 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
             }
 
             $scope.incidentData = incidentData;
+
+
+            if (incident.type && incident.incidentProcessings) {
+                $scope.onIncidentTypeChange(incident.type.id, incident.incidentProcessings);
+            }
+
         });
 
+        $scope.onIncidentTypeChange = function(type, incidentProcessings) {
+
+            if (incidentProcessings) {
+
+                var processingTemplates = [];
+
+                incidentProcessings.forEach(function(processing) {
+                    var processingTemplate = processing.template;
+                    processingTemplate.instance = {
+                        active: true,
+                        meta: processing
+                    }
+                    processingTemplates.push(processingTemplate);
+                });
+
+                $scope.incidentData.processingTemplates = processingTemplates;
+
+            } else {
+                IncidentTypeService.getProcessingTemplatesForType(type).then(function(processingTemplates) {
+
+                    processingTemplates.forEach(function(template) {
+                        template.instance = {
+                            active: true,
+                            searchParameters: {},
+                            inputs: {}
+                        }
+                    })
+
+                    $scope.incidentData.processingTemplates = processingTemplates;
+                });
+            }
+        }
+
+        $scope.editProcessingTemplateDialog = function($event, processingTemplate) {
+
+            var readOnly = !!$scope.incidentData.id;
+
+            function EditProcessingTemplateController($scope, $mdDialog) {
+
+                $scope.processingTemplateToEdit = processingTemplate;
+                $scope.processingInstance = processingTemplate.instance;
+
+                $scope.readOnly = readOnly || false;
+
+                $scope.closeDialog = function() {
+                    $mdDialog.hide();
+                };
+            }
+            EditProcessingTemplateController.$inject = ['$scope', '$mdDialog'];
+
+            if (processingTemplate.instance.meta && !processingTemplate.instance.searchParameters) {
+                IncidentProcessingService.getIncidentProcessing({id: processingTemplate.instance.meta.id}).then(function(data) {
+                    processingTemplate.instance.searchParameters = data.searchParameters;
+                    processingTemplate.instance.inputs = data.inputs;
+                    delete processingTemplate.instance.id;
+
+                    $mdDialog.show({
+                        controller: EditProcessingTemplateController,
+                        templateUrl: 'views/community/manage/incidentprocessing.html',
+                        parent: angular.element(document.body),
+                        targetEvent: $event,
+                        clickOutsideToClose: false
+                    });
+
+                })
+            } else {
+                $mdDialog.show({
+                    controller: EditProcessingTemplateController,
+                    templateUrl: 'views/community/manage/incidentprocessing.html',
+                    parent: angular.element(document.body),
+                    targetEvent: $event,
+                    clickOutsideToClose: false
+                });
+            }
+        }
+
+        $scope.goToProcessingCollection = function(collection) {
+
+            CollectionService.params.community.selectedOwnershipFilter = CollectionService.dbOwnershipFilters.ALL_COLLECTIONS;
+            CollectionService.params.community.searchText = collection.name;
+            TabService.navInfo.community.activeSideNav = TabService.getCommunityNavTabs().COLLECTIONS;
+            CollectionService.params.community.selectedCollection = collection;
+            CollectionService.getCollectionsByFilter('community');
+
+        };
+
+        $scope.goToSystematicProcessing = function(systematicProcessing) {
+            SystematicService.params.community.selectedOwnershipFilter = SystematicService.ownershipFilters.ALL_PROCESSINGS;
+            TabService.navInfo.community.activeSideNav = TabService.getCommunityNavTabs().SYSTEMATICPROCS;
+            SystematicService.params.community.selectedSystematicProcessing = systematicProcessing;
+            SystematicService.refreshSelectedSystematicProcessing('community');
+        }
 
         $scope.itemSearch = {
             searchText: $scope.incidentParams.itemSearchText
@@ -109,14 +207,36 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
             return params;
         }
 
+        var getProcessingInstances = function(incident, processingTemplates) {
+            return processingTemplates.filter(function(template) {
+                return template.instance.active
+            }).map(function(template) {
+                return {
+                    inputs: template.instance.inputs,
+                    searchParameters: template.instance.searchParameters,
+                    template: template._links.self.href,
+                    incident: incident
+                }
+            });
+        }
+
         $scope.addOrUpdateIncident = function() {
+
+
             var incident = $scope.incidentData;
 
             var data = getIncidentParams(incident);
 
             if (!data.id) {
                 IncidentService.createIncident(data).then(function(newIncident) {
-                    IncidentService.refreshIncidents('community', 'Create', newIncident);
+                    var processingInstances = getProcessingInstances(newIncident._links.self.href, $scope.incidentData.processingTemplates);
+                    IncidentProcessingService.createIncidentProcessings(processingInstances).then(function(response) {
+
+                        IncidentService.startIncidentProcessing(response[0]._embedded.incident).then(function() {
+                            IncidentService.refreshIncidents('community', 'Create', newIncident)
+                        })
+
+                    });
                 });
             } else {
                 IncidentService.updateIncident(data).then(function(updatedIncident) {

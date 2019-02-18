@@ -249,6 +249,25 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
             }
         };
 
+        this.getProcessingTemplatesForType = function(type) {
+
+            var uri = rootUri + '/incidentTypes/' + type + '/incidentProcessingTemplates'
+            var deferred = $q.defer();
+            halAPI.from(uri)
+                .newRequest()
+                .getResource()
+                .result
+                .then(
+                    function(document) {
+                        deferred.resolve(document._embedded.incidentProcessingTemplates);
+                    }, function(error) {
+                        MessageService.addError('Could not get processing template for type: ' + type, error);
+                        deferred.reject();
+                    });
+            return deferred.promise;
+        }
+
+
         this.getIncidentTypes = function() {
 
             var url = rootUri + '/incidentTypes';

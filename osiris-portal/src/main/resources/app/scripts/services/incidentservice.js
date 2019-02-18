@@ -137,6 +137,20 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
             });
         };
 
+        this.startIncidentProcessing = function(incident) {
+            return halAPI.from(rootUri + '/incidents/' + incident.id + '/process')
+                .newRequest()
+                .post()
+                .result
+                .then(
+                    function(document) {
+                        MessageService.addInfo('Incident processing start', 'Incident processing for ' + incident.title + ' started.');
+                        return document.data;
+                    }, function(error) {
+                        MessageService.addError('Could not start incident processing for incident ' + incident.title, error);
+                    });
+        }
+
         this.removeIncident = function(incident) {
             return $q(function(resolve, reject) {
                 deleteAPI.from(rootUri + '/incidents/' + incident.id)
@@ -202,7 +216,7 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
         this.refreshIncidents = function(page, action, incident) {
             if (self.params[page]) {
                 /* Get incident list */
-                getIncidents(page).then(function(data) {
+                return getIncidents(page).then(function(data) {
 
                     self.params[page].incidents = data;
 
@@ -220,7 +234,7 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
                     }
 
                     /* Update the selected incident */
-                    self.refreshSelectedIncident(page);
+                    return self.refreshSelectedIncident(page);
                 });
             }
         };
@@ -265,7 +279,7 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
                 if (self.params[page].selectedIncident &&
                         (self.params[page].selectedIncident.id || self.params[page].selectedIncident._links)) {
 
-                    getIncident(self.params[page].selectedIncident).then(function(incident) {
+                    return getIncident(self.params[page].selectedIncident).then(function(incident) {
                         self.params[page].selectedIncident = incident;
                     });
                 }
