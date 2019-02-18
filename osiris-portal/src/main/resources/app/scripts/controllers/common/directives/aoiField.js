@@ -7,7 +7,8 @@ define(['../../../osirismodules','ol', 'shp', 'clipboard'], function (osirismodu
                 label: '=',
                 description: '=',
                 value: '=',
-                required: '='
+                required: '=',
+                readOnly: '='
             },
             restrict: 'E',
             link: function(scope, element, attrs) {

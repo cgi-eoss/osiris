@@ -6,13 +6,14 @@ define(['../../../osirismodules'], function (osirismodules) {
             scope: {
                 formConfig: '=',
                 api: '=',
-                formData: '='
+                formData: '=',
+                readOnly: '='
             },
             restrict: 'E',
             link: function(scope, element, attrs) {
 
                 scope.formData = scope.formData || {};
-                scope.enabledFields = [];
+                scope.enabledFields = {};
 
                 scope.api = {
                     getFormData: function() {
@@ -38,9 +39,22 @@ define(['../../../osirismodules'], function (osirismodules) {
                 }
 
 
+                scope.$watch('formConfig', function(newValue, oldValue) {
+                    if (newValue) {
+                        scope.enabledFields = {};
+                        for (var fieldId in scope.formData) {
+                            scope.enabledFields[fieldId] = true;
+                        }
+                    }
+                });
+
                 scope.allowedSelectValues = {};
 
                 scope.setDefaultValue = function(fieldId, fieldConfig) {
+                    if (scope.formData[fieldId])  {
+                        return;
+                    }
+
                     if(fieldConfig.defaultValue) {
                         if(fieldConfig.type === 'text' || fieldConfig.type === 'int' || fieldConfig.type === 'polygon') {
                             scope.formData[fieldId] = fieldConfig.defaultValue;

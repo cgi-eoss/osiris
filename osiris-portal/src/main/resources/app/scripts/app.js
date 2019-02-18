@@ -392,7 +392,9 @@ define([
 
                     $scope.fieldData = {isSelection: (data.allowedValues && data.allowedValues !== '' ? true : false),
                                         allowedValues: (data.allowedValues && data.allowedValues !== '' ? data.allowedValues.split(',') : []),
-                                        description: attrs.description};
+                                        description: attrs.description,
+                                        readOnly: attrs.readOnly === "true" ? true : false
+                                        };
 
                     if($scope.fieldData.allowedValues.length > 0 && attrs.ngRequired === 'false'){
                         $scope.fieldData.allowedValues.splice(0, 0, ''); //add empty value at the beginning

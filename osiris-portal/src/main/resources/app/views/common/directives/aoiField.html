@@ -2,12 +2,11 @@
     <div class="col-xs-12 item-list">
         <md-input-container md-no-float>
             <label ng-if="label">{{label}}</label>
-            <input ng-if="!required" ng-model="value" aria-label="{{title}}" />
-            <input ng-if="required" ng-model="value" aria-label="{{title}}" required/>
+            <input  ng-model="value" aria-label="{{title}}" ng-required="required" ng-disabled="readOnly"/>
             <div class="hint" ng-show="true">{{description}}</div>
         </md-input-container>
 
-        <div style="text-align: right">
+        <div style="text-align: right" ng-if="!readOnly">
             <md-button class="toolbar-button md-secondary" ng-click="enableMapAoiDraw('bbox')" aria-label="Draw bbox" uib-tooltip="Draw bbox"
                 tooltip-placement="top" tooltip-trigger="mouseenter" tooltip-append-to-body="true">
                 <i class="material-icons">crop_5_4</i>
