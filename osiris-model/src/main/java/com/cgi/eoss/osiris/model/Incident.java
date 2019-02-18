@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -87,7 +88,7 @@ public class Incident implements OsirisEntityWithOwner<Incident> {
     /**
      * <p>A set of {@link IncidentProcessing}s associated with this incident.</p>
      */
-    @OneToMany(mappedBy = "incident", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<IncidentProcessing> incidentProcessings = new ArrayList<>();
 
     public Incident(User owner, IncidentType type, String title, String description, String aoi, Instant startDate, Instant endDate) {
