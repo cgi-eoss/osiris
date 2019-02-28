@@ -16,13 +16,13 @@ import com.cgi.eoss.osiris.rpc.worker.ContainerExitCode;
 import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
 import com.cgi.eoss.osiris.rpc.worker.ExitParams;
 import com.cgi.eoss.osiris.rpc.worker.ExitWithTimeoutParams;
-import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.cgi.eoss.osiris.rpc.worker.GetOutputFileParam;
 import com.cgi.eoss.osiris.rpc.worker.JobDockerConfig;
 import com.cgi.eoss.osiris.rpc.worker.JobEnvironment;
 import com.cgi.eoss.osiris.rpc.worker.JobInputs;
 import com.cgi.eoss.osiris.rpc.worker.LaunchContainerResponse;
 import com.cgi.eoss.osiris.rpc.worker.ListOutputFilesParam;
+import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.cgi.eoss.osiris.rpc.worker.OutputFileItem;
 import com.cgi.eoss.osiris.rpc.worker.OutputFileList;
 import com.cgi.eoss.osiris.rpc.worker.PortBinding;
@@ -44,7 +44,6 @@ import com.google.common.collect.Sets;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import javax.annotation.PostConstruct;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.CloseableThreadContext;
@@ -70,8 +69,7 @@ import shadow.dockerjava.com.github.dockerjava.core.command.PullImageResultCallb
 import shadow.dockerjava.com.github.dockerjava.core.command.PushImageResultCallback;
 import shadow.dockerjava.com.github.dockerjava.core.command.WaitContainerResultCallback;
 
-import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
-
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
@@ -183,6 +181,7 @@ public class OsirisWorker extends OsirisWorkerGrpc.OsirisWorkerImplBase {
                         Path subdirPath = jobEnv.getInputDir().resolve(e.getKey());
 
                         // Just hope no one has used a comma in their url...
+
                         Set<URI> inputUris = Arrays.stream(StringUtils.split(e.getValue(), ',')).map(URI::create).collect(Collectors.toSet());
                         inputOutputManager.prepareInput(subdirPath, inputUris);
                         jobInputs.putAll(request.getJob().getId(), inputUris);
@@ -214,7 +213,7 @@ public class OsirisWorker extends OsirisWorkerGrpc.OsirisWorkerImplBase {
         if (dockerRegistryConfig != null) {
             dockerClient = DockerClientFactory.buildDockerClient("unix:///var/run/docker.sock", dockerRegistryConfig);
             try {
-                String dockerImageTag = dockerRegistryConfig.getDockerRegistryUrl() + "/"+request.getDockerImage();
+                String dockerImageTag = dockerRegistryConfig.getDockerRegistryUrl() + "/" + request.getDockerImage();
                 responseObserver.onNext(PrepareDockerImageResponse.newBuilder().build());
                 //Remove previous images with same name
                 removeDockerImage(dockerClient, dockerImageTag);
@@ -222,10 +221,9 @@ public class OsirisWorker extends OsirisWorkerGrpc.OsirisWorkerImplBase {
                 pushDockerImage(dockerClient, dockerImageTag);
                 dockerClient.close();
                 responseObserver.onCompleted();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 responseObserver.onError(e);
-            } catch (InterruptedException e) {
-                responseObserver.onError(e);
+                LOG.error("Failed preparing Docker Image for service {}", request.getServiceName(), e);
             }
         }
         else {

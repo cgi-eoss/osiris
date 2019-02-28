@@ -1,7 +1,61 @@
 package com.cgi.eoss.osiris.orchestrator.service;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import com.cgi.eoss.osiris.catalogue.CatalogueService;
+import com.cgi.eoss.osiris.costing.CostingService;
+import com.cgi.eoss.osiris.logging.Logging;
+import com.cgi.eoss.osiris.model.Databasket;
+import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.Job.Status;
+import com.cgi.eoss.osiris.model.JobConfig;
+import com.cgi.eoss.osiris.model.OsirisService;
+import com.cgi.eoss.osiris.model.OsirisService.Type;
+import com.cgi.eoss.osiris.model.OsirisServiceDockerBuildInfo;
+import com.cgi.eoss.osiris.model.OsirisServiceResources;
+import com.cgi.eoss.osiris.model.User;
+import com.cgi.eoss.osiris.model.UserMount;
+import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
+import com.cgi.eoss.osiris.persistence.service.JobDataService;
+import com.cgi.eoss.osiris.persistence.service.ServiceDataService;
+import com.cgi.eoss.osiris.persistence.service.UserMountDataService;
+import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
+import com.cgi.eoss.osiris.rpc.BuildServiceParams;
+import com.cgi.eoss.osiris.rpc.BuildServiceResponse;
+import com.cgi.eoss.osiris.rpc.CancelJobParams;
+import com.cgi.eoss.osiris.rpc.CancelJobResponse;
+import com.cgi.eoss.osiris.rpc.GrpcUtil;
+import com.cgi.eoss.osiris.rpc.JobParam;
+import com.cgi.eoss.osiris.rpc.OsirisJobLauncherGrpc;
+import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
+import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
+import com.cgi.eoss.osiris.rpc.RelaunchFailedJobParams;
+import com.cgi.eoss.osiris.rpc.RelaunchFailedJobResponse;
+import com.cgi.eoss.osiris.rpc.StopServiceParams;
+import com.cgi.eoss.osiris.rpc.StopServiceResponse;
+import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
+import com.cgi.eoss.osiris.rpc.worker.JobSpec;
+import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
+import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
+import com.cgi.eoss.osiris.rpc.worker.ResourceRequest;
+import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
+import org.lognet.springboot.grpc.GRpcService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,70 +69,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.CloseableThreadContext;
-import org.lognet.springboot.grpc.GRpcService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import com.cgi.eoss.osiris.catalogue.CatalogueService;
-import com.cgi.eoss.osiris.costing.CostingService;
-import com.cgi.eoss.osiris.logging.Logging;
-import com.cgi.eoss.osiris.model.Databasket;
-import com.cgi.eoss.osiris.model.OsirisService;
-import com.cgi.eoss.osiris.model.OsirisService.Type;
-import com.cgi.eoss.osiris.model.OsirisServiceDockerBuildInfo;
-import com.cgi.eoss.osiris.model.OsirisServiceResources;
-import com.cgi.eoss.osiris.model.Job;
-import com.cgi.eoss.osiris.model.Job.Status;
-import com.cgi.eoss.osiris.model.JobConfig;
-import com.cgi.eoss.osiris.model.User;
-import com.cgi.eoss.osiris.model.UserMount;
-import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
-import com.cgi.eoss.osiris.persistence.service.JobDataService;
-import com.cgi.eoss.osiris.persistence.service.ServiceDataService;
-import com.cgi.eoss.osiris.persistence.service.UserMountDataService;
-import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
-import com.cgi.eoss.osiris.rpc.BuildServiceParams;
-import com.cgi.eoss.osiris.rpc.BuildServiceResponse;
-import com.cgi.eoss.osiris.rpc.CancelJobParams;
-import com.cgi.eoss.osiris.rpc.CancelJobResponse;
-import com.cgi.eoss.osiris.rpc.OsirisJobLauncherGrpc;
-import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
-import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
-import com.cgi.eoss.osiris.rpc.OsirisServiceResponse;
-import com.cgi.eoss.osiris.rpc.GrpcUtil;
-import com.cgi.eoss.osiris.rpc.JobParam;
-import com.cgi.eoss.osiris.rpc.RelaunchFailedJobParams;
-import com.cgi.eoss.osiris.rpc.RelaunchFailedJobResponse;
-import com.cgi.eoss.osiris.rpc.StopServiceParams;
-import com.cgi.eoss.osiris.rpc.StopServiceResponse;
-import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
-import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
-import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
-import com.cgi.eoss.osiris.rpc.worker.JobSpec;
-import com.cgi.eoss.osiris.rpc.worker.ResourceRequest;
-import com.cgi.eoss.osiris.security.OsirisSecurityService;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.SetMultimap;
-
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
-import lombok.extern.log4j.Log4j2;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 /**
  * <p>
  * Primary entry point for WPS services to launch in OSIRIS.
@@ -93,6 +89,7 @@ import lombok.extern.log4j.Log4j2;
 public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherImplBase {
 
     private static final String TIMEOUT_PARAM = "timeout";
+    private static final String PARALLEL_INPUT_IDENTIFIER = "parallelInputs";
 
     private static final int SINGLE_JOB_PRIORITY = 9;
 
@@ -186,7 +183,11 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                 
                 //TODO: Check that the user can use the geoserver spec
 
-                Collection<String> parallelInput = inputs.get("parallelInputs");
+                //TODO: externalise remaining "parallelInputs" instances into a static class
+                Collection<String> parallelInput = inputs.get(PARALLEL_INPUT_IDENTIFIER);
+                if (parallelInput.isEmpty()) {
+                    LOG.warn("Attempted to launch a parallel job without any values for required input: \"{}\". No subjobs will be run.", PARALLEL_INPUT_IDENTIFIER);
+                }
                 List<String> newInputs = explodeParallelInput(parallelInput);
                 checkCost(job.getOwner(), job.getConfig(), newInputs);
 
@@ -399,6 +400,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 	    catch(Exception e){
 	        service.getDockerBuildInfo().setDockerBuildStatus(OsirisServiceDockerBuildInfo.Status.ERROR);
 	        serviceDataService.save(service);
+            LOG.error("Failed building service {}", service.getId(), e);
 	    }
 	    responseObserver.onCompleted();
 	}
@@ -539,6 +541,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
         HashMap<String, Object> messageHeaders = new HashMap<String, Object>();
         messageHeaders.put("jobId", job.getId());
         queueService.sendObject(OsirisQueueService.jobQueueName, messageHeaders, jobSpec, priority);
+        LOG.info("Sent job {} to queue {}", job.getId(), OsirisQueueService.jobQueueName);
     }
 
     private void cancelJob(Job job) {
@@ -591,7 +594,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
         // Create the simpler map of parameters shared by all parallel jobs
         SetMultimap<String, String> sharedParams =
                 MultimapBuilder.hashKeys().hashSetValues().build(inputs);
-        sharedParams.removeAll("parallelInputs");
+        sharedParams.removeAll(PARALLEL_INPUT_IDENTIFIER);
         for (String newInput : newInputs) {
             SetMultimap<String, String> parallelJobParams =
                     MultimapBuilder.hashKeys().hashSetValues().build(sharedParams);
