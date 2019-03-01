@@ -3,6 +3,8 @@ package com.cgi.eoss.osiris.model;
 import com.cgi.eoss.osiris.model.converters.UriStringConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Sets;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,10 +20,13 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import java.net.URI;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -29,7 +34,7 @@ import java.util.UUID;
  * external files. These objects may be included in databaskets.</p>
  */
 @Data
-@EqualsAndHashCode(exclude = {"id"})
+@EqualsAndHashCode(exclude = {"id", "geoserverLayers"})
 @Table(name = "osiris_files",
         indexes = {
                 @Index(name = "osiris_files_uri_idx", columnList = "uri"),
@@ -106,6 +111,16 @@ public class OsirisFile implements OsirisEntityWithOwner<OsirisFile> {
     @JsonIgnore
     private Collection collection;
 
+    /**
+     * <p>Geoserver layers this file is associated to</p>
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "osiris_geoserver_layer_files",
+            joinColumns = @JoinColumn(name = "file_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "geoserver_layer_id", nullable = false),
+            indexes = @Index(name = "osiris_geoserver_layer_files_layer_file_idx", columnList = "geoserver_layer_id,file_id", unique = true))
+    private Set<GeoserverLayer> geoserverLayers = Sets.newHashSet();
+    
     /**
      * <p>Construct a new OsirisFile instance with the minimum mandatory (and unique) parameters.</p>
      *

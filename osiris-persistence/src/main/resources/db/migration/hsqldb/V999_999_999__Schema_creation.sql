@@ -234,6 +234,21 @@ CREATE UNIQUE INDEX osiris_files_resto_id_idx
 CREATE INDEX osiris_files_owner_idx
   ON osiris_files (owner);
 
+
+CREATE TABLE osiris_files_relations (
+  id         BIGINT IDENTITY PRIMARY KEY,
+  source_file      BIGINT FOREIGN KEY REFERENCES osiris_files (id) ON DELETE CASCADE,
+  target_file      BIGINT FOREIGN KEY REFERENCES osiris_files (id) ON DELETE CASCADE,
+  type       CHARACTER VARYING(255) CHECK (type IN ('VISUALIZATION_OF'))
+);
+CREATE INDEX osiris_files_relations_source_idx
+  ON osiris_files_relations (source_file);
+CREATE INDEX osiris_files_relations_target_idx
+  ON osiris_files_relations (target_file);
+CREATE UNIQUE INDEX osiris_files_source_target_type_idx
+  ON osiris_files_relations (source_file,target_file,type);
+
+
 CREATE TABLE osiris_databaskets (
   id          BIGINT IDENTITY PRIMARY KEY,
   name        CHARACTER VARYING(255) NOT NULL,
@@ -253,6 +268,28 @@ CREATE TABLE osiris_databasket_files (
 );
 CREATE UNIQUE INDEX osiris_databasket_files_basket_file_idx
   ON osiris_databasket_files (databasket_id, file_id);
+
+CREATE TABLE osiris_geoserver_layers (
+  id          BIGINT IDENTITY PRIMARY KEY,
+  workspace        CHARACTER VARYING(255) NOT NULL,
+  layer CHARACTER VARYING(255) NOT NULL,
+  store CHARACTER VARYING(255),
+  store_type  CHARACTER VARYING(255) NOT NULL CHECK (store_type IN('MOSAIC', 'GEOTIFF', 'POSTGIS')),
+  owner       BIGINT NOT NULL FOREIGN KEY REFERENCES osiris_users (uid)
+);
+
+CREATE INDEX osiris_geoserver_layers_owner_idx
+  ON osiris_geoserver_layers (owner);
+CREATE UNIQUE INDEX osiris_geoserver_layers_workspace_datastore_layer_idx
+  ON osiris_geoserver_layers (workspace, layer);
+
+CREATE TABLE osiris_geoserver_layer_files (
+  geoserver_layer_id BIGINT FOREIGN KEY REFERENCES osiris_geoserver_layers (id),
+  file_id       BIGINT FOREIGN KEY REFERENCES osiris_files (id)
+);
+
+CREATE UNIQUE INDEX osiris_geoserver_layer_files_layer_file_idx
+  ON osiris_geoserver_layer_files (geoserver_layer_id, file_id);
 
 CREATE TABLE osiris_projects (
   id          BIGINT IDENTITY PRIMARY KEY,

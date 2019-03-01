@@ -184,7 +184,7 @@ public class ServiceTemplatesApiIT {
     public void testCreateServiceFromTemplate() throws Exception {
     	OsirisServiceTemplate serviceTemplate = new OsirisServiceTemplate("service-template-1", osirisExpertUser);
     	OsirisServiceDescriptor serviceDescriptor = new OsirisServiceDescriptor();
-    	serviceDescriptor.setDataInputs(Collections.singletonList(new OsirisServiceDescriptor.Parameter("templateInput", "The template input", "Dec", 1, 1, DataNodeType.LITERAL, null, null, null)));
+    	serviceDescriptor.setDataInputs(Collections.singletonList(new OsirisServiceDescriptor.Parameter("templateInput", "The template input", "Dec", 1, 1, DataNodeType.LITERAL, null, null, null, null, null)));
     	serviceDescriptor.setDataOutputs(Collections.emptyList());
     	serviceTemplate.setServiceDescriptor(serviceDescriptor);
         dataService.save(serviceTemplate);
