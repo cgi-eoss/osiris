@@ -6,6 +6,8 @@ import com.cgi.eoss.osiris.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
+
 public interface IncidentsApiCustom {
 
     Page<Incident> findByType(IncidentType type, Pageable pageable);
@@ -15,4 +17,6 @@ public interface IncidentsApiCustom {
     Page<Incident> findByFilterAndOwner(String filter, User user, IncidentType incidentType, Pageable pageable);
 
     Page<Incident> findByFilterAndNotOwner(String filter, User user, IncidentType incidentType, Pageable pageable);
+
+    Page<Incident> findByDateRange(Instant startDate, Instant endDate, Pageable pageable);
 }

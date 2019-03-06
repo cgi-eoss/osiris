@@ -222,6 +222,35 @@ public class IncidentsApiIT {
     }
 
     @Test
+    public void testFindIncidentByDateRange() throws Exception {
+        String urlTemplate = "/api/incidents/search/findByDateRange";
+        String name = "REMOTE_USER";
+        String startDate = "startDate";
+        String endDate = "endDate";
+        // search before date (ignoring the epoch incident)
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().minus(9, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(0));
+        // search after date
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().plus(380, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(400, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(0));
+        // search partially within
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(10, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search fully within
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().plus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(20, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search encompassingly
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(380, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search exactly matching
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.EPOCH.toString()).param(endDate, Instant.EPOCH.plus(1, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search for both of the defined incidents ( both partially within )
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.EPOCH.plus(1, ChronoUnit.HOURS).toString()).param(endDate, Instant.now().plus(20, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+    }
+
+    @Test
     public void testFindIncidentTypeByFilter() throws Exception {
         mockMvc.perform(get("/api/incidentTypes/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
                 .andExpect(status().isOk())

@@ -18,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Getter
 @Component
@@ -59,6 +61,22 @@ public class IncidentsApiImpl extends BaseRepositoryApiImpl<Incident> implements
     @Override
     public Page<Incident> findByFilterAndNotOwner(String filter, User user, IncidentType incidentType, Pageable pageable) {
         return getFilteredResults(getOwnerPath().ne(user).and(getFilterPredicate(filter, incidentType)), pageable);
+    }
+
+    /**
+     * Returns any Incidents that have their active time matched by the search date range.
+     */
+    @Override
+    public Page<Incident> findByDateRange(Instant startDate, Instant endDate, Pageable pageable) {
+        return getFilteredResults(QIncident.incident
+                    .startDate.between(startDate, endDate)
+                .or(QIncident.incident
+                    .endDate.between(startDate, endDate)
+                .or(QIncident.incident
+                    .startDate.before(startDate)
+                    .and(QIncident.incident
+                    .endDate.after(endDate))))
+            , pageable);
     }
 
     private Predicate getFilterPredicate(String filter, IncidentType incidentType) {

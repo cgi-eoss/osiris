@@ -11,5 +11,5 @@ public interface IncidentDataService extends OsirisEntityDataService<Incident> {
     List<Incident> findByOwner(User user);
 
     List<Incident> findByType(IncidentType incidentType);
-	
+
 }

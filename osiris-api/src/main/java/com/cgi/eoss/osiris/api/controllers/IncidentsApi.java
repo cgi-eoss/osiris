@@ -16,6 +16,8 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.Instant;
+
 @RepositoryRestResource(path = "incidents", itemResourceRel = "incident", collectionResourceRel = "incidents", excerptProjection = ShortIncident.class)
 public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiCustom, PagingAndSortingRepository<Incident, Long> {
 
@@ -57,4 +59,9 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
     @RestResource(path = "findByFilterAndNotOwner", rel = "findByFilterAndNotOwner")
     @Query("select t from Incident t where not t.owner=:owner and (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
     Page<Incident> findByFilterAndNotOwner(@Param("filter") String filter, @Param("owner") User user, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
+
+    @Override
+    @RestResource(path = "findByDateRange", rel = "findByDateRange")
+    @Query("select t from Incident t where ((:startDate <= t.startDate AND t.startDate <= :endDate) OR (:startDate <= t.endDate AND t.endDate <= :endDate) OR (t.startDate < :startDate AND :endDate < t.endDate))")
+    Page<Incident> findByDateRange(@Param("startDate") Instant startDate, @Param("endDate") Instant endDate, Pageable pageable);
 }
