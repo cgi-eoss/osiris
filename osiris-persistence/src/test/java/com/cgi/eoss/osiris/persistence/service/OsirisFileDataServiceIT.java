@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -54,7 +55,7 @@ public class OsirisFileDataServiceIT {
         assertThat(dataService.isUniqueAndValid(new OsirisFile(URI.create("osiris://newUri"), osirisFile.getRestoId())), is(false));
         assertThat(dataService.isUniqueAndValid(new OsirisFile(URI.create("osiris://newUri"), UUID.randomUUID())), is(true));
 
-        assertThat(dataService.findByOwner(owner), is(ImmutableList.of(osirisFile, osirisFile2)));
+        assertThat(dataService.findByOwner(owner), containsInAnyOrder(osirisFile, osirisFile2));
         assertThat(dataService.findByOwner(owner2), is(ImmutableList.of()));
         assertThat(dataService.getByRestoId(osirisFile.getRestoId()), is(osirisFile));
         assertThat(dataService.getByRestoId(osirisFile2.getRestoId()), is(osirisFile2));

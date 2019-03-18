@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -69,13 +70,13 @@ public class DatabasketDataServiceIT {
         assertThat(dataService.isUniqueAndValid(new Databasket("Test Databasket3", owner)), is(true));
         assertThat(dataService.isUniqueAndValid(new Databasket("Test Databasket", owner2)), is(true));
 
-        assertThat(dataService.search("databasket"), is(ImmutableList.of(databasket, databasket2)));
+        assertThat(dataService.search("databasket"), containsInAnyOrder(databasket, databasket2));
         assertThat(dataService.search("databasket2"), is(ImmutableList.of(databasket2)));
         assertThat(dataService.getByNameAndOwner("Test Databasket", owner), is(databasket));
-        assertThat(dataService.findByOwner(owner), is(ImmutableList.of(databasket, databasket2)));
+        assertThat(dataService.findByOwner(owner), containsInAnyOrder(databasket2, databasket));
         assertThat(dataService.findByOwner(owner2), is(ImmutableList.of()));
         assertThat(dataService.findByFile(osirisFile), is(ImmutableList.of(databasket)));
-        assertThat(dataService.findByFile(osirisFile2), is(ImmutableList.of(databasket, databasket2)));
+        assertThat(dataService.findByFile(osirisFile2), containsInAnyOrder(databasket, databasket2));
     }
 
 }

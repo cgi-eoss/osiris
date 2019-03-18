@@ -14,6 +14,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -53,7 +54,7 @@ public class GroupDataServiceIT {
 
         assertThat(dataService.search("group"), is(ImmutableList.of(group, group2)));
         assertThat(dataService.search("group2"), is(ImmutableList.of(group2)));
-        assertThat(dataService.findByOwner(owner), is(ImmutableList.of(group, group2)));
+        assertThat(dataService.findByOwner(owner), containsInAnyOrder(group, group2));
         assertThat(dataService.findByOwner(owner2), is(ImmutableList.of()));
         assertThat(dataService.findGroupMemberships(owner), is(ImmutableList.of(group)));
         assertThat(dataService.findGroupMemberships(owner2), is(ImmutableList.of(group, group2)));
