@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,24 +47,25 @@ import org.springframework.stereotype.Component;
 import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec;
 import com.cgi.eoss.osiris.catalogue.util.GeoUtil;
-import com.cgi.eoss.osiris.costing.CostingService;
 import com.cgi.eoss.osiris.logging.Logging;
 import com.cgi.eoss.osiris.model.OsirisFile;
+import com.cgi.eoss.osiris.model.OsirisFilesRelation;
+import com.cgi.eoss.osiris.model.OsirisFilesRelation.Type;
 import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.OsirisServiceDescriptor;
 import com.cgi.eoss.osiris.model.Job;
 import com.cgi.eoss.osiris.model.JobStep;
 import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Relation;
 import com.cgi.eoss.osiris.model.Job.Status;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata;
 import com.cgi.eoss.osiris.model.internal.RetrievedOutputFile;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata.OutputFileMetadataBuilder;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata.OutputProductMetadataBuilder;
-import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
+import com.cgi.eoss.osiris.model.internal.ParameterRelationTypeToFileRelationTypeUtil;
 import com.cgi.eoss.osiris.persistence.service.JobDataService;
-import com.cgi.eoss.osiris.persistence.service.ServiceDataService;
-import com.cgi.eoss.osiris.persistence.service.UserMountDataService;
+import com.cgi.eoss.osiris.persistence.service.OsirisFilesRelationDataService;
 import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
 import com.cgi.eoss.osiris.rpc.FileStream;
 import com.cgi.eoss.osiris.rpc.FileStreamClient;
@@ -84,6 +86,7 @@ import com.cgi.eoss.osiris.rpc.worker.PortBinding;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
@@ -110,19 +113,23 @@ public class OsirisJobUpdatesManager {
     private final CachingWorkerFactory workerFactory;
     private final CatalogueService catalogueService;
     private final OsirisSecurityService securityService;
+    private final OsirisFilesRelationDataService fileRelationDataService;
+    
 	 @Autowired
 	    public OsirisJobUpdatesManager(JobDataService jobDataService, 
 	    		DynamicProxyService dynamicProxyService, 
 	    		OsirisGuiServiceManager guiService, 
 	    		CachingWorkerFactory workerFactory,
 	    		CatalogueService catalogueService,
-	    		OsirisSecurityService securityService) {
+	    		OsirisSecurityService securityService,
+	    		OsirisFilesRelationDataService fileRelationDataService) {
 	        this.jobDataService = jobDataService;
 	        this.dynamicProxyService = dynamicProxyService;
 	        this.guiService = guiService;
 	        this.workerFactory = workerFactory;
 	        this.catalogueService = catalogueService;
 	        this.securityService = securityService;
+	        this.fileRelationDataService = fileRelationDataService;
 	    }
 
     @JmsListener(destination = OsirisQueueService.jobUpdatesQueueName)
@@ -393,49 +400,41 @@ public class OsirisJobUpdatesManager {
                     @Override
                     public void onCompleted() {
                         super.onCompleted();
-                        Pair<OffsetDateTime, OffsetDateTime> startEndDateTimes = getStartEndDateTimes(outputId);
+                        Pair<OffsetDateTime, OffsetDateTime> startEndDateTimes = getServiceOutputParameter(job.getConfig().getService(), outputId).map(this::extractStartEndDateTimes)
+                                        .orElseGet(() -> new Pair<>(null, null));
                         outputFileMetadata.setStartDateTime(startEndDateTimes.getFirst());
                         outputFileMetadata.setEndDateTime(startEndDateTimes.getSecond());
                         retrievedOutputFiles.add(new RetrievedOutputFile(outputFileMetadata, getOutputPath()));
                     }
 
-					private Pair<OffsetDateTime, OffsetDateTime> getStartEndDateTimes(String outputId) {
+					private Pair<OffsetDateTime, OffsetDateTime> extractStartEndDateTimes(Parameter outputParameter) {
 						try {
-	                        //Retrieve the parameter 
-	                        Optional<Parameter> outputParameter = getServiceOutputParameter(outputId);
-	                        if (outputParameter.isPresent()) {
-		                        String regexp = outputParameter.get().getTimeRegexp();
-		                        if (regexp != null) {
-		                        	Pattern p = Pattern.compile(regexp);
-		                        	Matcher m = p.matcher(getOutputPath().getFileName().toString());
-		                        	if (m.find()) {
-		                        		if (regexp.contains("?<startEnd>")) {
-		                        			OffsetDateTime startEndDateTime = parseOffsetDateTime(m.group("startEnd"), LocalTime.MIDNIGHT);
-		                        			return new Pair<OffsetDateTime, OffsetDateTime>(startEndDateTime, startEndDateTime);
-		                        		}
-		                        		else {
-		                        			OffsetDateTime start = null, end = null;
-		                        			if (regexp.contains("?<start>")) {
-		                            			start = parseOffsetDateTime(m.group("start"), LocalTime.MIDNIGHT);
-		                            		}
-		                        			
-		                        			if (regexp.contains("?<end>")) {
-		                            			end = parseOffsetDateTime(m.group("end"), LocalTime.MIDNIGHT);
-		                            		}
-		                        			return new Pair<OffsetDateTime, OffsetDateTime>(start, end);
-		                        		}
-		                            }
-		                        }
+                            String regexp = outputParameter.getTimeRegexp();
+	                        if (regexp != null) {
+	                        	Pattern p = Pattern.compile(regexp);
+	                        	Matcher m = p.matcher(getOutputPath().getFileName().toString());
+	                        	if (m.find()) {
+	                        		if (regexp.contains("?<startEnd>")) {
+	                        			OffsetDateTime startEndDateTime = parseOffsetDateTime(m.group("startEnd"), LocalTime.MIDNIGHT);
+	                        			return new Pair<OffsetDateTime, OffsetDateTime>(startEndDateTime, startEndDateTime);
+	                        		}
+	                        		else {
+	                        			OffsetDateTime start = null, end = null;
+	                        			if (regexp.contains("?<start>")) {
+	                            			start = parseOffsetDateTime(m.group("start"), LocalTime.MIDNIGHT);
+	                            		}
+	                        			
+	                        			if (regexp.contains("?<end>")) {
+	                            			end = parseOffsetDateTime(m.group("end"), LocalTime.MIDNIGHT);
+	                            		}
+	                        			return new Pair<OffsetDateTime, OffsetDateTime>(start, end);
+	                        		}
+	                            }
 	                        }
-                        }
-                        catch(RuntimeException e) {
+                        } catch(RuntimeException e) {
                         	LOG.error("Unable to parse date from regexp");
                         }
 						return new Pair<OffsetDateTime, OffsetDateTime> (null, null);
-					}
-
-					private Optional<Parameter> getServiceOutputParameter(String outputId) {
-						return job.getConfig().getService().getServiceDescriptor().getDataOutputs().stream().filter(p -> p.getId().equals(outputId)).findFirst();
 					}
 					
 					private OffsetDateTime parseOffsetDateTime(String startDateStr, LocalTime defaultTime) {
@@ -458,13 +457,37 @@ public class OsirisJobUpdatesManager {
                 }
             }
         }
+        
         postProcessOutputProducts(retrievedOutputFiles).forEach( Unchecked.consumer(retrievedOutputFile -> outputFiles.put(retrievedOutputFile.getOutputFileMetadata().getOutputProductMetadata().getOutputId(), catalogueService.ingestOutputProduct(retrievedOutputFile.getOutputFileMetadata(), retrievedOutputFile.getPath()))));
+        buildOutputFileRelations(outputFiles, job.getConfig().getService());
+        
         return outputFiles;
     }
     
+    private Optional<Parameter> getServiceOutputParameter(OsirisService service, String outputId) {
+		return service.getServiceDescriptor().getDataOutputs().stream().filter(p -> p.getId().equals(outputId)).findFirst();
+	}
     
 
-    private OutputProductMetadata getOutputMetadata(Job job, Map<String, GeoServerSpec> geoServerSpecs,
+    private void buildOutputFileRelations(Multimap<String, OsirisFile> outputFiles, OsirisService service) {
+		for ( Parameter output: service.getServiceDescriptor().getDataOutputs()) {
+			if (output.getParameterRelations() != null){
+				for (Relation parameterRelation: output.getParameterRelations()) {
+					Collection<OsirisFile> filesForSourceOutput = outputFiles.get(output.getId());
+					Collection<OsirisFile> filesForTargetOutput = outputFiles.get(parameterRelation.getTargetParameterId());
+					for (OsirisFile sourceFile: filesForSourceOutput) {
+						for (OsirisFile targetFile: filesForTargetOutput) {
+							Type relationType = ParameterRelationTypeToFileRelationTypeUtil.fromParameterRelationType(parameterRelation.getType());
+							OsirisFilesRelation relation = new OsirisFilesRelation(sourceFile, targetFile, relationType);
+							fileRelationDataService.save(relation);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private OutputProductMetadata getOutputMetadata(Job job, Map<String, GeoServerSpec> geoServerSpecs,
             Map<String, String> collectionSpecs, String outputId) {
         OutputProductMetadataBuilder outputProductMetadataBuilder = OutputProductMetadata.builder()
                 .owner(job.getOwner())
@@ -492,10 +515,17 @@ public class OsirisJobUpdatesManager {
             properties.put("collection", collectionSpecForOutput);
         }
         
-
+        getServiceOutputParameter(job.getConfig().getService(), outputId).ifPresent(p -> addPlatformMetadata(properties, p));
+        
         OutputProductMetadata outputProduct = outputProductMetadataBuilder.productProperties(properties).build();
         return outputProduct;
     }
+	
+	private void addPlatformMetadata(Map<String, Object> properties, Parameter outputParameter) {
+	    if (outputParameter.getPlatformMetadata() != null && outputParameter.getPlatformMetadata().size() > 0 ) {
+	        properties.put("extraParams", outputParameter.getPlatformMetadata());
+        }
+	}
 
         
     private List<RetrievedOutputFile> postProcessOutputProducts(List<RetrievedOutputFile> retrievedOutputFiles) throws IOException {
