@@ -8,11 +8,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.io.Serializable;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -24,11 +30,19 @@ import org.geotools.coverage.grid.io.GridFormatFinder;
 import org.geotools.coverage.grid.io.UnknownFormat;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
+import org.geotools.data.DefaultTransaction;
+import org.geotools.data.Transaction;
 import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.factory.Hints;
+import org.geotools.feature.AttributeTypeBuilder;
+import org.geotools.feature.DefaultFeatureCollection;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.geom.GeometryJSON;
 import org.geotools.geometry.GeometryBuilder;
 import org.geotools.geometry.jts.JTS;
@@ -37,6 +51,7 @@ import org.geotools.geometry.text.WKTParser;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.geometry.coordinate.LineString;
 import org.opengis.geometry.coordinate.PointArray;
@@ -403,4 +418,113 @@ public class GeoUtil {
 
         throw new UnsupportedOperationException("Could not extract CRS from " + file.toString());
     }
+	
+	public static Path duplicateShapeFile(Path shapeFile, String newName, Map<String, Object> newAttributes, boolean zipResult) throws IOException {
+	    Path targetFolder = Files.createTempDirectory("target");
+	    Path targetShapeFilePath = targetFolder.resolve(newName + ".shp");
+	    if (isZip(shapeFile)) {
+	        Path tmpFolder = Files.createTempDirectory("shape");
+	        Path temp = unzipInTempFolder(shapeFile, tmpFolder);
+	        Optional<Path> shapeFileInFolder = Files.find(temp, 5, (path, attr) -> FilenameUtils.getExtension(path.getFileName().toString()).equalsIgnoreCase("shp")).findFirst();
+	        if (shapeFileInFolder.isPresent()) {
+	            duplicateShapeFile(shapeFileInFolder.get(), targetShapeFilePath, newAttributes);
+	        }
+	        else {
+	            throw new IOException("Shapefile not found");
+	        }
+        }
+	    else {
+	        duplicateShapeFile(shapeFile, targetShapeFilePath, newAttributes);
+	    }
+       
+	    if (zipResult) {
+	        File[] files = targetShapeFilePath.getParent().toFile().listFiles();
+	        File zipFile = new File(targetShapeFilePath.getParent().toFile(), targetFolder.getFileName() + ".zip");
+            FileOutputStream fos = new FileOutputStream(zipFile);
+            ZipOutputStream zos = new ZipOutputStream(fos);
+            for (final File f : files) {
+                try {
+                    ZipEntry zipEntry = new ZipEntry(f.getName());
+                    zos.putNextEntry(zipEntry);
+                    byte[] bytes = new byte[1024];
+                    int length;
+                    FileInputStream fis = new FileInputStream(f);
+                    while ((length = fis.read(bytes)) >= 0) {
+                        zos.write(bytes, 0, length);
+                    }
+                    zos.closeEntry();
+                    fis.close();
+                } catch (Exception e) {
+                    // TODO: handle exception
+                    e.printStackTrace();
+                }
+            }
+            zos.close();
+            fos.close();
+            return zipFile.toPath();
+	    }
+	    else {
+	        return targetShapeFilePath;
+	    }
+    }
+	
+	public static void duplicateShapeFile(Path shapeFile, Path newShapeFile, Map<String, Object> newAttributes) throws IOException {
+        ShapefileDataStore sourceStore = new ShapefileDataStore(shapeFile.toUri().toURL());
+        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        params.put("url", newShapeFile.toUri().toURL());
+        params.put("create spatial index", Boolean.FALSE);
+        ShapefileDataStore targetStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+        targetStore.setFidIndexed(false);
+        //FeatureStore featureStore = (FeatureStore) targetStore.getFeatureSource();
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        builder.init(sourceStore.getSchema());
+        for (Entry<String, Object> newAttribute: newAttributes.entrySet()) {
+            if (newAttribute.getValue() instanceof UUID) {
+                AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
+                attributeBuilder.setNillable(true);
+                attributeBuilder.setBinding(String.class);
+                attributeBuilder.setLength(36);
+                builder.add(attributeBuilder.buildDescriptor( newAttribute.getKey()));
+            }
+            else {
+                builder.add(newAttribute.getKey(), newAttribute.getValue().getClass());
+            }
+        }
+        SimpleFeatureType targetFeatureType = builder.buildFeatureType();
+        targetStore.createSchema(targetFeatureType);
+        SimpleFeatureIterator sourceFeatures = sourceStore.getFeatureSource().getFeatures().features();
+        DefaultFeatureCollection targetCollection = new DefaultFeatureCollection(null,null);
+        while (sourceFeatures.hasNext()) {
+            SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(targetFeatureType);
+            featureBuilder.init(sourceFeatures.next());
+            for (Entry<String, Object> newAttribute: newAttributes.entrySet()) {
+                featureBuilder.set(newAttribute.getKey(), newAttribute.getValue());
+            }
+            targetCollection.add(featureBuilder.buildFeature(null));
+        }
+        sourceFeatures.close();
+        sourceStore.dispose();
+        String typeName = targetStore.getTypeNames()[0];
+        SimpleFeatureSource featureSource = targetStore.getFeatureSource(typeName);
+        if (featureSource instanceof SimpleFeatureStore) {
+            Transaction transaction = new DefaultTransaction("create");
+            SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+            featureStore.setTransaction(transaction);
+            try {
+                featureStore.addFeatures(targetCollection);
+                transaction.commit();
+
+            } catch (Exception problem) {
+                transaction.rollback();
+                throw new IOException();
+
+            } finally {
+                transaction.close();
+            }
+        } else {
+            throw new IOException(typeName + " does not support read/write access");
+        }
+    }
 }
+

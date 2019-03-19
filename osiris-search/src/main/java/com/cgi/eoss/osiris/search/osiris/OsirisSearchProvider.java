@@ -81,6 +81,7 @@ public class OsirisSearchProvider extends RestoSearchProvider {
         parameters.getValue("jobDateEnd").ifPresent(s -> queryParameters.put("jobEndDate", s));
         parameters.getValue("publicationDateStart").ifPresent(s -> queryParameters.put("publishedAfter", s));
         parameters.getValue("publicationDateEnd").ifPresent(s -> queryParameters.put("publishedBefore", s));
+        parameters.getValue("osirisparam").ifPresent(s -> queryParameters.put("osirisparam", s));
         return queryParameters;
     }
 
@@ -154,10 +155,9 @@ public class OsirisSearchProvider extends RestoSearchProvider {
                         parameters.getRequestUrl().queryParameterNames().forEach(downloadUrlBuilder::removeAllQueryParameters);
                         downloadUrlBuilder.addPathSegment("dl").addPathSegment("osiris").addPathSegment(String.valueOf(osirisFile.getId()));
                         featureLinks.add(new Link(downloadUrlBuilder.build().toString(), "download"));
-
-                        HttpUrl wmsLink = catalogueService.getWmsUrl(osirisFile.getType(), osirisFile.getUri());
-                        if (wmsLink != null) {
-                            featureLinks.add(new Link(wmsLink.toString(), "wms"));
+                        Set<Link> ogcLinks = catalogueService.getOGCLinks(osirisFile);
+                        if (ogcLinks != null) {
+                            featureLinks.addAll(ogcLinks);
                         }
                     }
                 } else {

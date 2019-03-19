@@ -22,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.hateoas.Link;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -29,6 +30,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.endsWith;
@@ -124,7 +127,7 @@ public class OsirisFilesApiIT {
 
     @Test
     public void testGetWithProjection() throws Exception {
-        when(catalogueService.getWmsUrl(testFile1.getType(), testFile1.getUri())).thenReturn(HttpUrl.parse("http://example.com/wms"));
+        when(catalogueService.getOGCLinks(testFile1)).thenReturn(new HashSet<>(Collections.singletonList(new Link("http://example.com/wms", "wms"))));
 
         mockMvc.perform(get("/api/osirisFiles/" + testFile1.getId() + "?projection=detailedOsirisFile").header("REMOTE_USER", osirisAdmin.getName()))
                 .andExpect(status().isOk())

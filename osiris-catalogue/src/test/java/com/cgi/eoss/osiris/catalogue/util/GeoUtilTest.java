@@ -1,19 +1,28 @@
 package com.cgi.eoss.osiris.catalogue.util;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.apache.commons.io.FilenameUtils;
 import org.geojson.LngLatAlt;
 import org.geojson.Point;
 import org.geojson.Polygon;
 import org.junit.Before;
 import org.junit.Test;
-
-
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 /**
  */
 public class GeoUtilTest {
@@ -21,12 +30,15 @@ public class GeoUtilTest {
     private Path shapefileDurango;
     private Path shapefileChiapas;
     private Path geotiffDurango;
+	private Path shapefilePolygon;
 	
     @Before
     public void setUp() throws URISyntaxException {
         shapefileDurango = Paths.get(getClass().getResource("/DurangoRef/OSIRISsampleDurangoLandCoverRefPolygons.shp").toURI());
         shapefileChiapas = Paths.get(getClass().getResource("/OSIRISchiapasLandCover/OSIRISchiapasLandCover.shp").toURI());
         geotiffDurango = Paths.get(getClass().getResource("/subset_0_of_S2A_OPER_MTD_SAFL1C_PDMC_20160521T232007_R055_V20160521T174723_20160521T174723_resampled_RGB.tif").toURI());
+        shapefilePolygon = Paths.get(getClass().getResource("/POLYGON.zip").toURI());
+        
     }
     
     @Test
@@ -133,5 +145,21 @@ public class GeoUtilTest {
         String epsg = GeoUtil.extractEpsg(geotiffDurango);
         assertThat(epsg, is("EPSG:32612"));
     }
+  
+    
+    @Test
+    public void testDuplicateShapefileAddAttribute() throws Exception {
+        Map<String, Object> newAttributes = new HashMap<>();
+        newAttributes.put("newAttribute", 200);
+        Path duplicateFile = GeoUtil.duplicateShapeFile(shapefilePolygon, "test", newAttributes, true);
+        try (ZipFile zipFile = new ZipFile(shapefilePolygon.toFile()); ZipFile newZipFile = new ZipFile(duplicateFile.toFile())) {
+            ArrayList<? extends ZipEntry> originalZipEntries = Collections.list(zipFile.entries());
+            ArrayList<? extends ZipEntry> newZipEntries = Collections.list(newZipFile.entries());
+            Map<String, ZipEntry> originalZipEntriesMap = originalZipEntries.stream().collect(Collectors.toMap(z -> z.getName(), z-> z));
+            Map<String, ZipEntry> newZipEntriesMap = newZipEntries.stream().collect(Collectors.toMap(z -> z.getName(), z-> z));
+            assertThat(newZipEntriesMap.size(), is (originalZipEntriesMap.size()));
+        }
+    }
+    
 
 }

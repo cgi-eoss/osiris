@@ -9,11 +9,13 @@ import com.cgi.eoss.osiris.model.internal.ReferenceDataMetadata;
 import okhttp3.HttpUrl;
 import org.geojson.GeoJsonObject;
 import org.springframework.core.io.Resource;
+import org.springframework.hateoas.Link;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Set;
 
 /**
  * <p>Centralised access to the OSIRIS catalogues of reference data, output products, and external product
@@ -84,13 +86,12 @@ public interface CatalogueService {
     void delete(OsirisFile file) throws IOException;
 
     /**
-     * <p>Generate an appropriate WMS URL for the given file.</p>
+     * <p>Generate appropriate OGC links for the given file.</p>
      *
-     * @param type
-     * @param uri
+     * @param osirisFile
      * @return
      */
-    HttpUrl getWmsUrl(OsirisFile.Type type, URI uri);
+    Set<Link> getOGCLinks(OsirisFile osirisFile);
 
     /**
      * <p>Determine whether the given user has read access to the object represented by the given URI ({@link

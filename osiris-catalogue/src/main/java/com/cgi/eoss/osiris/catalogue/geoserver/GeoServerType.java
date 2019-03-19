@@ -3,5 +3,6 @@ package com.cgi.eoss.osiris.catalogue.geoserver;
 public enum GeoServerType {
 
     SINGLE_COVERAGE,
-    MOSAIC
+    MOSAIC,
+    SHAPEFILE_POSTGIS_IMPORT
 }

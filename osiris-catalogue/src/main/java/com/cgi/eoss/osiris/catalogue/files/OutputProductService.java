@@ -1,14 +1,17 @@
 package com.cgi.eoss.osiris.catalogue.files;
 
-import com.cgi.eoss.osiris.catalogue.OsirisFileService;
-import com.cgi.eoss.osiris.model.Collection;
-import com.cgi.eoss.osiris.model.OsirisFile;
-import com.cgi.eoss.osiris.model.User;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Map;
-import okhttp3.HttpUrl;
+import java.util.Set;
+
+import org.springframework.hateoas.Link;
+
+import com.cgi.eoss.osiris.catalogue.OsirisFileService;
+import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.OsirisFile;
+import com.cgi.eoss.osiris.model.User;
 
 public interface OutputProductService extends OsirisFileService {
     
@@ -22,8 +25,9 @@ public interface OutputProductService extends OsirisFileService {
     boolean deleteCollection(Collection collection);
 
     Path provision(String jobId, String filename) throws IOException;
+    
+	Set<Link> getOGCLinks(OsirisFile osirisFile);
 
-    HttpUrl getWmsUrl(String jobId, String filename);
 
 
 }

@@ -4,6 +4,7 @@ import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.model.OsirisFile;
 import com.cgi.eoss.osiris.model.projections.DetailedOsirisFile;
 import com.cgi.eoss.osiris.model.projections.ShortOsirisFile;
+import com.cgi.eoss.osiris.persistence.service.OsirisFileDataService;
 import lombok.RequiredArgsConstructor;
 import okhttp3.HttpUrl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.hateoas.ResourceProcessor;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * <p>HATEOAS resource processor for {@link OsirisFile}s. Adds extra _link entries for client use, e.g. file download.</p>
@@ -25,7 +28,8 @@ public class OsirisFileResourceProcessor extends BaseResourceProcessor<OsirisFil
 
     private final RepositoryEntityLinks entityLinks;
     private final CatalogueService catalogueService;
-
+    private final OsirisFileDataService osirisFileDataService;
+    
     @Override
     protected EntityLinks getEntityLinks() {
         return entityLinks;
@@ -44,11 +48,15 @@ public class OsirisFileResourceProcessor extends BaseResourceProcessor<OsirisFil
         }
     }
 
-    private void addWmsLink(Resource resource, OsirisFile.Type type, URI uri) {
-        HttpUrl wmsLink = catalogueService.getWmsUrl(type, uri);
-        if (wmsLink != null) {
-            resource.add(new Link(wmsLink.toString()).withRel("wms"));
+    private void addOGCLinks(Resource resource, OsirisFile file) {
+    	Set<Link> ogcLinks = catalogueService.getOGCLinks(file);
+        if (ogcLinks != null) {
+            resource.add(ogcLinks);
         }
+    }
+    
+    private void addOGCLinks(Resource resource, UUID restoId) {
+        addOGCLinks(resource, osirisFileDataService.getByRestoId(restoId));
     }
 
     private void addOsirisLink(Resource resource, URI osirisFileUri) {
@@ -63,7 +71,7 @@ public class OsirisFileResourceProcessor extends BaseResourceProcessor<OsirisFil
 
             addSelfLink(resource, entity);
             addDownloadLink(resource, entity.getType());
-            addWmsLink(resource, entity.getType(), entity.getUri());
+            addOGCLinks(resource, entity);
             addOsirisLink(resource, entity.getUri());
 
             return resource;
@@ -78,7 +86,7 @@ public class OsirisFileResourceProcessor extends BaseResourceProcessor<OsirisFil
 
             addSelfLink(resource, entity);
             addDownloadLink(resource, entity.getType());
-            addWmsLink(resource, entity.getType(), entity.getUri());
+            addOGCLinks(resource, entity.getRestoId());
             addOsirisLink(resource, entity.getUri());
 
             return resource;
