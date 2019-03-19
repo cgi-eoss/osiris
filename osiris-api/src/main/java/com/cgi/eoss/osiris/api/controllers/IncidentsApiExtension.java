@@ -1,23 +1,10 @@
 package com.cgi.eoss.osiris.api.controllers;
 
-import com.cgi.eoss.osiris.model.Collection;
-import com.cgi.eoss.osiris.model.Incident;
-import com.cgi.eoss.osiris.model.IncidentProcessing;
-import com.cgi.eoss.osiris.model.Job;
-import com.cgi.eoss.osiris.model.OsirisServiceDescriptor;
-import com.cgi.eoss.osiris.persistence.service.CollectionDataService;
-import com.cgi.eoss.osiris.persistence.service.IncidentProcessingDataService;
-import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
-import com.cgi.eoss.osiris.rpc.GrpcUtil;
-import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
-import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
-import com.cgi.eoss.osiris.security.OsirisSecurityService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import lombok.extern.log4j.Log4j2;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.BasePathAwareController;
 import org.springframework.data.rest.webmvc.RepositoryRestController;
@@ -30,10 +17,31 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec;
+import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerType;
+import com.cgi.eoss.osiris.catalogue.geoserver.GeoserverService;
+import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.Incident;
+import com.cgi.eoss.osiris.model.IncidentProcessing;
+import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.OsirisService;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter;
+import com.cgi.eoss.osiris.model.internal.InternalModelUtils;
+import com.cgi.eoss.osiris.persistence.service.CollectionDataService;
+import com.cgi.eoss.osiris.persistence.service.IncidentProcessingDataService;
+import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
+import com.cgi.eoss.osiris.rpc.GrpcUtil;
+import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
+import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
+import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+
+import lombok.extern.log4j.Log4j2;
 
 /**
  * <p>A {@link RepositoryRestController} for interacting with {@link Incident}s. Offers additional functionality over
@@ -46,21 +54,24 @@ import java.util.stream.Collectors;
 public class IncidentsApiExtension {
 
     private static final String COLLECTION_INPUT = "collection";
+    private static final String GEOSERVER_INPUT = "geoServerSpec";
 
     private final OsirisSecurityService osirisSecurityService;
     private final LocalServiceLauncher localServiceLauncher;
     private final SystematicProcessingDataService systematicProcessingDataService;
     private final CollectionDataService collectionDataService;
     private final IncidentProcessingDataService incidentProcessingDataService;
+    private final GeoserverService geoserverService; 
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public IncidentsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, SystematicProcessingDataService systematicProcessingDataService, CollectionDataService collectionDataService, IncidentProcessingDataService incidentProcessingDataService, ObjectMapper objectMapper) {
+    public IncidentsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, SystematicProcessingDataService systematicProcessingDataService, CollectionDataService collectionDataService, IncidentProcessingDataService incidentProcessingDataService, ObjectMapper objectMapper, GeoserverService geoserverService) {
         this.osirisSecurityService = osirisSecurityService;
         this.localServiceLauncher = localServiceLauncher;
         this.systematicProcessingDataService = systematicProcessingDataService;
         this.collectionDataService = collectionDataService;
         this.incidentProcessingDataService = incidentProcessingDataService;
+        this.geoserverService = geoserverService;
         this.objectMapper = objectMapper;
     }
 
@@ -97,7 +108,7 @@ public class IncidentsApiExtension {
         collection.setIdentifier("osiris" + UUID.randomUUID().toString().replaceAll("-", ""));
         collectionDataService.save(collection);
         incidentProcessing.setCollection(collection);
-
+        
         // Associate all outputs of this processing with the newly-created collection
         Map<String, String> outputCollectionsMap = incidentProcessing.getTemplate().getService().getServiceDescriptor().getDataOutputs().stream()
                 .map(OsirisServiceDescriptor.Parameter::getId)
@@ -105,6 +116,12 @@ public class IncidentsApiExtension {
 
         inputs.put(COLLECTION_INPUT, objectMapper.writeValueAsString(outputCollectionsMap));
 
+        Map<String, Object> geoserverSpecMap = incidentProcessing.getTemplate().getService().getServiceDescriptor().getDataOutputs().stream()
+        		.filter(p-> isGeoserverIngestible(p))
+                .collect(Collectors.toMap(OsirisServiceDescriptor.Parameter::getId, p-> prepareGeoserverForOutput(incidentProcessing, incidentProcessing.getTemplate().getService(), p)));
+
+        inputs.put(GEOSERVER_INPUT, objectMapper.writeValueAsString(geoserverSpecMap));
+        
         SystematicProcessingRequest.Builder grpcRequestBuilder = SystematicProcessingRequest.newBuilder()
                 .setUserId(osirisSecurityService.getCurrentUser().getName())
                 .setServiceId(incidentProcessing.getTemplate().getService().getName())
@@ -119,7 +136,52 @@ public class IncidentsApiExtension {
         incidentProcessingDataService.save(incidentProcessing);
     }
 
-    private Multimap<String, String> mergeReplace(Multimap<String, String> initialMap, Multimap<String, String> replacingMap) {
+   
+
+	private boolean isGeoserverIngestible(Parameter p) {
+		if (p.getPlatformMetadata() != null && p.getPlatformMetadata().containsKey("format")) {
+				switch(p.getPlatformMetadata().get("format")) {
+				case "GEOTIFF": return true;
+				case "SHAPEFILE" : return true;
+				default: return false;
+			}
+		}
+		return false;
+	}
+
+	private GeoServerSpec prepareGeoserverForOutput(IncidentProcessing incidentProcessing, OsirisService s, Parameter p) {
+		switch(p.getPlatformMetadata().get("format")) {
+		case "GEOTIFF": 
+			return prepareGeoserverMosaic(incidentProcessing, s, p);
+		case "SHAPEFILE" : 
+			return getShapefileSpec(incidentProcessing, s, p);
+		default:
+			throw new IllegalArgumentException("Unrecognized format for parameter " + p.getTitle());
+		}
+		
+	}
+
+	private GeoServerSpec getShapefileSpec(IncidentProcessing incidentProcessing, OsirisService s, Parameter p) {
+		return GeoServerSpec.builder()
+				.geoserverType(GeoServerType.SHAPEFILE_POSTGIS_IMPORT)
+				.layerName("incident1"+ incidentProcessing.getIncident().getId() + "_processing" + incidentProcessing.getId())
+			    .build();
+	}
+
+	private GeoServerSpec prepareGeoserverMosaic(IncidentProcessing incidentProcessing, OsirisService s, Parameter p) {
+		String workspace = "incident" + incidentProcessing.getIncident().getId();
+		String storeName = "processing" + incidentProcessing.getId();
+		geoserverService.createEmptyMosaic(workspace, storeName, p.getTitle(), InternalModelUtils.platformTimeRegexpToGeoserverTimeRegexp(p.getTimeRegexp()));
+		return GeoServerSpec.builder()
+				.geoserverType(GeoServerType.MOSAIC)
+				.workspace(workspace)
+			    .datastoreName(storeName)
+			    .coverageName(p.getId())
+			    .build();
+	}
+		
+
+	private Multimap<String, String> mergeReplace(Multimap<String, String> initialMap, Multimap<String, String> replacingMap) {
         ListMultimap<String, String> replacedMap = ArrayListMultimap.create(initialMap);
         for (String key : replacingMap.keys()) {
             replacedMap.replaceValues(key, replacingMap.get(key));
