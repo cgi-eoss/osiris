@@ -62,6 +62,7 @@ public class JpaSystematicProcessingDataService extends AbstractJpaDataService<S
     public SystematicProcessing buildNew(String extId, String userId, String serviceId, String jobConfigLabel, String systematicParameter,
                                          Multimap<String, String> inputs, ListMultimap<String, String> searchParameters, LocalDateTime lastUpdated) {
         Job parentJob = jobDataService.buildNew(extId, userId, serviceId, jobConfigLabel, inputs, systematicParameter);
+        parentJob.setParent(true);
         return dao.save(new SystematicProcessing(userDataService.getByName(userId), parentJob, searchParameters, lastUpdated));
     }
 }

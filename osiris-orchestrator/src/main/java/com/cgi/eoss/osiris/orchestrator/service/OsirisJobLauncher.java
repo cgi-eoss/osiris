@@ -144,11 +144,6 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
             if (!Strings.isNullOrEmpty(parentId)) {
                 //this is a request to attach a subjob to an existing parent
                 job = jobDataService.reload(Long.valueOf(parentId));
-                OsirisService service = job.getConfig().getService();
-                if (service.getType() != OsirisService.Type.PARALLEL_PROCESSOR) {
-                    throw new ServiceExecutionException(
-                            "Trying to attach a new subjob to a non parallel job");
-                }
             }
            
             else {
@@ -212,27 +207,11 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 
             } 
             else {
-                checkCost(job.getOwner(), job.getConfig());
-                if (!checkInputs(job.getOwner(), rpcInputs)) {
-                    try (CloseableThreadContext.Instance userCtc = Logging.userLoggingContext()) {
-                        LOG.error("User {} does not have read access to all requested inputs",
-                                userId);
-                    }
-                    throw new ServiceExecutionException(
-                            "User does not have read access to all requested inputs");
+                if (!Strings.isNullOrEmpty(parentId)) {
+                    Job subJob = jobDataService.buildNew(zooId, userId, serviceId, jobConfigLabel, inputs, job);
+                    submitSingleJob(userId, rpcInputs, subJob, GrpcUtil.toRpcJob(subJob));
                 }
-              //TODO: Check that the user can use the geoserver spec
-                if (!checkAccessToOutputCollection(job.getOwner(), rpcInputs)) {
-                    try (CloseableThreadContext.Instance userCtc = Logging.userLoggingContext()) {
-                        LOG.error("User {} does not have read access to all requested output collections",
-                                userId);
-                    }
-                    throw new ServiceExecutionException(
-                            "User does not have read access to all requested output collections");
-                }
-                
-                chargeUser(job.getOwner(), job);
-                submitJob(job, rpcJob, rpcInputs, SINGLE_JOB_PRIORITY);
+                submitSingleJob(userId, rpcInputs, job, rpcJob);
             }
 
         } catch (Exception e) {
@@ -244,6 +223,30 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
             responseObserver.onError(new StatusRuntimeException(
                     io.grpc.Status.fromCode(io.grpc.Status.Code.ABORTED).withCause(e)));
         }
+    }
+
+    private void submitSingleJob(String userId, List<JobParam> rpcInputs, Job job, com.cgi.eoss.osiris.rpc.Job rpcJob) throws IOException {
+        checkCost(job.getOwner(), job.getConfig());
+        if (!checkInputs(job.getOwner(), rpcInputs)) {
+            try (CloseableThreadContext.Instance userCtc = Logging.userLoggingContext()) {
+                LOG.error("User {} does not have read access to all requested inputs",
+                        userId);
+            }
+            throw new ServiceExecutionException(
+                    "User does not have read access to all requested inputs");
+        }
+           //TODO: Check that the user can use the geoserver spec
+        if (!checkAccessToOutputCollection(job.getOwner(), rpcInputs)) {
+            try (CloseableThreadContext.Instance userCtc = Logging.userLoggingContext()) {
+                LOG.error("User {} does not have read access to all requested output collections",
+                        userId);
+            }
+            throw new ServiceExecutionException(
+                    "User does not have read access to all requested output collections");
+        }
+        
+        chargeUser(job.getOwner(), job);
+        submitJob(job, rpcJob, rpcInputs, SINGLE_JOB_PRIORITY);
     }
     
     @Override
