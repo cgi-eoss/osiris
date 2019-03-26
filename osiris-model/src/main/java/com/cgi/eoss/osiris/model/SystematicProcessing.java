@@ -68,6 +68,9 @@ public class SystematicProcessing implements OsirisEntityWithOwner<SystematicPro
     @Column(name = "search_parameters")
     private ListMultimap<String, String> searchParameters;
     
+    @Column(name = "cron_expression")
+    private String cronExpression;
+    
     /**
     * <p>The date and time this processing was last updated.</p>
     */
@@ -83,10 +86,11 @@ public class SystematicProcessing implements OsirisEntityWithOwner<SystematicPro
         ACTIVE, BLOCKED, COMPLETED
     }
 
-    public SystematicProcessing(User owner, Job parentJob, ListMultimap<String, String> searchParameters, LocalDateTime lastUpdated) {
+    public SystematicProcessing(User owner, Job parentJob, ListMultimap<String, String> searchParameters, String cronExpression, LocalDateTime lastUpdated) {
         this.owner = owner;
         this.parentJob = parentJob;
         this.searchParameters = searchParameters;
+        this.cronExpression = cronExpression;
         this.lastUpdated = lastUpdated;
     }
 }

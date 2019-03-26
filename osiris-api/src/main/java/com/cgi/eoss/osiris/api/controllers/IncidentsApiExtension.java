@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.BasePathAwareController;
 import org.springframework.data.rest.webmvc.RepositoryRestController;
@@ -37,6 +36,7 @@ import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
@@ -95,12 +95,6 @@ public class IncidentsApiExtension {
 
     private void launchProcessing(IncidentProcessing incidentProcessing) throws JsonProcessingException {
         LOG.debug("Launching Systematic Processing for Incident Processing {}", incidentProcessing.getId());
-        ListMultimap<String, String> searchParameters = (ListMultimap<String, String>) mergeReplace(incidentProcessing.getTemplate().getSearchParameters(),
-                incidentProcessing.getSearchParameters());
-        // TODO: Allow the AOI and date range to be modified in some way here?
-        searchParameters.put("aoi", incidentProcessing.getIncident().getAoi());
-        searchParameters.put("productDateStart", incidentProcessing.getIncident().getStartDate().toString());
-        searchParameters.put("productDateEnd", incidentProcessing.getIncident().getEndDate().toString());
         Multimap<String, String> inputs = mergeReplace(incidentProcessing.getTemplate().getFixedInputs(), incidentProcessing.getInputs());
 
         Collection collection = new Collection(incidentProcessing.getIncident().getTitle() + "-" + incidentProcessing.getId(),
@@ -126,9 +120,21 @@ public class IncidentsApiExtension {
                 .setUserId(osirisSecurityService.getCurrentUser().getName())
                 .setServiceId(incidentProcessing.getTemplate().getService().getName())
                 .addAllInput(GrpcUtil.mapToParams(inputs))
-                .addAllSearchParameter(GrpcUtil.mapToParams(searchParameters))
                 .setSystematicParameter(incidentProcessing.getTemplate().getSystematicInput());
-
+        if (!Strings.isNullOrEmpty(incidentProcessing.getTemplate().getCronExpression())) {
+            grpcRequestBuilder.setCronExpression(incidentProcessing.getTemplate().getCronExpression());
+        }
+        else {
+            ListMultimap<String, String> searchParameters = (ListMultimap<String, String>) mergeReplace(incidentProcessing.getTemplate().getSearchParameters(),
+                            incidentProcessing.getSearchParameters());
+                    // TODO: Allow the AOI and date range to be modified in some way here?
+                    searchParameters.put("aoi", incidentProcessing.getIncident().getAoi());
+                    searchParameters.put("productDateStart", incidentProcessing.getIncident().getStartDate().toString());
+                    searchParameters.put("productDateEnd", incidentProcessing.getIncident().getEndDate().toString());
+            grpcRequestBuilder.addAllSearchParameter(GrpcUtil.mapToParams(searchParameters));
+        }  
+        
+        
         long systematicProcessingId = localServiceLauncher.launchSystematicProcessing(grpcRequestBuilder.build()).getSystematicProcessingId();
 
         LOG.info("Associated Systematic Processing {} with Incident Processing {}", systematicProcessingId, incidentProcessing.getId());

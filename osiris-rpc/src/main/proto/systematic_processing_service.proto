@@ -9,6 +9,8 @@ option java_package = "com.cgi.eoss.osiris.rpc";
 
 service SystematicProcessingService {
     rpc Launch (SystematicProcessingRequest) returns (SystematicProcessingResponse);
+    rpc Terminate (TerminateSystematicProcessingParams) returns (TerminateSystematicProcessingResponse);
+    rpc Restart (RestartSystematicProcessingParams) returns (RestartSystematicProcessingResponse);
 }
 
 message SystematicProcessingRequest {
@@ -18,9 +20,24 @@ message SystematicProcessingRequest {
     repeated JobParam input = 4;
     string systematicParameter = 5;
     repeated JobParam searchParameter = 6;
+    string cronExpression = 7;
 }
 
 message SystematicProcessingResponse {
+    int64 systematicProcessingId = 1;
+}
+
+message TerminateSystematicProcessingParams{
+    int64 systematicProcessingId = 1;
+}
+message TerminateSystematicProcessingResponse {
+    int64 systematicProcessingId = 1;
+}
+
+message RestartSystematicProcessingParams{
+    int64 systematicProcessingId = 1;
+}
+message RestartSystematicProcessingResponse {
     int64 systematicProcessingId = 1;
 }
 

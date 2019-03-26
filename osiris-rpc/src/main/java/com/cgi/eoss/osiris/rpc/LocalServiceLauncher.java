@@ -58,4 +58,14 @@ public class LocalServiceLauncher {
         SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub blockingStub = SystematicProcessingServiceGrpc.newBlockingStub(inProcessChannelBuilder.build());
         return blockingStub.launch(request);
     }
+    
+    public TerminateSystematicProcessingResponse terminateSystematicProcessing(TerminateSystematicProcessingParams request) {
+        SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub blockingStub = SystematicProcessingServiceGrpc.newBlockingStub(inProcessChannelBuilder.build());
+        return blockingStub.terminate(request);
+    }
+    
+    public RestartSystematicProcessingResponse restartSystematicProcessing(RestartSystematicProcessingParams request) {
+        SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub blockingStub = SystematicProcessingServiceGrpc.newBlockingStub(inProcessChannelBuilder.build());
+        return blockingStub.restart(request);
+    }
 }

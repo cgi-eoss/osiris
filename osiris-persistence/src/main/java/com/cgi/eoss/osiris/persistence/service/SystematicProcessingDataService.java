@@ -17,5 +17,5 @@ public interface SystematicProcessingDataService extends OsirisEntityDataService
     Optional<SystematicProcessing> findByParentJob(Job parentJob);
 
     SystematicProcessing buildNew(String extId, String userId, String serviceId, String jobConfigLabel, String systematicParameter,
-                                  Multimap<String, String> inputs, ListMultimap<String, String> searchParameters, LocalDateTime lastUpdated);
+                                  Multimap<String, String> inputs, ListMultimap<String, String> searchParameters, String cronExpression, LocalDateTime lastUpdated);
 }

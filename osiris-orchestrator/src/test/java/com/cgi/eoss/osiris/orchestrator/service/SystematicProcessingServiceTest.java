@@ -1,16 +1,20 @@
 package com.cgi.eoss.osiris.orchestrator.service;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.orchestrator.OrchestratorConfig;
 import com.cgi.eoss.osiris.orchestrator.OrchestratorTestConfig;
-import com.cgi.eoss.osiris.persistence.service.ServiceDataService;
 import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
 import com.cgi.eoss.osiris.rpc.GrpcUtil;
-import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingResponse;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingServiceGrpc;
-import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
@@ -26,22 +30,15 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.io.IOException;
 import java.util.Map;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {OrchestratorConfig.class, OrchestratorTestConfig.class})
@@ -62,10 +59,16 @@ public class SystematicProcessingServiceTest {
 
     private SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub stub;
 
+    @Mock
+    private Scheduler scheduler;
+    
+    @Autowired 
+    private TaskScheduler taskScheduler;
+    
     @Before
     public void setUp() throws IOException {
         MockitoAnnotations.initMocks(this);
-        serverBuilder.addService(new SystematicProcessingService(systematicProcessingDataService));
+        serverBuilder.addService(new SystematicProcessingService(systematicProcessingDataService, scheduler, 3000, taskScheduler));
         server = serverBuilder.build().start();
         stub = SystematicProcessingServiceGrpc.newBlockingStub(channelBuilder.build());
     }
@@ -91,8 +94,9 @@ public class SystematicProcessingServiceTest {
         searchParams.put("processingLevel", "L1B");
 
         SystematicProcessing dummySysProc = new SystematicProcessing();
+        dummySysProc.setSearchParameters(searchParams);
         dummySysProc.setId(5L);
-        when(systematicProcessingDataService.buildNew(any(), any(), any(), any(), any(), any(), any(), any()))
+        when(systematicProcessingDataService.buildNew(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(dummySysProc);
 
         SystematicProcessingRequest.Builder builder = SystematicProcessingRequest.newBuilder();
@@ -120,6 +124,6 @@ public class SystematicProcessingServiceTest {
         };
 
         verify(systematicProcessingDataService, times(1)).buildNew(any(), eq(userId), eq(serviceId), eq(jobConfigLabel),
-                eq(systematicParam), eq(inputsMap), ArgumentMatchers.argThat(isSearchParams), any());
+                eq(systematicParam), eq(inputsMap), ArgumentMatchers.argThat(isSearchParams), any(), any());
     }
 }

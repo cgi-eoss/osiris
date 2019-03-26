@@ -92,6 +92,12 @@ public class IncidentProcessingTemplate implements OsirisEntityWithOwner<Inciden
     private Multimap<String, String> fixedInputs = HashMultimap.create();
 
     /**
+     * <p>The cron expression, for processing not based on a search but on a fixed time schedule.</p>
+     */
+    @Column(name = "cron_expression")
+    private String cronExpression;
+    
+    /**
      * <p>The set of search parameters that are fixed in this definition, and their values.</p>
      */
     // TODO: startDate and stopDate are fixed by the Incident, have the way this is calculated be configurable?
