@@ -69,23 +69,23 @@ public class JpaJobDataService extends AbstractJpaDataService<Job> implements Jo
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter) {
-        return buildNew(extId, userId, serviceId, jobConfigLabel, inputs, systematicParameter, null);
+    public Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter, boolean isParent) {
+        return buildNew(extId, userId, serviceId, jobConfigLabel, inputs, systematicParameter, null, isParent);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Job buildNew(String extId, String ownerId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, Job parentJob) {
-        return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, parentJob);
+        return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, parentJob, false);
     }
     
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Job buildNew(String extId, String ownerId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs) {
-    		return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, null);
+    		return buildNew(extId, ownerId, serviceId, jobConfigLabel, inputs, null, null, false);
     }
 
-    private Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter, Job parentJob) {
+    private Job buildNew(String extId, String userId, String serviceId, String jobConfigLabel, Multimap<String, String> inputs, String systematicParameter, Job parentJob, boolean isParent) {
         User owner = userDataService.getByName(userId);
         OsirisService service = serviceDataService.getByName(serviceId);
 
@@ -94,8 +94,9 @@ public class JpaJobDataService extends AbstractJpaDataService<Job> implements Jo
         config.setInputs(inputs);
         Optional.ofNullable(parentJob).ifPresent(config::setParent);
         Optional.ofNullable(systematicParameter).ifPresent(config::setSystematicParameter);
-
-        return dao.save(new Job(jobConfigDataService.save(config), extId, owner, parentJob));
+        Job job = new Job(jobConfigDataService.save(config), extId, owner, parentJob);
+        job.setParent(isParent);
+        return dao.save(job);
     }
     
     public Job reload(Long id) {
