@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.controllers;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -108,13 +109,13 @@ public class IncidentsApiExtension {
                 .map(OsirisServiceDescriptor.Parameter::getId)
                 .collect(Collectors.toMap(Function.identity(), s -> collection.getIdentifier()));
 
-        inputs.put(COLLECTION_INPUT, objectMapper.writeValueAsString(outputCollectionsMap));
+        inputs.replaceValues(COLLECTION_INPUT, Collections.singletonList(objectMapper.writeValueAsString(outputCollectionsMap)));
 
         Map<String, Object> geoserverSpecMap = incidentProcessing.getTemplate().getService().getServiceDescriptor().getDataOutputs().stream()
         		.filter(p-> isGeoserverIngestible(p))
                 .collect(Collectors.toMap(OsirisServiceDescriptor.Parameter::getId, p-> prepareGeoserverForOutput(incidentProcessing, incidentProcessing.getTemplate().getService(), p)));
 
-        inputs.put(GEOSERVER_INPUT, objectMapper.writeValueAsString(geoserverSpecMap));
+        inputs.replaceValues(GEOSERVER_INPUT, Collections.singletonList(objectMapper.writeValueAsString(geoserverSpecMap)));
         
         SystematicProcessingRequest.Builder grpcRequestBuilder = SystematicProcessingRequest.newBuilder()
                 .setUserId(osirisSecurityService.getCurrentUser().getName())
