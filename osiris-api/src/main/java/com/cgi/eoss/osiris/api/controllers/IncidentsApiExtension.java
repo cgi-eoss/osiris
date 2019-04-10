@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerType;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoserverService;
@@ -62,17 +62,19 @@ public class IncidentsApiExtension {
     private final SystematicProcessingDataService systematicProcessingDataService;
     private final CollectionDataService collectionDataService;
     private final IncidentProcessingDataService incidentProcessingDataService;
+    private final CatalogueService catalogueService;
     private final GeoserverService geoserverService; 
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public IncidentsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, SystematicProcessingDataService systematicProcessingDataService, CollectionDataService collectionDataService, IncidentProcessingDataService incidentProcessingDataService, ObjectMapper objectMapper, GeoserverService geoserverService) {
+    public IncidentsApiExtension(OsirisSecurityService osirisSecurityService, LocalServiceLauncher localServiceLauncher, SystematicProcessingDataService systematicProcessingDataService, CollectionDataService collectionDataService, IncidentProcessingDataService incidentProcessingDataService, ObjectMapper objectMapper, GeoserverService geoserverService, CatalogueService catalogueService) {
         this.osirisSecurityService = osirisSecurityService;
         this.localServiceLauncher = localServiceLauncher;
         this.systematicProcessingDataService = systematicProcessingDataService;
         this.collectionDataService = collectionDataService;
         this.incidentProcessingDataService = incidentProcessingDataService;
         this.geoserverService = geoserverService;
+        this.catalogueService = catalogueService;
         this.objectMapper = objectMapper;
     }
 
@@ -88,7 +90,7 @@ public class IncidentsApiExtension {
                 launchProcessing(incidentProcessing);
             }
             return ResponseEntity.ok().build();
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             LOG.error("Exception thrown during processing of Incident {}", incident.getId(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -101,6 +103,10 @@ public class IncidentsApiExtension {
         Collection collection = new Collection(incidentProcessing.getIncident().getTitle() + "-" + incidentProcessing.getId(),
                 incidentProcessing.getOwner());
         collection.setIdentifier("osiris" + UUID.randomUUID().toString().replaceAll("-", ""));
+        if (!catalogueService.createOutputCollection(collection)) {
+            LOG.error("Failed to create underlying output collection {} for incident processing {}", collection, incidentProcessing.getId());
+            throw new RuntimeException("Failed to create underlying output collection");
+        }
         collectionDataService.save(collection);
         incidentProcessing.setCollection(collection);
         
