@@ -2033,6 +2033,25 @@
 #developer-container .right-container #service-form .field-definitions table td {
   border-bottom: #d2d2d2 solid 1px;
 }
+#developer-container .right-container #service-form .field-definitions table td .output-relations {
+  display: -ms-flexbox;
+  display: flex;
+}
+#developer-container .right-container #service-form .field-definitions table td .output-relations .output-relation {
+  display: -ms-flexbox;
+  display: flex;
+}
+#developer-container .right-container #service-form .field-definitions table td .output-relations .output-relation button {
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+}
+#developer-container .right-container #service-form .field-definitions table td .output-relations .add-relation-btn {
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+  -ms-flex-item-align: end;
+      align-self: flex-end;
+  line-height: 58px;
+}
 #developer-container .right-container #service-form .field-definitions md-input-container {
   width: 100%;
 }

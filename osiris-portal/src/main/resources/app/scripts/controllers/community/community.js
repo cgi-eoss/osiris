@@ -9,7 +9,7 @@
 
 define(['../../osirismodules'], function (osirismodules) {
 
-    osirismodules.controller('CommunityCtrl', ['$scope', 'CommunityService', 'GroupService', 'UserService', 'ProjectService', 'CollectionService', 'IncidentService', 'IncidentTypeService', 'BasketService', 'JobService', 'SystematicService', 'ProductService', 'FileService', 'MessageService', 'TabService', 'CommonService', '$injector', function ($scope, CommunityService, GroupService, UserService, ProjectService, CollectionService, IncidentService, IncidentTypeService, BasketService, JobService, SystematicService, ProductService, FileService, MessageService, TabService, CommonService, $injector) {
+    osirismodules.controller('CommunityCtrl', ['$scope', 'CommunityService', 'GroupService', 'UserService', 'ProjectService', 'CollectionService', 'IncidentService', 'IncidentTypeService', 'BasketService', 'JobService', 'SystematicService', 'ProductService', 'DeveloperTemplatesCtrlState', 'FileService', 'MessageService', 'TabService', 'CommonService', '$injector', function ($scope, CommunityService, GroupService, UserService, ProjectService, CollectionService, IncidentService, IncidentTypeService, BasketService, JobService, SystematicService, ProductService, DeveloperTemplatesCtrlState, FileService, MessageService, TabService, CommonService, $injector) {
 
         $scope.navInfo = TabService.navInfo.community;
         $scope.bottombarNavInfo = TabService.navInfo.bottombar;
@@ -23,6 +23,7 @@ define(['../../osirismodules'], function (osirismodules) {
         $scope.jobParams = JobService.params.community;
         $scope.systematicParams = SystematicService.params.community;
         $scope.serviceParams = ProductService.params.community;
+        $scope.serviceTemplateParams = DeveloperTemplatesCtrlState.params;
         $scope.fileParams = FileService.params.community;
 
         /* Get current user */
@@ -108,6 +109,16 @@ define(['../../osirismodules'], function (osirismodules) {
             } else if(!$scope.serviceParams.selectedService && $scope.navInfo.activeSideNav === $scope.communityTabs.SERVICES) {
                 return true;
             } else if(!$scope.fileParams.selectedFile && $scope.navInfo.activeSideNav === $scope.communityTabs.FILES) {
+                return true;
+            } else if (!$scope.collectionParams.selectedCollection && $scope.navInfo.activeSideNav === $scope.communityTabs.COLLECTIONS) {
+                return true;
+            } else if (!$scope.serviceTemplateParams.selectedService && $scope.navInfo.activeSideNav === $scope.communityTabs.SERVICETEMPLATES) {
+                return true;
+            } else if (!$scope.systematicParams.selectedSystematicProcessing && $scope.navInfo.activeSideNav === $scope.communityTabs.SYSTEMATICPROCS) {
+                return true;
+            } else if (!$scope.incidentParams.selectedIncident && $scope.navInfo.activeSideNav === $scope.communityTabs.INCIDENTS) {
+                return true;
+            } else if (!$scope.incidentTypeParams.selectedIncidentType && $scope.navInfo.activeSideNav === $scope.communityTabs.INCIDENTTYPES) {
                 return true;
             }
             return false;

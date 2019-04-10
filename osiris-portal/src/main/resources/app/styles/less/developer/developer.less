@@ -226,6 +226,23 @@
                     }
                     td {
                         .border(border-bottom, @bg);
+
+                        .output-relations {
+                            display: flex;
+
+                            .output-relation {
+                                display: flex;
+                                button {
+                                    flex-shrink: 0;
+                                }
+                            }
+
+                            .add-relation-btn {
+                                flex-shrink: 0;
+                                align-self: flex-end;
+                                line-height: 58px;
+                            }
+                        }
                     }
                 }
                 md-input-container {

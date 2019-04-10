@@ -20,11 +20,8 @@ define(['../../../osirismodules'], function (osirismodules) {
             dataOutputs: {title: 'Output Definitions'}
         };
         $scope.serviceParams.activeArea = $scope.serviceForms.files;
-        $scope.constants = {
-            serviceFields: ['dataInputs', 'dataOutputs'],
-            fieldTypes: [{type: 'LITERAL'}, {type: 'COMPLEX'}], //{type: 'BOUNDING_BOX'}],
-            literalTypes: [{dataType: 'string'}, {dataType: 'integer'}, {dataType: 'double'}]
-        };
+        $scope.constants = ProductService.serviceParametersConstants;
+
         $scope.serviceTypes = {
             APPLICATION: { id: 0, name: 'Application', value: 'APPLICATION'},
             PROCESSOR: { id: 0, name: 'Processor', value: 'PROCESSOR'},
@@ -190,6 +187,26 @@ define(['../../../osirismodules'], function (osirismodules) {
             var index = list.indexOf(item);
             list.splice(index, 1);
         };
+
+        $scope.enableOutputRelation = function(output) {
+            if ($scope.serviceParams.selectedService.serviceDescriptor.dataOutputs.length > 1 ) {
+                output.parameterRelations = output.parameterRelations || [];
+                return true;
+            } else {
+                delete output.parameterRelations;
+                return false;
+            }
+        }
+
+        $scope.addOutputRelation = function(output) {
+            output.parameterRelations.push({});
+        }
+
+        $scope.getEligibleRelationTargets = function(output) {
+            return $scope.serviceParams.selectedService.serviceDescriptor.dataOutputs.filter(function(param) {
+                return param !== output && param.id;
+            })
+        }
 
         $scope.editTypeDialog = function($event, fieldDescriptor, constants){
 

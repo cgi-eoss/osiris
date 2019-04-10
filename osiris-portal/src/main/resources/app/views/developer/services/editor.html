@@ -219,6 +219,9 @@
                     <th style="min-width: 120px">Type</th>
                     <th ng-if="key === 'dataOutputs'">Time Regexp</th>
                     <th>Default Value</th>
+                    <th ng-if="key === 'dataOutputs'">Format</th>
+                    <th ng-if="key === 'dataOutputs'">Data type</th>
+                    <th ng-if="key === 'dataOutputs'" ng-show="serviceParams.selectedService.serviceDescriptor[key].length > 1">Relations</th>
                     <th>Min Occurs</th>
                     <th>Max Occurs</th>
                     <th></th>
@@ -277,6 +280,63 @@
                     <td>
                         <service-input ng-model="input.defaultAttrs.value" default-attrs="{{input.defaultAttrs}}" keep-watch="true"
                                 placeholder="Default value" aria-label="Default value"/>
+                    </td>
+                    <td ng-if="key === 'dataOutputs'">
+                        <md-input-container md-no-float>
+                            <md-select ng-model="input.platformMetadata.format" required>
+                                <md-option ng-repeat="format in constants.formats" ng-value="format.value">
+                                    {{format.title}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+                    </td>
+                    <td ng-if="key === 'dataOutputs'">
+                        <md-input-container md-no-float>
+                            <md-select ng-model="input.platformMetadata.type">
+                                <md-option ng-repeat="dataType in constants.dataTypes" ng-value="dataType.value">
+                                    {{dataType.title}}
+                                </md-option>
+                            </md-select>
+                        </md-input-container>
+                    </td>
+                    <td ng-if="key === 'dataOutputs'" ng-show="enableOutputRelation(input)">
+                        <div class="output-relations">
+                            <div>
+                                <div class="output-relation" ng-repeat="relation in input.parameterRelations">
+                                    <md-input-container md-no-float>
+                                        <md-select ng-model="relation.type" placeholder="Relation type" required>
+                                            <md-option ng-repeat="relationType in constants.relations" ng-value="relationType.value">
+                                                {{relationType.title}}
+                                            </md-option>
+                                        </md-select>
+                                    </md-input-container>
+                                    <md-input-container md-no-float>
+                                        <md-select ng-model="relation.targetParameterId" placeholder="Target parameter" required>
+                                            <md-option
+                                                ng-repeat="output in getEligibleRelationTargets(input)" ng-value="output.id">
+                                                {{output.id}}
+                                            </md-option>
+                                        </md-select>
+                                    </md-input-container>
+                                    <md-button ng-click="input.parameterRelations.splice($index, 1)"
+                                                class="remove-button"
+                                                aria-label="Remove relation"
+                                                uib-tooltip="Remove relation"
+                                                tooltip-trigger="mouseenter"
+                                                tooltip-append-to-body="true">
+                                        <i class="material-icons">remove</i>
+                                    </md-button>
+                                </div>
+                            </div>
+                            <md-button ng-click="addOutputRelation(input)"
+                                class="remove-button add-relation-btn"
+                                aria-label="Add relation"
+                                uib-tooltip="Add relation"
+                                tooltip-trigger="mouseenter"
+                                tooltip-append-to-body="true">
+                                <i class="material-icons">add</i>
+                            </md-button>
+                        </div>
                     </td>
                     <td>
                         <md-input-container md-no-float>

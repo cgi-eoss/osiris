@@ -44,6 +44,33 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             SYSTEMATIC: {id: 1, name: 'Systematic'}
         }
 
+        this.serviceParametersConstants = {
+            serviceFields: ['dataInputs', 'dataOutputs'],
+            fieldTypes: [{type: 'LITERAL'}, {type: 'COMPLEX'}],
+            literalTypes: [{dataType: 'string'}, {dataType: 'integer'}, {dataType: 'double'}],
+            formats: [{title: 'GeoTIFF', value: 'GEOTIFF'}, {title: 'Shapefile', value: 'SHAPEFILE'}, {title: 'Other', value: 'OTHER'}],
+            dataTypes: [{
+                title: 'EO product visualization',
+                value: 'EO_PROD_VIEW'
+            }, {
+                title: 'EO product',
+                value: 'EO_PROD'
+            }, {
+                title: 'Footprint predictions',
+                value: 'FOOTPRINT_PREDICTIONS'
+            }, {
+                title: 'Detected oilspill',
+                value: 'DETECTED_OILSPILL'
+            }, {
+                title: 'Detected wind',
+                value: 'DETECTED_WIND'
+            }, {
+                title: 'Other',
+                value: 'OTHER'
+            }],
+            relations: [{title: 'Visualization of', value: 'VISUALIZATION_OF'}]
+        }
+
         this.params = {
             explorer: {
                 services: undefined,
