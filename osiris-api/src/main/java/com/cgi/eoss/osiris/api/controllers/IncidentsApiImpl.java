@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.controllers;
 
+import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.QIncident;
@@ -77,6 +78,16 @@ public class IncidentsApiImpl extends BaseRepositoryApiImpl<Incident> implements
                     .and(QIncident.incident
                     .endDate.after(endDate))))
             , pageable);
+    }
+
+    /**
+     * Returns any Incidents that belong to a collection via an incident process.
+     */
+    @Override
+    public Page<Incident> findByCollection(Collection collection, Pageable pageable) {
+        return getFilteredResults(QIncident
+                        .incident.incidentProcessings.any().collection.eq(collection)
+                , pageable);
     }
 
     private Predicate getFilterPredicate(String filter, IncidentType incidentType) {

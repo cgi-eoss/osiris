@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.controllers;
 
+import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.User;
@@ -19,4 +20,6 @@ public interface IncidentsApiCustom {
     Page<Incident> findByFilterAndNotOwner(String filter, User user, IncidentType incidentType, Pageable pageable);
 
     Page<Incident> findByDateRange(Instant startDate, Instant endDate, Pageable pageable);
+
+    Page<Incident> findByCollection(Collection collection, Pageable pageable);
 }

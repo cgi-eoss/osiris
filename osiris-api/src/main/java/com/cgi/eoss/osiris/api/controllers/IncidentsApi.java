@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.controllers;
 
+import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.User;
@@ -64,4 +65,9 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
     @RestResource(path = "findByDateRange", rel = "findByDateRange")
     @Query("select t from Incident t where ((:startDate <= t.startDate AND t.startDate <= :endDate) OR (:startDate <= t.endDate AND t.endDate <= :endDate) OR (t.startDate < :startDate AND :endDate < t.endDate))")
     Page<Incident> findByDateRange(@Param("startDate") Instant startDate, @Param("endDate") Instant endDate, Pageable pageable);
+
+    @Override
+    @RestResource(path = "findByCollection", rel = "findByCollection")
+    @Query("SELECT i FROM Incident i JOIN IncidentProcessing ip WHERE ip.collection = :collection")
+    Page<Incident> findByCollection(@Param("collection") Collection collection, Pageable pageable);
 }
