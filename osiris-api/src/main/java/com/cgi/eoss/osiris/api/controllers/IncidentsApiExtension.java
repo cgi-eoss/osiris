@@ -184,7 +184,7 @@ public class IncidentsApiExtension {
 	private GeoServerSpec prepareGeoserverMosaic(IncidentProcessing incidentProcessing, OsirisService s, Parameter p) {
 		String workspace = "incident" + incidentProcessing.getIncident().getId();
 		String storeName = "processing" + incidentProcessing.getId();
-		geoserverService.createEmptyMosaic(workspace, storeName, p.getTitle(), InternalModelUtils.platformTimeRegexpToGeoserverTimeRegexp(p.getTimeRegexp()));
+		geoserverService.createEmptyMosaic(workspace, storeName, p.getId(), InternalModelUtils.platformTimeRegexpToGeoserverTimeRegexp(p.getTimeRegexp()));
 		return GeoServerSpec.builder()
 				.geoserverType(GeoServerType.MOSAIC)
 				.workspace(workspace)
