@@ -80,7 +80,7 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 	
 			Properties indexerProperties = new Properties();
 			indexerProperties.load(getClass().getResourceAsStream("indexer.properties"));
-			indexerProperties.setProperty("Name", coverageName);
+			indexerProperties.setProperty("Name", workspace + "_" + storeName + "_" + coverageName);
 			ByteArrayOutputStream indexerBaos = new ByteArrayOutputStream();
 	
 			indexerProperties.store(indexerBaos, "");
