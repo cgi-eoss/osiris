@@ -63,7 +63,7 @@ public class JobConfig implements OsirisEntityWithOwner<JobConfig> {
      * <p>The service this job is configuring.</p>
      */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "service")
+    @JoinColumn(name = "service", nullable = false)
     private OsirisService service;
 
     /**

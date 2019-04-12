@@ -59,7 +59,7 @@ public class SystematicProcessing implements OsirisEntityWithOwner<SystematicPro
      * <p>The job that will contain all systematic subjobs</p>
      */
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "parentJob")
+    @JoinColumn(name = "parentJob", nullable = false)
     private Job parentJob;
     
     
