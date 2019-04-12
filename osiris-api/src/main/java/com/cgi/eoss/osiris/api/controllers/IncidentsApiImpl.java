@@ -5,6 +5,7 @@ import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.QIncident;
 import com.cgi.eoss.osiris.model.QUser;
+import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.dao.IncidentDao;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
@@ -87,6 +88,13 @@ public class IncidentsApiImpl extends BaseRepositoryApiImpl<Incident> implements
     public Page<Incident> findByCollection(Collection collection, Pageable pageable) {
         return getFilteredResults(QIncident
                         .incident.incidentProcessings.any().collection.eq(collection)
+                , pageable);
+    }
+
+    @Override
+    public Page<Incident> findBySystematicProcessing(SystematicProcessing systematicProcessing, Pageable pageable) {
+        return getFilteredResults(QIncident
+                        .incident.incidentProcessings.any().systematicProcessing.eq(systematicProcessing)
                 , pageable);
     }
 

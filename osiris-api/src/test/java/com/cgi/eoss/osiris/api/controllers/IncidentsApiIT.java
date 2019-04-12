@@ -7,13 +7,19 @@ import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentProcessing;
 import com.cgi.eoss.osiris.model.IncidentProcessingTemplate;
 import com.cgi.eoss.osiris.model.IncidentType;
+import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.Role;
+import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.dao.CollectionDao;
 import com.cgi.eoss.osiris.persistence.dao.IncidentProcessingDao;
 import com.cgi.eoss.osiris.persistence.dao.IncidentProcessingTemplateDao;
+import com.cgi.eoss.osiris.persistence.dao.JobConfigDao;
+import com.cgi.eoss.osiris.persistence.dao.JobDao;
 import com.cgi.eoss.osiris.persistence.dao.OsirisServiceDao;
+import com.cgi.eoss.osiris.persistence.dao.SystematicProcessingDao;
 import com.cgi.eoss.osiris.persistence.service.IncidentDataService;
 import com.cgi.eoss.osiris.persistence.service.IncidentTypeDataService;
 import com.cgi.eoss.osiris.persistence.service.UserDataService;
@@ -54,33 +60,31 @@ public class IncidentsApiIT {
     @Autowired
     private UserDataService userDataService;
     @Autowired
+    private OsirisServiceDao serviceDao;
+    @Autowired
     private IncidentTypeDataService incidentTypeDataService;
     @Autowired
     private IncidentDataService incidentDataService;
-    @Autowired
-    private IncidentProcessingDao processingDao;
     @Autowired
     private IncidentProcessingTemplateDao templateDao;
     @Autowired
     private CollectionDao collectionDao;
     @Autowired
-    private OsirisServiceDao serviceDao;
+    private JobConfigDao jobConfigDao;
+    @Autowired
+    private JobDao jobDao;
+    @Autowired
+    private SystematicProcessingDao systematicProcessingDao;
+    @Autowired
+    private IncidentProcessingDao incidentProcessingDao;
 
     @Autowired
     private MockMvc mockMvc;
 
-    private Collection collectionSingle;
-    private Collection collectionBoth;
-
-    private IncidentProcessingTemplate template1;
-    private IncidentProcessingTemplate template2;
-    private IncidentProcessingTemplate templateBoth;
+    private User osirisUser;
+    private User osirisAdmin;
 
     private OsirisService service;
-
-    private IncidentProcessing processing1;
-    private IncidentProcessing processing2;
-    private IncidentProcessing processingBoth;
 
     private IncidentType incidentType1;
     private IncidentType incidentType2;
@@ -88,8 +92,23 @@ public class IncidentsApiIT {
     private Incident incident1;
     private Incident incident2;
 
-    private User osirisUser;
-    private User osirisAdmin;
+    private IncidentProcessingTemplate template1;
+    private IncidentProcessingTemplate template2;
+    private IncidentProcessingTemplate templateBoth;
+
+    private Collection collectionSingle;
+    private Collection collectionBoth;
+
+    private JobConfig jobConfig;
+
+    private Job job;
+
+    private SystematicProcessing systematicProcessingSingle;
+    private SystematicProcessing systematicProcessingBoth;
+
+    private IncidentProcessing incidentProcessing1;
+    private IncidentProcessing incidentProcessing2;
+    private IncidentProcessing incidentProcessingBoth;
 
     @Before
     public void setUp() throws Exception {
@@ -148,30 +167,65 @@ public class IncidentsApiIT {
         collectionBoth.setIdentifier("Both");
         collectionDao.save(ImmutableSet.of(collectionSingle, collectionBoth));
 
+        //job config
+        jobConfig = new JobConfig();
+        jobConfig.setOwner(osirisAdmin);
+        jobConfig.setService(service);
+        jobConfigDao.save(jobConfig);
+
+        //job
+        job = new Job();
+        job.setExtId("External Job ID");
+        job.setConfig(jobConfig);
+        job.setOwner(osirisAdmin);
+        jobDao.save(job);
+
+        //systematic processing
+        systematicProcessingSingle = new SystematicProcessing();
+        systematicProcessingSingle.setOwner(osirisUser);
+        systematicProcessingSingle.setParentJob(job);
+        systematicProcessingBoth = new SystematicProcessing();
+        systematicProcessingBoth.setOwner(osirisAdmin);
+        systematicProcessingBoth.setParentJob(job);
+        systematicProcessingDao.save(ImmutableSet.of(systematicProcessingSingle, systematicProcessingBoth));
+
         //incident processing
-        processing1 = new IncidentProcessing();
-        processing1.setCollection(collectionSingle);
-        processing1.setTemplate(template1);
-        processing1.setIncident(incident1);
-        processing1.setOwner(osirisAdmin);
-        processing2 = new IncidentProcessing();
-        processing2.setCollection(collectionBoth);
-        processing2.setTemplate(template2);
-        processing2.setIncident(incident2);
-        processing2.setOwner(osirisUser);
-        processingBoth = new IncidentProcessing();
-        processingBoth.setCollection(collectionBoth);
-        processingBoth.setTemplate(templateBoth);
-        processingBoth.setIncident(incident1);
-        processingBoth.setOwner(osirisAdmin);
-        processingDao.save(ImmutableSet.of(processing1, processing2, processingBoth));
+        incidentProcessing1 = new IncidentProcessing();
+        incidentProcessing1.setCollection(collectionSingle);
+        incidentProcessing1.setTemplate(template1);
+        incidentProcessing1.setIncident(incident1);
+        incidentProcessing1.setOwner(osirisAdmin);
+        incidentProcessing1.setSystematicProcessing(systematicProcessingSingle);
+        incidentProcessing2 = new IncidentProcessing();
+        incidentProcessing2.setCollection(collectionBoth);
+        incidentProcessing2.setTemplate(template2);
+        incidentProcessing2.setIncident(incident2);
+        incidentProcessing2.setOwner(osirisUser);
+        incidentProcessing2.setSystematicProcessing(systematicProcessingBoth);
+        incidentProcessingBoth = new IncidentProcessing();
+        incidentProcessingBoth.setCollection(collectionBoth);
+        incidentProcessingBoth.setTemplate(templateBoth);
+        incidentProcessingBoth.setIncident(incident1);
+        incidentProcessingBoth.setOwner(osirisAdmin);
+        incidentProcessingBoth.setSystematicProcessing(systematicProcessingBoth);
+        incidentProcessingDao.save(ImmutableSet.of(incidentProcessing1, incidentProcessing2, incidentProcessingBoth));
     }
 
+    /**
+     * Deletes all test data in reverse of how it was created.
+     */
     @After
     public void tearDown() throws Exception {
-
+        incidentProcessingDao.deleteAll();
+        systematicProcessingDao.deleteAll();
+        collectionDao.deleteAll();
+        jobDao.deleteAll();
+        jobConfigDao.deleteAll();
+        templateDao.deleteAll();
         incidentDataService.deleteAll();
         incidentTypeDataService.deleteAll();
+        serviceDao.deleteAll();
+        userDataService.deleteAll();
     }
 
     @Test
@@ -351,6 +405,23 @@ public class IncidentsApiIT {
     }
 
     @Test
+    public void testFindIncidentBySystematicProcessing() throws Exception {
+        String urlTemplate = "/api/incidents/search/findBySystematicProcessing";
+        String name = "REMOTE_USER";
+        String systematicProcessing = "systematicProcessing";
+
+        // search by systematic processing related to a single incident
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, systematicProcessingUri(systematicProcessingSingle)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search by systematic processing related to a two incidents
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, systematicProcessingUri(systematicProcessingBoth)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+        // search by a malformed systematic processing uri
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, "malformed"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     public void testFindIncidentTypeByFilter() throws Exception {
         mockMvc.perform(get("/api/incidentTypes/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
                 .andExpect(status().isOk())
@@ -377,6 +448,13 @@ public class IncidentsApiIT {
     private String collectionUri(Collection collection) throws Exception {
         String jsonResult = mockMvc.perform(
                 get("/api/collections/" + collection.getId()).header("REMOTE_USER", osirisAdmin.getName()))
+                .andReturn().getResponse().getContentAsString();
+        return SELF_HREF_JSONPATH.read(jsonResult);
+    }
+
+    private String systematicProcessingUri(SystematicProcessing systematicProcessing) throws Exception {
+        String jsonResult = mockMvc.perform(
+                get("/api/systematicProcessings/" + systematicProcessing.getId()).header("REMOTE_USER", osirisAdmin.getName()))
                 .andReturn().getResponse().getContentAsString();
         return SELF_HREF_JSONPATH.read(jsonResult);
     }

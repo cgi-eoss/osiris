@@ -3,6 +3,7 @@ package com.cgi.eoss.osiris.api.controllers;
 import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
+import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,4 +23,6 @@ public interface IncidentsApiCustom {
     Page<Incident> findByDateRange(Instant startDate, Instant endDate, Pageable pageable);
 
     Page<Incident> findByCollection(Collection collection, Pageable pageable);
+
+    Page<Incident> findBySystematicProcessing(SystematicProcessing systematicProcessing, Pageable pageable);
 }

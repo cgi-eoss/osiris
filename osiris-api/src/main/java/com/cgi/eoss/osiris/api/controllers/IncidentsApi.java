@@ -3,6 +3,7 @@ package com.cgi.eoss.osiris.api.controllers;
 import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentType;
+import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.projections.ShortIncident;
 import org.springframework.data.domain.Page;
@@ -70,4 +71,9 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
     @RestResource(path = "findByCollection", rel = "findByCollection")
     @Query("SELECT i FROM Incident i JOIN IncidentProcessing ip WHERE ip.collection = :collection")
     Page<Incident> findByCollection(@Param("collection") Collection collection, Pageable pageable);
+
+    @Override
+    @RestResource(path = "findBySystematicProcessing", rel = "findBySystematicProcessing")
+    @Query("SELECT i from Incident i JOIN IncidentProcessing ip WHERE ip.systematicProcessing = :systematicProcessing")
+    Page<Incident> findBySystematicProcessing(@Param("systematicProcessing") SystematicProcessing systematicProcessing, Pageable pageable);
 }
