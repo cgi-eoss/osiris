@@ -211,7 +211,9 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                     Job subJob = jobDataService.buildNew(zooId, userId, serviceId, jobConfigLabel, inputs, job);
                     submitSingleJob(userId, rpcInputs, subJob, GrpcUtil.toRpcJob(subJob));
                 }
-                submitSingleJob(userId, rpcInputs, job, rpcJob);
+                else {
+                    submitSingleJob(userId, rpcInputs, job, rpcJob);
+                }
             }
 
         } catch (Exception e) {
