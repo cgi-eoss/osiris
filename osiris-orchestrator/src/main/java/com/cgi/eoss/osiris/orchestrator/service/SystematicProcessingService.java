@@ -144,7 +144,7 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
         
         
         SimpleTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX+ systematicProcessing.getId(), "osiris")
-                        .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int) searchPeriodMillis/1000).withMisfireHandlingInstructionIgnoreMisfires()).build();
+                        .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int) searchPeriodMillis/1000).withMisfireHandlingInstructionNextWithExistingCount()).build();
         scheduler.scheduleJob(jobDetail, cronTrigger);
     }
 
@@ -154,7 +154,7 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
         JobDetail jobDetail = JobBuilder.newJob(FixedInputsQuartzJob.class).withIdentity(UUID.randomUUID().toString(), "osiris-jobs")
                         .storeDurably().withDescription("Run Osiris Job").usingJobData(jobDataMap).storeDurably().build();
         CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX + systematicProcessing.getId(), "osiris")
-                        .withSchedule(CronScheduleBuilder.cronSchedule(systematicProcessing.getCronExpression()).withMisfireHandlingInstructionIgnoreMisfires()).build();
+                        .withSchedule(CronScheduleBuilder.cronSchedule(systematicProcessing.getCronExpression()).withMisfireHandlingInstructionDoNothing()).build();
         scheduler.scheduleJob(jobDetail, cronTrigger);
     }
     
