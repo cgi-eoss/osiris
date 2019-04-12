@@ -9,6 +9,7 @@ import com.cgi.eoss.osiris.model.IncidentProcessingTemplate;
 import com.cgi.eoss.osiris.model.IncidentType;
 import com.cgi.eoss.osiris.model.Job;
 import com.cgi.eoss.osiris.model.JobConfig;
+import com.cgi.eoss.osiris.model.OsirisEntity;
 import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.Role;
 import com.cgi.eoss.osiris.model.SystematicProcessing;
@@ -277,14 +278,15 @@ public class IncidentsApiIT {
 
     @Test
     public void testFindByOwner() throws Exception {
-        mockMvc.perform(get("/api/incidentTypes/search/findByOwner?owner=" + userUri(osirisAdmin))
+        String entityName = "user";
+        mockMvc.perform(get("/api/incidentTypes/search/findByOwner?owner=" + uri(osirisAdmin, entityName))
                 .header("REMOTE_USER", osirisAdmin.getName()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1));
 
         mockMvc.perform(get("/api/incidents/search/findByOwner")
                 .header("REMOTE_USER", osirisAdmin.getName())
-                .param("owner", userUri(osirisAdmin)))
+                .param("owner", uri(osirisAdmin, entityName)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
     }
@@ -343,7 +345,7 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident2.getTitle()));
 
-        mockMvc.perform(get("/api/incidents/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", userUri(osirisAdmin)))
+        mockMvc.perform(get("/api/incidents/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", uri(osirisAdmin, "user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
@@ -391,16 +393,16 @@ public class IncidentsApiIT {
     public void testFindIncidentByCollection() throws Exception {
         String urlTemplate = "/api/incidents/search/findByCollection";
         String name = "REMOTE_USER";
-        String collection = "collection";
+        String entityName = "collection";
 
         // search by collection related to a single incident
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(collection, collectionUri(collectionSingle)))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionSingle, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
         // search by collection related to a two incidents
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(collection, collectionUri(collectionBoth)))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionBoth, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
         // search by a malformed collection uri
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(collection, "malformed"))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
                 .andExpect(status().isInternalServerError());
     }
 
@@ -408,16 +410,16 @@ public class IncidentsApiIT {
     public void testFindIncidentBySystematicProcessing() throws Exception {
         String urlTemplate = "/api/incidents/search/findBySystematicProcessing";
         String name = "REMOTE_USER";
-        String systematicProcessing = "systematicProcessing";
+        String entityName = "systematicProcessing";
 
         // search by systematic processing related to a single incident
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, systematicProcessingUri(systematicProcessingSingle)))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(systematicProcessingSingle, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
         // search by systematic processing related to a two incidents
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, systematicProcessingUri(systematicProcessingBoth)))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(systematicProcessingBoth, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
         // search by a malformed systematic processing uri
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(systematicProcessing, "malformed"))
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
                 .andExpect(status().isInternalServerError());
     }
 
@@ -432,29 +434,16 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidentTypes[0].title").value(incidentType2.getTitle()));
 
-        mockMvc.perform(get("/api/incidentTypes/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", userUri(osirisAdmin)))
+        mockMvc.perform(get("/api/incidentTypes/search/findByFilterAndOwner").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", uri(osirisAdmin, "user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidentTypes[0].title").value(incidentType1.getTitle()));
     }
 
-    private String userUri(User user) throws Exception {
+    private String uri(OsirisEntity entity, String entityName) throws Exception {
+        String urlTemplate = "/api/"+entityName+"s/"+entity.getId();
         String jsonResult = mockMvc.perform(
-                get("/api/users/" + user.getId()).header("REMOTE_USER", osirisAdmin.getName()))
-                .andReturn().getResponse().getContentAsString();
-        return SELF_HREF_JSONPATH.read(jsonResult);
-    }
-
-    private String collectionUri(Collection collection) throws Exception {
-        String jsonResult = mockMvc.perform(
-                get("/api/collections/" + collection.getId()).header("REMOTE_USER", osirisAdmin.getName()))
-                .andReturn().getResponse().getContentAsString();
-        return SELF_HREF_JSONPATH.read(jsonResult);
-    }
-
-    private String systematicProcessingUri(SystematicProcessing systematicProcessing) throws Exception {
-        String jsonResult = mockMvc.perform(
-                get("/api/systematicProcessings/" + systematicProcessing.getId()).header("REMOTE_USER", osirisAdmin.getName()))
+                get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()))
                 .andReturn().getResponse().getContentAsString();
         return SELF_HREF_JSONPATH.read(jsonResult);
     }
