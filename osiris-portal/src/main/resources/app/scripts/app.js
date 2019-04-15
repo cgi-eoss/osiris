@@ -26,6 +26,7 @@ define([
     'ngOpenlayers',
     'ngBootstrap',
     'ngPaging',
+    'angularCronGen',
     'moment',
     'angularMoment',
     'traversonAngular',
@@ -38,7 +39,7 @@ define([
 
     var app = angular.module('osirisApp', ['app.osirismodules', 'ngRoute', 'ngMaterial', 'ngAnimate', 'ngAria', 'ngSanitize', 'ngMessages',
                                          'ngResource', 'dndLists', 'ui.bootstrap', 'openlayers-directive', 'bw.paging',
-                                         'angularMoment', 'traverson', 'ngFileUpload', 'ui.codemirror']);
+                                         'angularMoment', 'traverson', 'ngFileUpload', 'angular-cron-gen', 'ui.codemirror']);
 
     /* jshint -W117  */
     app.constant('osirisProperties', {

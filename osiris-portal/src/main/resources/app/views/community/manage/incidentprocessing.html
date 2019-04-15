@@ -27,6 +27,20 @@
                         <textarea ng-model="processingTemplate.description"></textarea>
                     </div>
                 </md-input-container>
+                <md-input-container  md-no-float>
+                    <div class="col-xs-12">
+                        <md-subheader class="md-accent md-subheader-title">
+                            <span>Run Mode</span>
+                        </md-subheader>
+                    </div>
+                    <div class="col-xs-12">
+                        <md-select ng-model="processingTemplate.runMode" ng-change="updateProcessingRunMode()"required>
+                            <md-option ng-repeat="runMode in runModes" ng-value="runMode.value">
+                                {{runMode.title}}
+                            </md-option>
+                        </md-select>
+                    </div>
+                </md-input-container>
                 </ng-container>
                 <md-tabs md-dynamic-height md-border-bottom style="margin-top: 20px;">
                     <md-tab label="Processing configuration">
@@ -69,7 +83,7 @@
 
                                 <div ng-if="processingTemplate.service && !isServiceDescriptionLoading">
 
-                                    <md-input-container class="row">
+                                    <md-input-container class="row" ng-if="processingTemplate.runMode === 'DATA_DRIVEN'">
                                         <div class="col-xs-12">
                                             <md-subheader class="md-accent md-subheader-title">
                                                 <span>Data input parameter</span>
@@ -95,7 +109,7 @@
                                         ng-repeat="fieldDesc in processingTemplate.serviceDetails.serviceDescriptor.dataInputs">
 
                                         <div class="input-container"
-                                            ng-if="fieldDesc.id != processingTemplate.systematicInput && fieldDesc.id !== 'aoi'">
+                                            ng-if="!shouldHideField(fieldDesc)">
 
                                             <div class="col-xs-12">
                                                 <md-subheader class="md-accent">
@@ -125,7 +139,7 @@
 
                         </md-content>
                     </md-tab>
-                    <md-tab label="Input retrieval">
+                    <md-tab label="Input retrieval" ng-if="processingTemplate.runMode === 'DATA_DRIVEN'">
                         <md-content class="md-padding">
                             <div ng-show="isSearchParametersLoading" layout="row" layout-sm="column"
                                 layout-align="space-around">
@@ -134,6 +148,12 @@
                             <dynamic-form form-config="searchForm.config" api="searchForm.api"
                                 form-data="searchForm.data" read-only="readOnly"></dynamic-form>
                         </md-content>
+                    </md-tab>
+                    <md-tab label="Cron settings" ng-if="processingTemplate.runMode === 'TIME_DRIVEN'">
+                        <cron-gen name="cron" ng-model="processingTemplate.cronExpression"
+                            cron-format="quartz"
+                        >
+                        </cron-gen>
                     </md-tab>
                 </md-tabs>
             </md-content>

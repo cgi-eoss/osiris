@@ -1045,6 +1045,18 @@
 #processing-template-dlg md-autocomplete md-autocomplete-wrap input {
   margin-top: 4px;
 }
+#processing-template-dlg .cron-gen-main {
+  padding-top: 10px;
+}
+#processing-template-dlg .cron-gen-main .cron-gen-container {
+  border: solid 1px #e6e6e6;
+  margin-top: 0;
+  border-top: none;
+  padding-top: 10px;
+}
+#processing-template-dlg .cron-gen-main .cron-gen-container .well {
+  background-color: transparent;
+}
 
 @media (min-width: 1600px) and (max-width: 2399px) {
   .container {

@@ -251,7 +251,7 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
 
         this.getProcessingTemplatesForType = function(type) {
 
-            var uri = rootUri + '/incidentTypes/' + type + '/incidentProcessingTemplates'
+            var uri = rootUri + '/incidentTypes/' + type + '/incidentProcessingTemplates?projection=detailedIncidentProcessingTemplate'
             var deferred = $q.defer();
             halAPI.from(uri)
                 .newRequest()

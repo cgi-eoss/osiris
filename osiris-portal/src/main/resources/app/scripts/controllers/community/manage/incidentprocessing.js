@@ -16,6 +16,14 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.isServiceDescriptionLoading = false;
         $scope.isSearchParametersLoading = true;
 
+        $scope.runModes = [{
+            value: 'DATA_DRIVEN',
+            title: 'Data driven'
+        }, {
+            value: 'TIME_DRIVEN' ,
+            title: 'Time driven'
+        }];
+
         $scope.searchForm = {
             config: {},
             api: {},
@@ -44,6 +52,15 @@ define(['../../../osirismodules'], function (osirismodules) {
                 $scope.searchForm.data = formData;
 
                 $scope.processingTemplate.systematicInput = processingTemplate.systematicInput;
+                $scope.processingTemplate.cronExpression = processingTemplate.cronExpression;
+                if ($scope.processingInstance && $scope.processingInstance.cronExpression) {
+                    $scope.processingTemplate.cronExpression = $scope.processingInstance.cronExpression;
+                }
+                if ($scope.processingTemplate.cronExpression) {
+                    $scope.processingTemplate.runMode = 'TIME_DRIVEN';
+                } else {
+                    $scope.processingTemplate.runMode = 'DATA_DRIVEN';
+                }
                 $scope.processingTemplate.service = processingTemplate.service;
 
             });
@@ -87,6 +104,13 @@ define(['../../../osirismodules'], function (osirismodules) {
             return ProcessingTemplateService.getProcessingServices(expression);
         }
 
+        $scope.shouldHideField = function(field) {
+            if ($scope.processingTemplate.runMode === 'DATA_DRIVEN' && $scope.processingTemplate.systematicInput === field.id) {
+                return true;
+            }
+            return false;
+        }
+
         $scope.onSelectedServiceChange = function(service) {
 
             $scope.processingTemplate.serviceDetails = null;
@@ -99,7 +123,9 @@ define(['../../../osirismodules'], function (osirismodules) {
 
                     $scope.processingTemplate.serviceDetails = detailedService;
                     detailedService.serviceDescriptor.dataInputs = detailedService.serviceDescriptor.dataInputs.filter(function(input) {
-                        return input.id !== 'aoi';
+                        return !['aoi', 'startDate', 'endDate'].find(function(id) {
+                            return (id === input.id);
+                        });
                     });
 
                     $scope.isServiceDescriptionLoading = false;
@@ -122,6 +148,12 @@ define(['../../../osirismodules'], function (osirismodules) {
             }
         }
 
+        $scope.updateProcessingRunMode = function() {
+            if ($scope.processingTemplate.runMode === 'TIME_DRIVEN') {
+                $scope.processingTemplate.cronExpression = $scope.processingTemplate.cronExpression || '0 0 1 1/1 * ? *';
+            }
+        }
+
         $scope.getDefaultValue = function(fieldDesc){
             return $scope.processingTemplate.serviceParams[fieldDesc.id] ? $scope.processingTemplate.serviceParams[fieldDesc.id] : fieldDesc.defaultAttrs.value;
         };
@@ -129,11 +161,17 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.updateIncidentProcessing = function($event) {
 
             if (!$scope.processingInstance) {
-                delete  $scope.processingTemplate.serviceParams[$scope.processingTemplate.systematicInput];
 
-                var searchParams = $scope.searchForm.api.getFormData();
-                for (var key in searchParams) {
-                    searchParams[key] = [searchParams[key]];
+                var searchParams, cronExpression;
+
+                if ($scope.processingTemplate.runMode === 'DATA_DRIVEN') {
+                    delete  $scope.processingTemplate.serviceParams[$scope.processingTemplate.systematicInput];
+                    searchParams = $scope.searchForm.api.getFormData();
+                    for (var key in searchParams) {
+                        searchParams[key] = [searchParams[key]];
+                    }
+                } else {
+                    cronExpression = $scope.processingTemplate.cronExpression;
                 }
 
                 var serviceParams = {}
@@ -144,12 +182,25 @@ define(['../../../osirismodules'], function (osirismodules) {
                 var serviceData  = {
                     title: $scope.processingTemplate.title,
                     description: $scope.processingTemplate.description,
-                    systematicInput: $scope.processingTemplate.systematicInput,
                     fixedInputs: serviceParams,
-                    searchParameters: searchParams,
                     service: $scope.processingTemplate.service._links.self.href,
                     incidentType: $scope.incidentType._links.self.href
                 };
+
+                if (searchParams) {
+                    serviceData.searchParameters = searchParams;
+                    serviceData.systematicInput = $scope.processingTemplate.systematicInput;
+                    if ($scope.processingTemplateToEdit && $scope.processingTemplateToEdit.cronExpression) {
+                        serviceData.cronExpression = null;
+                    }
+                }
+
+                if (cronExpression) {
+                    serviceData.cronExpression = cronExpression;
+                    if ($scope.processingTemplateToEdit && $scope.processingTemplateToEdit.searchParameters) {
+                        serviceData.searchParameters = null;
+                    }
+                }
 
                 if ($scope.processingTemplateToEdit) {
                     ProcessingTemplateService.updateProcessingTemplate($scope.processingTemplateToEdit.id, serviceData).then(function() {
@@ -162,13 +213,22 @@ define(['../../../osirismodules'], function (osirismodules) {
                 }
             } else {
 
-                $scope.processingInstance.searchParameters = {};
+                if ($scope.processingTemplate.runMode === 'DATA_DRIVEN') {
+                    $scope.processingInstance.searchParameters = {};
 
-                var formSearchParams = $scope.searchForm.api.getFormData();
-                var originalSearchParams = $scope.processingTemplateToEdit.searchParameters;
-                for (var key in formSearchParams) {
-                    if (!originalSearchParams[key] || formSearchParams[key] !== originalSearchParams[key][0]) {
-                        $scope.processingInstance.searchParameters[key] = [formSearchParams[key]];
+                    var formSearchParams = $scope.searchForm.api.getFormData();
+                    var originalSearchParams = $scope.processingTemplateToEdit.searchParameters;
+                    for (var key in formSearchParams) {
+                        if (!originalSearchParams[key] || formSearchParams[key] !== originalSearchParams[key][0]) {
+                            $scope.processingInstance.searchParameters[key] = [formSearchParams[key]];
+                        }
+                    }
+                } else {
+                    let cronExpression = $scope.processingTemplateToEdit.cronExpression;
+                    if (!cronExpression || $scope.processingTemplate.cronExpression !== cronExpression) {
+                        $scope.processingInstance.cronExpression = $scope.processingTemplate.cronExpression;
+                    } else {
+                        delete $scope.processingInstance.cronExpression;
                     }
                 }
 

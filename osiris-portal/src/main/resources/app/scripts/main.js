@@ -20,6 +20,7 @@ require.config({
         ngSanitize: 'vendor/angular-sanitize/angular-sanitize',
         ngTouch: 'vendor/angular-touch/angular-touch',
         ngBootstrap: 'vendor/angular-ui-bootstrap/ui-bootstrap-tpls',
+        angularCronGen: 'vendor/angular-cron-gen/cron-gen.min',
 
         // Other vendor modules
         bootstrap: 'vendor/bootstrap/js/bootstrap',
@@ -62,6 +63,7 @@ require.config({
         ngSanitize: { deps: ['angular'], exports: 'ngSanitize' },
         ngBootstrap: { deps: ['angular'], exports: 'ngBootstrap' },
         ngOpenlayers: { deps: ['angular'], exports: 'ngOpenlayers' },
+        angularCronGen: {deps: ['angular'], exports: 'angular-cron-gen'},
         ol: { exports: 'ol' },
         bootstrap: { deps: ['jquery'] },
         clipboard: { exports: 'clipboard' },

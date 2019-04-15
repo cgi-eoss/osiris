@@ -10,7 +10,7 @@
 
 define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, moment) {
 
-    osirismodules.controller('CommunityManageIncidentCtrl', ['IncidentService', 'IncidentTypeService', 'IncidentProcessingService', 'CollectionService', 'SystematicService', 'TabService', 'AoiService', 'MapService', 'CommunityService', '$scope', '$mdDialog', function (IncidentService, IncidentTypeService, IncidentProcessingService, CollectionService, SystematicService, TabService, AoiService, MapService, CommunityService, $scope, $mdDialog) {
+    osirismodules.controller('CommunityManageIncidentCtrl', ['$q', 'IncidentService', 'IncidentTypeService', 'IncidentProcessingService', 'ProductService', 'CollectionService', 'SystematicService', 'TabService', 'AoiService', 'MapService', 'CommunityService', '$scope', '$mdDialog', function ($q, IncidentService, IncidentTypeService, IncidentProcessingService, ProductService, CollectionService, SystematicService, TabService, AoiService, MapService, CommunityService, $scope, $mdDialog) {
 
         /* Get stored Databaskets & Files details */
         $scope.incidentParams = IncidentService.params.community;
@@ -211,13 +211,41 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
             return processingTemplates.filter(function(template) {
                 return template.instance.active
             }).map(function(template) {
-                return {
+                var instanceConfig = {
                     inputs: template.instance.inputs,
                     searchParameters: template.instance.searchParameters,
                     template: template._links.self.href,
                     incident: incident
                 }
+                if (template.instance.cronExpression) {
+                    instanceConfig.cronExpression = template.instance.cronExpression;
+                }
+                return instanceConfig;
             });
+        }
+
+        var populateImplicitInputs = function(incidentParams) {
+            let requests = [];
+
+            $scope.incidentData.processingTemplates.forEach(function(template) {
+                if (template.instance.active && template.cronExpression) {
+                    requests.push(ProductService.getService(template.service).then(function(detailedService) {
+                        detailedService.serviceDescriptor.dataInputs.forEach(function(input) {
+                            if (input.id === 'aoi') {
+                                template.instance.inputs['aoi'] = incidentParams.aoi;
+                            }
+                            if (input.id === 'startDate') {
+                                template.instance.inputs['startDate'] = incidentParams.startDate;
+                            }
+                            if (input.id === 'endDate') {
+                                template.instance.inputs['endDate'] = incidentParams.endDate;
+                            }
+                        });
+                    }));
+                }
+            })
+
+            return $q.all(requests);
         }
 
         $scope.addOrUpdateIncident = function() {
@@ -229,13 +257,13 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
 
             if (!data.id) {
                 IncidentService.createIncident(data).then(function(newIncident) {
-                    var processingInstances = getProcessingInstances(newIncident._links.self.href, $scope.incidentData.processingTemplates);
-                    IncidentProcessingService.createIncidentProcessings(processingInstances).then(function(response) {
-
-                        IncidentService.startIncidentProcessing(response[0]._embedded.incident).then(function() {
-                            IncidentService.refreshIncidents('community', 'Create', newIncident)
-                        })
-
+                    populateImplicitInputs(data).then(function() {
+                        var processingInstances = getProcessingInstances(newIncident._links.self.href, $scope.incidentData.processingTemplates);
+                        IncidentProcessingService.createIncidentProcessings(processingInstances).then(function(response) {
+                            IncidentService.startIncidentProcessing(response[0]._embedded.incident).then(function() {
+                                IncidentService.refreshIncidents('community', 'Create', newIncident)
+                            })
+                        });
                     });
                 });
             } else {
