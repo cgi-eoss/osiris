@@ -80,7 +80,8 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 	
 			Properties indexerProperties = new Properties();
 			indexerProperties.load(getClass().getResourceAsStream("indexer.properties"));
-			indexerProperties.setProperty("Name", workspace + "_" + storeName + "_" + coverageName);
+			String qualifiedCoverageName = getQualifiedCoverageName(workspace, storeName, coverageName);
+            indexerProperties.setProperty("Name", qualifiedCoverageName);
 			ByteArrayOutputStream indexerBaos = new ByteArrayOutputStream();
 	
 			indexerProperties.store(indexerBaos, "");
@@ -148,13 +149,18 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 		CoverageConfig coverageConfig = XML_MAPPER.readValue(getClass().getResourceAsStream("coverageconfig.xml"), CoverageConfig.class);
 		
 		coverageConfig.setName(coverageName);
-		coverageConfig.setNativeCoverageName(coverageName);
+		String qualifiedCoverageName = getQualifiedCoverageName(workspace, storeName, coverageName);
+        coverageConfig.setNativeCoverageName(qualifiedCoverageName);
 		System.out.println(XML_MAPPER.writeValueAsString(coverageConfig));
 		String postResult = HTTPUtils.post(coveragesUrl, XML_MAPPER.writeValueAsString(coverageConfig), "text/xml", gsuser, gspass);
 		if (postResult == null) {
 			throw new IngestionException("Cannot create coverage");
 		}
 	}
+
+    private String getQualifiedCoverageName(String workspace, String storeName, String coverageName) {
+        return workspace + "_" + storeName + "_" + coverageName;
+    }
 
 	
     public void deleteGranuleFromMosaic(String workspace, String storeName, String location) {
