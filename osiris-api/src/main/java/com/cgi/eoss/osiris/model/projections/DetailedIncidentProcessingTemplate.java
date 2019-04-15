@@ -18,6 +18,7 @@ public interface DetailedIncidentProcessingTemplate extends Identifiable<Long> {
     ShortIncidentType getIncidentType();
     ShortUser getOwner();
     ShortOsirisService getService();
+    String getCronExpression();
     String getSystematicInput();
     Multimap<String, String> getFixedInputs();
     ListMultimap<String, String> getSearchParameters();
