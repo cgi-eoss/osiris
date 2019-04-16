@@ -8,7 +8,7 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -114,11 +114,11 @@ public class OsirisFile implements OsirisEntityWithOwner<OsirisFile> {
     /**
      * <p>Geoserver layers this file is associated to</p>
      */
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "osiris_geoserver_layer_files",
-            joinColumns = @JoinColumn(name = "file_id", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "geoserver_layer_id", nullable = false),
-            indexes = @Index(name = "osiris_geoserver_layer_files_layer_file_idx", columnList = "geoserver_layer_id,file_id", unique = true))
+            joinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "geoserver_layer_id", referencedColumnName = "id"),
+            uniqueConstraints = @UniqueConstraint(name = "osiris_geoserver_layer_files_layer_file_idx", columnNames = {"geoserver_layer_id", "file_id"}))
     private Set<GeoserverLayer> geoserverLayers = Sets.newHashSet();
     
     /**

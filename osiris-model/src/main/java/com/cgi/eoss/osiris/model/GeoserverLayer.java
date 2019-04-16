@@ -16,7 +16,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -81,11 +80,7 @@ public class GeoserverLayer implements OsirisEntityWithOwner<GeoserverLayer> {
     /**
      * <p>Member files of this geoserver layer.</p>
      */
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "osiris_geoserver_layer_files",
-            joinColumns = @JoinColumn(name = "geoserver_layer_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"),
-            uniqueConstraints = @UniqueConstraint(name = "osiris_geoserver_layer_files_layer_file_idx", columnNames = {"geoserver_layer_id", "file_id"}))
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "geoserverLayers")
     private Set<OsirisFile> files = Sets.newHashSet();
     
     /**

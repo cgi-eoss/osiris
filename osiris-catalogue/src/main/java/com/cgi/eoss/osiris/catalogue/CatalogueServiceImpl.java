@@ -124,12 +124,24 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
                 path);
         osirisFile.setDataSource(dataSourceDataService.getForService(outputProductMetadata.getService()));
         osirisFile.setCollection(collectionDataService.getByIdentifier(collection));
-        java.util.Collection<GeoserverLayer> syncedLayers = geoserverLayerDataService.save(osirisFile.getGeoserverLayers());
-        osirisFile.getGeoserverLayers().clear();
-        osirisFile.getGeoserverLayers().addAll(syncedLayers);
+        syncGeoserverLayers(osirisFile);
         return osirisFileDataService.save(osirisFile);
     }
 
+    private void syncGeoserverLayers(OsirisFile osirisFile) {
+        Set<GeoserverLayer> fileLayers = osirisFile.getGeoserverLayers();
+        Set<GeoserverLayer> syncedLayers = new HashSet<>();
+        for (GeoserverLayer fileLayer: fileLayers) {
+            GeoserverLayer syncedLayer = geoserverLayerDataService.findOneByExample(fileLayer);
+            if (syncedLayer == null) {
+                syncedLayer = fileLayer;
+            }
+            syncedLayer.getFiles().add(osirisFile);
+            syncedLayers.add(syncedLayer);
+        }
+        osirisFile.setGeoserverLayers(syncedLayers);
+    }
+    
     private void ensureOutputCollectionExists(String collectionIdentifier) {
         Collection collection = collectionDataService.getByIdentifier(collectionIdentifier);
         if (collection == null) {
