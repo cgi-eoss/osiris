@@ -63,7 +63,7 @@ require.config({
         ngSanitize: { deps: ['angular'], exports: 'ngSanitize' },
         ngBootstrap: { deps: ['angular'], exports: 'ngBootstrap' },
         ngOpenlayers: { deps: ['angular'], exports: 'ngOpenlayers' },
-        angularCronGen: {deps: ['angular'], exports: 'angular-cron-gen'},
+        angularCronGen: {deps: ['angular'], exports: 'angularCronGen'},
         ol: { exports: 'ol' },
         bootstrap: { deps: ['jquery'] },
         clipboard: { exports: 'clipboard' },
