@@ -82,6 +82,9 @@ public class OsirisSearchProvider extends RestoSearchProvider {
         parameters.getValue("publicationDateStart").ifPresent(s -> queryParameters.put("publishedAfter", s));
         parameters.getValue("publicationDateEnd").ifPresent(s -> queryParameters.put("publishedBefore", s));
         parameters.getValue("osirisparam").ifPresent(s -> queryParameters.put("osirisparam", s));
+        parameters.getValue("sortParam").ifPresent(s -> queryParameters.put("sortParam", s));
+        parameters.getValue("sortOrder").ifPresent(s -> queryParameters.put("sortOrder", s));
+        
         return queryParameters;
     }
 
