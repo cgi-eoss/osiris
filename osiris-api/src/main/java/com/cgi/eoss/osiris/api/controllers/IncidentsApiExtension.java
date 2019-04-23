@@ -177,7 +177,7 @@ public class IncidentsApiExtension {
 	private GeoServerSpec getShapefileSpec(IncidentProcessing incidentProcessing, OsirisService s, Parameter p) {
 		return GeoServerSpec.builder()
 				.geoserverType(GeoServerType.SHAPEFILE_POSTGIS_IMPORT)
-				.layerName("incident1"+ incidentProcessing.getIncident().getId() + "_processing" + incidentProcessing.getId())
+				.layerName("incident_"+ incidentProcessing.getIncident().getId() + "_processing_" + incidentProcessing.getId())
 			    .build();
 	}
 
