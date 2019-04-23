@@ -65,6 +65,8 @@ public class RestoServiceImpl implements RestoService {
 
     @Value("${osiris.catalogue.resto.collection.outputProductsModel:RestoModel_Osiris_Output}")
     private String outputProductModel;
+    
+    private final int RESTO_COLLECTION_SHORT_NAME_LIMIT= 16;
 
     @Autowired
     public RestoServiceImpl(@Value("${osiris.catalogue.resto.url:http://osiris-resto/resto/}") String restoBaseUrl,
@@ -290,8 +292,10 @@ public class RestoServiceImpl implements RestoService {
         RestoCollection.RestoCollectionBuilder builder = RestoCollection.builder().name(collection.getIdentifier()).status("public")
                 .licenseId("unlicensed").rights(ImmutableMap.of("download", 0, "visualize", 1));
         builder.model(outputProductModel)
+        //Resto imposes a length limit on the collection short name, so we use the prefix of the platform collection name
+        //(there are no constraints on uniqueness)
         .osDescription(ImmutableMap.of("en",
-                RestoCollection.OpensearchDescription.builder().shortName(collection.getName())
+                RestoCollection.OpensearchDescription.builder().shortName(collection.getName().substring(0, RESTO_COLLECTION_SHORT_NAME_LIMIT))
                         .longName(collection.getOwner().getName()+" - " + collection.getName()).description(collection.getDescription())
                         .tags("osiris osiris output outputs generated " + collection.getName()).query(collection.getName()).build()))
         .propertiesMapping(ImmutableMap.of("osirisFileType", OsirisFile.Type.OUTPUT_PRODUCT.toString()));
