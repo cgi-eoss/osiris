@@ -232,13 +232,13 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
                     requests.push(ProductService.getService(template.service).then(function(detailedService) {
                         detailedService.serviceDescriptor.dataInputs.forEach(function(input) {
                             if (input.id === 'aoi') {
-                                template.instance.inputs['aoi'] = incidentParams.aoi;
+                                template.instance.inputs['aoi'] = [incidentParams.aoi];
                             }
                             if (input.id === 'startDate') {
-                                template.instance.inputs['startDate'] = incidentParams.startDate;
+                                template.instance.inputs['startDate'] = [incidentParams.startDate];
                             }
                             if (input.id === 'endDate') {
-                                template.instance.inputs['endDate'] = incidentParams.endDate;
+                                template.instance.inputs['endDate'] = [incidentParams.endDate];
                             }
                         });
                     }));
