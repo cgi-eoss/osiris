@@ -7,7 +7,6 @@ import com.cgi.eoss.osiris.logging.Logging;
 import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.DataSource;
 import com.cgi.eoss.osiris.model.Databasket;
-import com.cgi.eoss.osiris.model.GeoserverLayer;
 import com.cgi.eoss.osiris.model.OsirisFile;
 import com.cgi.eoss.osiris.model.OsirisFilesRelation;
 import com.cgi.eoss.osiris.model.User;
@@ -124,22 +123,8 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
                 path);
         osirisFile.setDataSource(dataSourceDataService.getForService(outputProductMetadata.getService()));
         osirisFile.setCollection(collectionDataService.getByIdentifier(collection));
-        syncGeoserverLayers(osirisFile);
+        geoserverLayerDataService.syncGeoserverLayers(osirisFile);
         return osirisFileDataService.save(osirisFile);
-    }
-
-    private void syncGeoserverLayers(OsirisFile osirisFile) {
-        Set<GeoserverLayer> fileLayers = osirisFile.getGeoserverLayers();
-        Set<GeoserverLayer> syncedLayers = new HashSet<>();
-        for (GeoserverLayer fileLayer: fileLayers) {
-            GeoserverLayer syncedLayer = geoserverLayerDataService.findOneByExample(fileLayer);
-            if (syncedLayer == null) {
-                syncedLayer = fileLayer;
-            }
-            syncedLayer.getFiles().add(osirisFile);
-            syncedLayers.add(syncedLayer);
-        }
-        osirisFile.setGeoserverLayers(syncedLayers);
     }
     
     private void ensureOutputCollectionExists(String collectionIdentifier) {
