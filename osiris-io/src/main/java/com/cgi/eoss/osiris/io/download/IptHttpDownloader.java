@@ -81,6 +81,11 @@ public class IptHttpDownloader implements Downloader {
     }
 
     @Override
+    public int getPriority(URI uri) {
+        return properties.getPriority();
+    }
+    
+    @Override
     public Path download(Path targetDir, URI uri) throws IOException {
     	int count = 0;
     	int maxTries = properties.getRetries();
@@ -236,6 +241,8 @@ public class IptHttpDownloader implements Downloader {
         private String authDomain;
         @Value("${osiris.worker.downloader.ipt.retries:3}")
         private int retries;
+        @Value("${osiris.worker.downloader.ipt.priority:0}")
+        private int priority;
     }
 
 }
