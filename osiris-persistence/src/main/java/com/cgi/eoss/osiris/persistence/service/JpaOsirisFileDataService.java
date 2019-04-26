@@ -21,9 +21,12 @@ public class JpaOsirisFileDataService extends AbstractJpaDataService<OsirisFile>
 
     private final OsirisFileDao dao;
 
+    private GeoserverLayerDataService geoserverLayerDataService;
+    
     @Autowired
-    public JpaOsirisFileDataService(OsirisFileDao osirisFileDao) {
+    public JpaOsirisFileDataService(OsirisFileDao osirisFileDao, GeoserverLayerDataService geoserverLayerDataService) {
         this.dao = osirisFileDao;
+        this.geoserverLayerDataService = geoserverLayerDataService;
     }
 
     @Override
@@ -59,6 +62,13 @@ public class JpaOsirisFileDataService extends AbstractJpaDataService<OsirisFile>
     @Override
     public List<OsirisFile> getByType(OsirisFile.Type type) {
         return dao.findByType(type);
+    }
+
+    @Override
+    @Transactional
+    public OsirisFile syncGeoserverLayersAndSave(OsirisFile osirisFile) {
+        geoserverLayerDataService.syncGeoserverLayers(osirisFile);
+        return this.save(osirisFile);
     }
 
 }

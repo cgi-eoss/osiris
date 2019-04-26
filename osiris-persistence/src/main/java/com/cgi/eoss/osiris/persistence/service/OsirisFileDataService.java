@@ -18,4 +18,6 @@ public interface OsirisFileDataService extends
     List<OsirisFile> findByOwner(User user);
 
     List<OsirisFile> getByType(OsirisFile.Type type);
+
+    OsirisFile syncGeoserverLayersAndSave(OsirisFile osirisFile);
 }

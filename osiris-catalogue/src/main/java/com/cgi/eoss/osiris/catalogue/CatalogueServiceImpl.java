@@ -16,7 +16,6 @@ import com.cgi.eoss.osiris.model.internal.ReferenceDataMetadata;
 import com.cgi.eoss.osiris.persistence.service.CollectionDataService;
 import com.cgi.eoss.osiris.persistence.service.DataSourceDataService;
 import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
-import com.cgi.eoss.osiris.persistence.service.GeoserverLayerDataService;
 import com.cgi.eoss.osiris.persistence.service.OsirisFileDataService;
 import com.cgi.eoss.osiris.persistence.service.OsirisFilesRelationDataService;
 import com.cgi.eoss.osiris.persistence.service.UserDataService;
@@ -69,10 +68,9 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
     private final ExternalProductDataService externalProductDataService;
     private final OsirisSecurityService securityService;
     private final UserDataService userDataService;
-    private final GeoserverLayerDataService geoserverLayerDataService;
     private final OsirisFilesRelationDataService osirisFilesRelationDataService;
     @Autowired
-    public CatalogueServiceImpl(OsirisFileDataService osirisFileDataService, CollectionDataService collectionDataService, DataSourceDataService dataSourceDataService, DatabasketDataService databasketDataService, OutputProductService outputProductService, ReferenceDataService referenceDataService, ExternalProductDataService externalProductDataService, OsirisSecurityService securityService, UserDataService userDataService, GeoserverLayerDataService geoserverLayerDataService, OsirisFilesRelationDataService osirisFilesRelationDataService) {
+    public CatalogueServiceImpl(OsirisFileDataService osirisFileDataService, CollectionDataService collectionDataService, DataSourceDataService dataSourceDataService, DatabasketDataService databasketDataService, OutputProductService outputProductService, ReferenceDataService referenceDataService, ExternalProductDataService externalProductDataService, OsirisSecurityService securityService, UserDataService userDataService, OsirisFilesRelationDataService osirisFilesRelationDataService) {
         this.osirisFileDataService = osirisFileDataService;
         this.collectionDataService = collectionDataService;
         this.dataSourceDataService = dataSourceDataService;
@@ -82,7 +80,6 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
         this.externalProductDataService = externalProductDataService;
         this.securityService = securityService;
         this.userDataService = userDataService;
-        this.geoserverLayerDataService = geoserverLayerDataService;
         this.osirisFilesRelationDataService = osirisFilesRelationDataService;
     }
 
@@ -123,8 +120,7 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
                 path);
         osirisFile.setDataSource(dataSourceDataService.getForService(outputProductMetadata.getService()));
         osirisFile.setCollection(collectionDataService.getByIdentifier(collection));
-        geoserverLayerDataService.syncGeoserverLayers(osirisFile);
-        return osirisFileDataService.save(osirisFile);
+        return osirisFileDataService.syncGeoserverLayersAndSave(osirisFile);
     }
     
     private void ensureOutputCollectionExists(String collectionIdentifier) {

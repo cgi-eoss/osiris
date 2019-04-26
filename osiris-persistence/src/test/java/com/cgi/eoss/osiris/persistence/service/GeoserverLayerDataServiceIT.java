@@ -51,12 +51,13 @@ public class GeoserverLayerDataServiceIT {
 
         GeoserverLayer geoserverLayer = new GeoserverLayer(owner, "test", "test", StoreType.MOSAIC);
         osirisFile.getGeoserverLayers().add(geoserverLayer);
-        geoserverLayerDataService.syncGeoserverLayers(osirisFile);
-        fileDataService.save(ImmutableSet.of(osirisFile, osirisFile2));
+        fileDataService.syncGeoserverLayersAndSave(osirisFile);
+        fileDataService.save(ImmutableSet.of(osirisFile2));
         assertThat(geoserverLayerDataService.getAll().size(), is (1));
         GeoserverLayer layer = geoserverLayerDataService.getAll().get(0);
         assertThat(layer.getFiles().size(), is (1));
     }
+    
     
     @Test
     public void testUpdateGeoserverLayer() throws Exception {
@@ -71,8 +72,7 @@ public class GeoserverLayerDataServiceIT {
         GeoserverLayer geoserverLayer1 = new GeoserverLayer(owner, "test", "test", StoreType.MOSAIC);
         osirisFile1.getGeoserverLayers().add(geoserverLayer1);
         
-        geoserverLayerDataService.syncGeoserverLayers(osirisFile1);
-        fileDataService.save(ImmutableSet.of(osirisFile1));
+        fileDataService.syncGeoserverLayersAndSave(osirisFile1);
         
         assertThat(geoserverLayerDataService.getAll().size(), is (1));
         GeoserverLayer layer = geoserverLayerDataService.getAll().get(0);
@@ -86,10 +86,7 @@ public class GeoserverLayerDataServiceIT {
         
         GeoserverLayer geoserverLayer2 = new GeoserverLayer(owner, "test", "test", StoreType.POSTGIS);
         osirisFile2.getGeoserverLayers().add(geoserverLayer2);
-        geoserverLayerDataService.syncGeoserverLayers(osirisFile2);
-        
-        //osirisFile2.setGeoserverLayers(layers);
-        fileDataService.save(ImmutableSet.of(osirisFile2));
+        fileDataService.syncGeoserverLayersAndSave(osirisFile2);
         assertThat(geoserverLayerDataService.getAll().size(), is (1));
         layer = geoserverLayerDataService.getAll().get(0);
         layer = geoserverLayerDataService.refreshFull(layer);
