@@ -69,7 +69,9 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 		try (ZipOutputStream zos = new ZipOutputStream(baos)) {
 			Properties timeregexProperties = new Properties();
 			timeregexProperties.load(getClass().getResourceAsStream("timeregex.properties"));
-			timeregexProperties.setProperty("regex", timeRegexp);
+			if (timeRegexp != null) {
+			    timeregexProperties.setProperty("regex", timeRegexp);
+			}
 			ByteArrayOutputStream timeRegexBaos = new ByteArrayOutputStream();
 	
 			timeregexProperties.store(timeRegexBaos, "");
