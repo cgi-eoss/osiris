@@ -439,7 +439,7 @@ public class OsirisJobUpdatesManager {
 					
 					private OffsetDateTime parseOffsetDateTime(String startDateStr, LocalTime defaultTime) {
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd[[ ]['T']HHmm[ss][.SSS][XXX]]");
-						TemporalAccessor temporalAccessor = formatter.parseBest(startDateStr, OffsetDateTime::from, LocalDate::from);
+						TemporalAccessor temporalAccessor = formatter.parseBest(startDateStr, OffsetDateTime::from, LocalDateTime::from, LocalDate::from);
 						if (temporalAccessor instanceof OffsetDateTime) {
 							return (OffsetDateTime) temporalAccessor;
 						} 
