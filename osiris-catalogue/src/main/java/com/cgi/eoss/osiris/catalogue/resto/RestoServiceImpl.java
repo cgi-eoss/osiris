@@ -24,6 +24,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.apache.commons.lang3.StringUtils;
 import org.geojson.Feature;
 import org.geojson.GeoJsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -295,11 +296,15 @@ public class RestoServiceImpl implements RestoService {
         //Resto imposes a length limit on the collection short name, so we use the prefix of the platform collection name
         //(there are no constraints on uniqueness)
         .osDescription(ImmutableMap.of("en",
-                RestoCollection.OpensearchDescription.builder().shortName(collection.getName().substring(0, RESTO_COLLECTION_SHORT_NAME_LIMIT))
+                RestoCollection.OpensearchDescription.builder().shortName(getRestoCollectionShortName(collection.getName()))
                         .longName(collection.getOwner().getName()+" - " + collection.getName()).description(collection.getDescription())
                         .tags("osiris osiris output outputs generated " + collection.getName()).query(collection.getName()).build()))
         .propertiesMapping(ImmutableMap.of("osirisFileType", OsirisFile.Type.OUTPUT_PRODUCT.toString()));
         return builder.build();
+    }
+
+    private String getRestoCollectionShortName(String collectionName) {
+        return StringUtils.substring(collectionName, 0, RESTO_COLLECTION_SHORT_NAME_LIMIT);
     }
     
     @Override
