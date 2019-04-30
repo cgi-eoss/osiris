@@ -515,15 +515,19 @@ public class OsirisJobUpdatesManager {
             properties.put("collection", collectionSpecForOutput);
         }
         
-        getServiceOutputParameter(job.getConfig().getService(), outputId).ifPresent(p -> addPlatformMetadata(properties, p));
+        Map<String, String> extraParams = new HashMap<>();
+        extraParams.put("outputId", outputId);
+        
+        getServiceOutputParameter(job.getConfig().getService(), outputId).ifPresent(p -> addPlatformMetadata(extraParams, p));
+        properties.put("extraParams", extraParams);
         
         OutputProductMetadata outputProduct = outputProductMetadataBuilder.productProperties(properties).build();
         return outputProduct;
     }
 	
-	private void addPlatformMetadata(Map<String, Object> properties, Parameter outputParameter) {
+	private void addPlatformMetadata(Map<String, String> extraParams, Parameter outputParameter) {
 	    if (outputParameter.getPlatformMetadata() != null && outputParameter.getPlatformMetadata().size() > 0 ) {
-	        properties.put("extraParams", outputParameter.getPlatformMetadata());
+	        extraParams.putAll(outputParameter.getPlatformMetadata());
         }
 	}
 
