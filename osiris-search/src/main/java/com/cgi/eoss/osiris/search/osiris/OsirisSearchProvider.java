@@ -84,7 +84,7 @@ public class OsirisSearchProvider extends RestoSearchProvider {
         parameters.getValue("osirisparam").ifPresent(s -> queryParameters.put("osirisparam", s));
         parameters.getValue("sortParam").ifPresent(s -> queryParameters.put("sortParam", s));
         parameters.getValue("sortOrder").ifPresent(s -> queryParameters.put("sortOrder", s));
-        
+        parameters.getValue("jobId").ifPresent(s -> queryParameters.put("jobId", s));
         return queryParameters;
     }
 
