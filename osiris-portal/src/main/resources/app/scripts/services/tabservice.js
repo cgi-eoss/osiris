@@ -70,7 +70,7 @@ define(['../osirismodules'], function (osirismodules) {
                 community: {
                     activeTab: tabs.COMMUNITY,
                     sideViewVisible: true,
-                    activeSideNav: communityTabs.GROUPS,
+                    activeSideNav: communityTabs.INCIDENTS,
                     activeBottomNav: undefined
                 },
                 admin: {

@@ -2,20 +2,17 @@
 
     <ul class="osiris-nav">
 
-        <li ng-click="togglePage(communityTabs.GROUPS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.GROUPS }">
-            <i class="material-icons" uib-tooltip="Groups" tooltip-placement="right">group</i>
-        </li>
-        <!--li ng-click="togglePage(communityTabs.PROJECTS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.PROJECTS}">
-            <i class="material-icons" uib-tooltip="Projects" tooltip-placement="right">folder_special</i>
-        </li-->
-        <li ng-click="togglePage(communityTabs.COLLECTIONS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.COLLECTIONS}">
-            <i class="material-icons" uib-tooltip="Collections" tooltip-placement="right">collections</i>
+        <li ng-click="togglePage(communityTabs.INCIDENTS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.INCIDENTS}">
+            <i class="material-icons" uib-tooltip="Incidents" tooltip-placement="right">warning</i>
         </li>
         <li ng-click="togglePage(communityTabs.INCIDENTTYPES)" ng-class="{'active': navInfo.activeSideNav === communityTabs.INCIDENTTYPES}">
             <i class="material-icons" uib-tooltip="Incident types" tooltip-placement="right">security</i>
         </li>
-        <li ng-click="togglePage(communityTabs.INCIDENTS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.INCIDENTS}">
-            <i class="material-icons" uib-tooltip="Incidents" tooltip-placement="right">warning</i>
+        <li ng-click="togglePage(communityTabs.GROUPS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.GROUPS }">
+            <i class="material-icons" uib-tooltip="Groups" tooltip-placement="right">group</i>
+        </li>
+        <li ng-click="togglePage(communityTabs.COLLECTIONS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.COLLECTIONS}">
+            <i class="material-icons" uib-tooltip="Collections" tooltip-placement="right">collections</i>
         </li>
         <li ng-click="togglePage(communityTabs.DATABASKETS)" ng-class="{'active': navInfo.activeSideNav === communityTabs.DATABASKETS}">
             <i class="material-icons" uib-tooltip="Databaskets" tooltip-placement="right">shopping_basket</i>

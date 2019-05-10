@@ -27,7 +27,7 @@
                 </li>
 
                 <li ng-click="goTo('/community')" ng-if="user.name" aria-label="Manage " ng-class="{ active: isActive('/community')}">
-                    <p><i class="material-icons">person</i><span> Manage / Share</span></p>
+                    <p><i class="material-icons">person</i><span> Administration</span></p>
                 </li>
 
                 <li ng-repeat="endpoint in userEndpoints" ng-click="goTo('/userendpoint/' + endpoint.id)" aria-label="{{endpoint.name}}" ng-class="{ active: isActive('/userendpoint/' + endpoint.id)}">
@@ -41,17 +41,13 @@
 
                 <li aria-label="Analyst">
                     <a ng-href="{{analystpUrl}}" target="_blank">
-                        <p><i class="material-icons">insert_chart</i><span> Analyst</span></p>
+                        <p><i class="material-icons">insert_chart</i><span> Incidents monitoring</span></p>
                     </a>
                 </li>
 
                 <li ng-click="goTo('/helpdesk')" aria-label="Helpdesk" ng-class="{ active: isActive('/helpdesk')}">
                     <p><i class="material-icons">help</i><span> Help</span></p>
                  </li>
-
-                <li ng-click="goTo('/account')" ng-if="user.name" aria-label="Account" ng-class="{ active: isActive('/account')}">
-                   <p><i class="material-icons">account_circle</i><span> My Account</span></p>
-                </li>
 
                 <li ng-if="user.name" aria-label="Logout">
                     <a ng-href="{{osirisUrl}}/Shibboleth.sso/SLogout" target="_self">
