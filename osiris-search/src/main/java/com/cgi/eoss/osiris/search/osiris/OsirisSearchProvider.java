@@ -11,8 +11,13 @@ import com.cgi.eoss.osiris.search.api.SearchResults;
 import com.cgi.eoss.osiris.search.resto.RestoResult;
 import com.cgi.eoss.osiris.search.resto.RestoSearchProvider;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimaps;
 import lombok.extern.log4j.Log4j2;
 import okhttp3.Credentials;
 import okhttp3.HttpUrl;
@@ -43,6 +48,8 @@ public class OsirisSearchProvider extends RestoSearchProvider {
     private final OsirisFileDataService osirisFileDataService;
     private final OsirisSecurityService securityService;
     private final CollectionDataService collectionDataService;
+    private final ObjectMapper unwrappedArrayObjectMapper;
+    
     public OsirisSearchProvider(int priority, OsirisSearchProperties searchProperties, OkHttpClient httpClient, ObjectMapper objectMapper, CatalogueService catalogueService, RestoService restoService, OsirisFileDataService osirisFileDataService, OsirisSecurityService securityService, CollectionDataService collectionDataService) {
         super(searchProperties.getBaseUrl(),
                 httpClient.newBuilder()
@@ -61,6 +68,8 @@ public class OsirisSearchProvider extends RestoSearchProvider {
         this.osirisFileDataService = osirisFileDataService;
         this.securityService = securityService;
         this.collectionDataService = collectionDataService;
+        unwrappedArrayObjectMapper = new ObjectMapper();
+        unwrappedArrayObjectMapper.enable(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED);
     }
 
     @Override
@@ -182,12 +191,14 @@ public class OsirisSearchProvider extends RestoSearchProvider {
             .ifPresent(completionDate -> extraParams.put("osirisEndTime", completionDate));
             
             f.getProperties().put("extraParams", extraParams);
-
-            // OSIRIS links are "_links", resto links are "links"
-            f.setProperty("_links", featureLinks.stream().collect(Collectors.toMap(
-                    Link::getRel,
-                    l -> ImmutableMap.of("href", l.getHref())
-            )));
+            ImmutableListMultimap<String, Link> relToLinkMultimap = Multimaps.index(featureLinks, Link::getRel);
+            ListMultimap<String, Map<String, String>> relToHrefsMultimap = Multimaps.transformValues(relToLinkMultimap, l -> ImmutableMap.of("href", l.getHref()));
+            try {
+                // FS-TEP links are "_links", resto links are "links"
+                f.setProperty("_links", new RawJsonString(unwrappedArrayObjectMapper.writeValueAsString(relToHrefsMultimap.asMap())));
+            } catch (JsonProcessingException e) {
+                LOG.debug("Could not convert feature links to JSON: {}", f.getId(), e);
+            }
         });
         return results;
     }
