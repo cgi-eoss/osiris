@@ -37,43 +37,63 @@ public interface IncidentsApi extends BaseRepositoryApi<Incident>, IncidentsApiC
 
     @Override
     @Query("select t from Incident t where t.owner=user")
+    @Deprecated
     Page<Incident> findByOwner(@Param("owner") User user, Pageable pageable);
 
     @Override
     @Query("select t from Incident t where not t.owner=user")
+    @Deprecated
     Page<Incident> findByNotOwner(@Param("owner") User user, Pageable pageable);
 
     @Override
     @Query("select i from Incident i where i.type=type")
+    @Deprecated
     Page<Incident> findByType(@Param("type") IncidentType type, Pageable pageable);
 
     @Override
     @RestResource(path="findByFilterOnly", rel="findByFilterOnly")
     @Query("select t from Incident t where (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    @Deprecated
     Page<Incident> findByFilterOnly(@Param("filter") String filter, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
 
     @Override
     @RestResource(path = "findByFilterAndOwner", rel = "findByFilterAndOwner")
     @Query("select t from Incident t where t.owner=:owner and (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    @Deprecated
     Page<Incident> findByFilterAndOwner(@Param("filter") String filter, @Param("owner") User user, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
 
     @Override
     @RestResource(path = "findByFilterAndNotOwner", rel = "findByFilterAndNotOwner")
     @Query("select t from Incident t where not t.owner=:owner and (t.title like %:filter% or t.description like %:filter%) and (:incidentType is null or t.type = :incidentType)")
+    @Deprecated
     Page<Incident> findByFilterAndNotOwner(@Param("filter") String filter, @Param("owner") User user, @Param("incidentType") @RequestParam(required = false) IncidentType incidentType, Pageable pageable);
 
     @Override
     @RestResource(path = "findByDateRange", rel = "findByDateRange")
     @Query("select t from Incident t where ((:startDate <= t.startDate AND t.startDate <= :endDate) OR (:startDate <= t.endDate AND t.endDate <= :endDate) OR (t.startDate < :startDate AND :endDate < t.endDate))")
+    @Deprecated
     Page<Incident> findByDateRange(@Param("startDate") Instant startDate, @Param("endDate") Instant endDate, Pageable pageable);
 
     @Override
     @RestResource(path = "findByCollection", rel = "findByCollection")
     @Query("SELECT i FROM Incident i JOIN IncidentProcessing ip WHERE ip.collection = :collection")
+    @Deprecated
     Page<Incident> findByCollection(@Param("collection") Collection collection, Pageable pageable);
 
     @Override
     @RestResource(path = "findBySystematicProcessing", rel = "findBySystematicProcessing")
     @Query("SELECT i from Incident i JOIN IncidentProcessing ip WHERE ip.systematicProcessing = :systematicProcessing")
+    @Deprecated
     Page<Incident> findBySystematicProcessing(@Param("systematicProcessing") SystematicProcessing systematicProcessing, Pageable pageable);
+
+    @Override
+    @RestResource(path = "parametricFind", rel = "parametricFind")
+    @Query("SELECT i from Incident i") // dummy query, implementation in IncidentsApiImpl
+    Page<Incident> parametricFind(@Param("owner") User owner, @Param("notOwner") User notOwner,
+                          @Param("incidentType") IncidentType type,
+                          @Param("filter") String filter,
+                          @Param("startDate") Instant startDate, @Param("endDate") Instant endDate,
+                          @Param("collection") Collection collection,
+                          @Param("systematicProcessing") SystematicProcessing systematicProcessing,
+                          Pageable pageable);
 }

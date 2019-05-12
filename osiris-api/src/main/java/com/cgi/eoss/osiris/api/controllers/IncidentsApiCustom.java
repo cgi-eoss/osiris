@@ -25,4 +25,12 @@ public interface IncidentsApiCustom {
     Page<Incident> findByCollection(Collection collection, Pageable pageable);
 
     Page<Incident> findBySystematicProcessing(SystematicProcessing systematicProcessing, Pageable pageable);
+
+    Page<Incident> parametricFind(User owner, User notOwner,
+                          IncidentType type,
+                          String filter,
+                          Instant startDate, Instant endDate,
+                          Collection collection,
+                          SystematicProcessing systematicProcessing,
+                          Pageable pageable);
 }

@@ -37,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -277,6 +278,7 @@ public class IncidentsApiIT {
     }
 
     @Test
+    @Deprecated
     public void testFindByOwner() throws Exception {
         String entityName = "user";
         mockMvc.perform(get("/api/incidentTypes/search/findByOwner?owner=" + uri(osirisAdmin, entityName))
@@ -285,6 +287,15 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidentTypes.size()").value(1));
 
         mockMvc.perform(get("/api/incidents/search/findByOwner")
+                .header("REMOTE_USER", osirisAdmin.getName())
+                .param("owner", uri(osirisAdmin, entityName)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+    }
+    @Test
+    public void testFindByOwnerWithSingleEndpoint() throws Exception {
+        String entityName = "user";
+        mockMvc.perform(get("/api/incidents/search/parametricFind")
                 .header("REMOTE_USER", osirisAdmin.getName())
                 .param("owner", uri(osirisAdmin, entityName)))
                 .andExpect(status().isOk())
@@ -317,6 +328,7 @@ public class IncidentsApiIT {
     }
 
     @Test
+    @Deprecated
     public void testFindIncidentByType() throws Exception {
         String incidentType1Url = JsonPath.compile("$._links.self.href")
                 .read(mockMvc.perform(get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
@@ -333,8 +345,26 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidents[0].endDate").value(incident1.getEndDate().toString()))
                 .andExpect(jsonPath("$._embedded.incidents[0]._links.self.href").value(endsWith("/incidents/" + incident1.getId())));
     }
+    @Test
+    public void testFindIncidentByTypeWithSingleEndPoint() throws Exception {
+        String incidentType1Url = JsonPath.compile("$._links.self.href")
+                .read(mockMvc.perform(get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
+                        .andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString());
+
+        mockMvc.perform(get("/api/incidents/search/parametricFind").header("REMOTE_USER", osirisAdmin.getName()).param("incidentType", incidentType1Url))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()))
+                .andExpect(jsonPath("$._embedded.incidents[0].type.title").value(incidentType1.getTitle()))
+                .andExpect(jsonPath("$._embedded.incidents[0].aoi").value(incident1.getAoi()))
+                .andExpect(jsonPath("$._embedded.incidents[0].startDate").value(incident1.getStartDate().toString()))
+                .andExpect(jsonPath("$._embedded.incidents[0].endDate").value(incident1.getEndDate().toString()))
+                .andExpect(jsonPath("$._embedded.incidents[0]._links.self.href").value(endsWith("/incidents/" + incident1.getId())));
+    }
 
     @Test
+    @Deprecated
     public void testFindIncidentByFilter() throws Exception {
         mockMvc.perform(get("/api/incidents/search/findByFilterOnly").header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
                 .andExpect(status().isOk())
@@ -359,8 +389,35 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
                 .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
     }
+    @Test
+    public void testFindIncidentByFilterWithSingleEndPoint() throws Exception {
+        String urlTemplate = "/api/incidents/search/parametricFind";
+        mockMvc.perform(get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+
+        mockMvc.perform(get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()).param("filter", "second"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident2.getTitle()));
+
+        mockMvc.perform(get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Inc").param("owner", uri(osirisAdmin, "user")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
+
+        String incidentType1Url = SELF_HREF_JSONPATH.read(mockMvc.perform(
+                get("/api/incidentTypes/" + incidentType1.getId()).header("REMOTE_USER", osirisAdmin.getName()))
+                .andReturn().getResponse().getContentAsString());
+
+        mockMvc.perform(get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()).param("filter", "Incident").param("incidentType", incidentType1Url))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1))
+                .andExpect(jsonPath("$._embedded.incidents[0].title").value(incident1.getTitle()));
+    }
 
     @Test
+    @Deprecated
     public void testFindIncidentByDateRange() throws Exception {
         String urlTemplate = "/api/incidents/search/findByDateRange";
         String name = "REMOTE_USER";
@@ -388,8 +445,37 @@ public class IncidentsApiIT {
         mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.EPOCH.plus(1, ChronoUnit.HOURS).toString()).param(endDate, Instant.now().plus(20, ChronoUnit.DAYS).toString()))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
     }
+    @Test
+    public void testFindIncidentByDateRangeWithSingleEndPoint() throws Exception {
+        String urlTemplate = "/api/incidents/search/parametricFind";
+        String name = "REMOTE_USER";
+        String startDate = "startDate";
+        String endDate = "endDate";
+        // search before date (ignoring the epoch incident)
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().minus(9, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(0));
+        // search after date
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().plus(380, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(400, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(0));
+        // search partially within
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(10, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search fully within
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().plus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(20, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search encompassingly
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.now().minus(10, ChronoUnit.DAYS).toString()).param(endDate, Instant.now().plus(380, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search exactly matching
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.EPOCH.toString()).param(endDate, Instant.EPOCH.plus(1, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search for both of the defined incidents ( both partially within )
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(startDate, Instant.EPOCH.plus(1, ChronoUnit.HOURS).toString()).param(endDate, Instant.now().plus(20, ChronoUnit.DAYS).toString()))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+    }
 
     @Test
+    @Deprecated
     public void testFindIncidentByCollection() throws Exception {
         String urlTemplate = "/api/incidents/search/findByCollection";
         String name = "REMOTE_USER";
@@ -405,20 +491,53 @@ public class IncidentsApiIT {
         mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
                 .andExpect(status().isInternalServerError());
     }
+    @Test
+    public void testFindIncidentByCollectionWithSingleEndPoint() throws Exception {
+        String urlTemplate = "/api/incidents/search/parametricFind";
+        String name = "REMOTE_USER";
+        String entityName = "collection";
+
+        // search by collection related to a single incident
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionSingle, entityName)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search by collection related to a two incidents
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionBoth, entityName)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+        // search by a malformed collection uri
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
+                .andExpect(status().isInternalServerError());
+    }
 
     @Test
+    @Deprecated
     public void testFindIncidentBySystematicProcessing() throws Exception {
-        String urlTemplate = "/api/incidents/search/findBySystematicProcessing";
+        String urlTemplate = "/api/incidents/search/findByCollection";
         String name = "REMOTE_USER";
-        String entityName = "systematicProcessing";
+        String entityName = "collection";
 
-        // search by systematic processing related to a single incident
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(systematicProcessingSingle, entityName)))
+        // search by collection related to a single incident
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionSingle, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
-        // search by systematic processing related to a two incidents
-        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(systematicProcessingBoth, entityName)))
+        // search by collection related to a two incidents
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionBoth, entityName)))
                 .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
-        // search by a malformed systematic processing uri
+        // search by a malformed collection uri
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
+                .andExpect(status().isInternalServerError());
+    }
+    @Test
+    public void testFindIncidentBySystematicProcessingWithSingleEndpoint() throws Exception {
+        String urlTemplate = "/api/incidents/search/parametricFind";
+        String name = "REMOTE_USER";
+        String entityName = "collection";
+
+        // search by collection related to a single incident
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionSingle, entityName)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // search by collection related to a two incidents
+        mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, uri(collectionBoth, entityName)))
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(2));
+        // search by a malformed collection uri
         mockMvc.perform(get(urlTemplate).header(name, osirisAdmin.getName()).param(entityName, "malformed"))
                 .andExpect(status().isInternalServerError());
     }
@@ -440,8 +559,79 @@ public class IncidentsApiIT {
                 .andExpect(jsonPath("$._embedded.incidentTypes[0].title").value(incidentType1.getTitle()));
     }
 
+    /**
+     * Standalone test method for the single end-point search via API.
+     * It checks whether the single endpoint is capable of finding incidents when all of the parameters are used,
+     * and whether all of the parameters can constrain the search.
+     * @throws Exception
+     */
+    @Test
+    public void testFindIncidentBySingleEndPoint() throws Exception {
+        String urlTemplate = "/api/incidents/search/parametricFind";
+        String name = "REMOTE_USER";
+        String[] parameters = {"owner", "notOwner",
+                "incidentType",
+                "filter",
+                "startDate", "endDate",
+                "collection",
+                "systematicProcessing"
+        };
+        Object[] entityPositive = {osirisUser, osirisAdmin,
+                incidentType2,
+                "Incident",
+                Instant.EPOCH, Instant.EPOCH.plus(1, ChronoUnit.DAYS),
+                collectionBoth,
+                systematicProcessingBoth
+        };
+        Object[] entityNegative = {osirisAdmin, osirisUser,
+                incidentType1,
+                "Incidenl",
+                Instant.now(), Instant.now().plus(2, ChronoUnit.DAYS),
+                collectionSingle,
+                systematicProcessingSingle
+        };
+        // positive check
+        MockHttpServletRequestBuilder mockBuilder = get(urlTemplate).header(name, osirisAdmin.getName());
+        if (entityPositive[0] != null) {
+        	mockBuilder =  mockBuilder.param(parameters[0], uri((OsirisEntity) entityPositive[0], "user"));
+        }
+        if (entityPositive[1] != null) {
+        	mockBuilder =  mockBuilder.param(parameters[1], uri((OsirisEntity) entityPositive[1], "user"));
+                    
+        }
+        mockBuilder =  mockBuilder.param(parameters[2], uri((OsirisEntity) entityPositive[2], parameters[2]))
+                .param(parameters[3], (String) entityPositive[3])
+                .param(parameters[4], entityPositive[4].toString())
+                .param(parameters[5], entityPositive[5].toString())
+                .param(parameters[6], uri((OsirisEntity) entityPositive[6], parameters[6]))
+                .param(parameters[7], uri((OsirisEntity) entityPositive[7], parameters[7]));
+		mockMvc.perform(mockBuilder)
+                .andExpect(jsonPath("$._embedded.incidents.size()").value(1));
+        // check that every parameter can constrain the search appropriately | negative check
+        for (int i=0; i < parameters.length; i++) {
+            mockBuilder = get(urlTemplate).header(name, osirisAdmin.getName());
+            Object entity0 = i != 0 ? entityPositive[0] : entityNegative[0];
+            if (entity0 != null) {
+            	mockBuilder =  mockBuilder.param(parameters[0], uri((OsirisEntity) entity0, "user"));
+            }
+            Object entity1 = i != 1 ? entityPositive[1] : entityNegative[1];
+            if (entity1 != null) {
+            	mockBuilder =  mockBuilder.param(parameters[1], uri((OsirisEntity) entity1, "user"));
+            }
+            mockBuilder =  mockBuilder
+                    .param(parameters[2], uri((OsirisEntity) (i != 2 ? entityPositive[2] : entityNegative[2]), parameters[2])) //incorrect variable
+                    .param(parameters[3], (String) (i != 3 ? entityPositive[3] : entityNegative[3]))
+                    .param(parameters[4], (i != 4 && i != 5 ? entityPositive[4] : entityNegative[4]).toString())
+                    .param(parameters[5], (i != 5 && i != 4 ? entityPositive[5] : entityNegative[5]).toString())
+                    .param(parameters[6], uri((OsirisEntity) (i != 6 ? entityPositive[6] : entityNegative[6]), parameters[6]))
+                    .param(parameters[7], uri((OsirisEntity) (i != 7 ? entityPositive[7] : entityNegative[7]), parameters[7]));
+			mockMvc.perform(mockBuilder)
+                    .andExpect(jsonPath("$._embedded.incidents.size()").value(0));
+        }
+    }
+
     private String uri(OsirisEntity entity, String entityName) throws Exception {
-        String urlTemplate = "/api/"+entityName+"s/"+entity.getId();
+    	String urlTemplate = "/api/"+entityName+"s/"+entity.getId();
         String jsonResult = mockMvc.perform(
                 get(urlTemplate).header("REMOTE_USER", osirisAdmin.getName()))
                 .andReturn().getResponse().getContentAsString();
