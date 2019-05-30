@@ -47,14 +47,12 @@ public class FilesystemOutputProductService implements OutputProductService {
     private final Path outputProductBasedir;
     private final RestoService resto;
     private final GeoserverService geoserver;
-    private final ObjectMapper jsonMapper;
-
+    
     @Autowired
-    public FilesystemOutputProductService(@Qualifier("outputProductBasedir") Path outputProductBasedir, RestoService resto, GeoserverService geoserver, ObjectMapper jsonMapper) {
+    public FilesystemOutputProductService(@Qualifier("outputProductBasedir") Path outputProductBasedir, RestoService resto, GeoserverService geoserver) {
         this.outputProductBasedir = outputProductBasedir;
         this.resto = resto;
         this.geoserver = geoserver;
-        this.jsonMapper = jsonMapper;
     }
 
     @Override
@@ -228,11 +226,14 @@ public class FilesystemOutputProductService implements OutputProductService {
             }
             case MOSAIC: {
                 geoserver.deleteGranuleFromMosaic(geoserverLayer.getWorkspace(), geoserverLayer.getStore(), file.getFilename());
+                break;
             }
             case POSTGIS:
                 //Simply delete the layer - update of Postgis table is not supported in geoserver
                 geoserver.deleteLayer(geoserverLayer.getWorkspace(), geoserverLayer.getLayer());
-            
+                break;
+            default:
+            	return;
         }
         
     }
