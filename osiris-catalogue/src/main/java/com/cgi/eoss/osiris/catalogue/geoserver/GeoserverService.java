@@ -38,5 +38,5 @@ public interface GeoserverService {
 
     void createEmptyMosaic(String workspace, String storeName, String coverageName, String timeRegexp);
 
-    void deleteGranuleFromMosaic(String workspace, String coverageStoreName, String location);
+    void deleteGranuleFromMosaic(String workspace, String coverageStoreName, String layerName, String location);
 }

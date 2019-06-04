@@ -1,14 +1,13 @@
 package com.cgi.eoss.osiris.catalogue.geoserver;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
+import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
@@ -16,13 +15,18 @@ import com.cgi.eoss.osiris.catalogue.IngestionException;
 import com.cgi.eoss.osiris.catalogue.geoserver.model.Coverage;
 import com.cgi.eoss.osiris.catalogue.geoserver.model.CoverageConfig;
 import com.cgi.eoss.osiris.catalogue.geoserver.model.Coverages;
+import com.cgi.eoss.osiris.catalogue.geoserver.model.Feature;
+import com.cgi.eoss.osiris.catalogue.geoserver.model.FeatureCollection;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 import it.geosolutions.geoserver.rest.GeoServerRESTReader;
 import it.geosolutions.geoserver.rest.HTTPUtils;
 import it.geosolutions.geoserver.rest.decoder.RESTCoverageStore;
 import it.geosolutions.geoserver.rest.manager.GeoServerRESTAbstractManager;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 
 	private String postgisHost;
@@ -37,7 +41,9 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 
 	private GeoServerRESTReader reader;
 	
-	private static XmlMapper XML_MAPPER = new XmlMapper();
+	private static final XmlMapper XML_MAPPER = new XmlMapper();
+	
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	
 	public GeoserverMosaicManager(GeoServerRESTReader reader, URL url, String username, String password, String postgisHost, int postgisPort, String postgisDb, String postgisUsername, String postgisPassword) {
 		super(url, username, password);
@@ -128,8 +134,7 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 		}
 	}
 
-	public RESTCoverageStore addGeoTiffToExternalMosaic(String workspace, final String storeName, File geoTiff)
-			throws FileNotFoundException, IllegalArgumentException {
+	public RESTCoverageStore addGeoTiffToExternalMosaic(String workspace, final String storeName, File geoTiff){
 		String sUrl = gsBaseUrl + "/rest/workspaces/" + workspace + "/coveragestores/" + storeName
 				+ "/external.imagemosaic";
 		String sendResult = HTTPUtils.post(sUrl, geoTiff.toURI().toString(), "text/plain", gsuser, gspass);
@@ -137,7 +142,6 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 	}
 
 	public void createCoverageIfNotExists(String workspace, String storeName, String coverageName) throws IOException{
-		// TODO Generate the coverage config
 		String sUrl = gsBaseUrl + "/rest/workspaces/" + workspace + "/coveragestores/" + storeName
 				+ "/coverages.xml";
 		String sendResult = HTTPUtils.get(sUrl, gsuser, gspass);
@@ -153,7 +157,6 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
 		coverageConfig.setName(coverageName);
 		String qualifiedCoverageName = getQualifiedCoverageName(workspace, storeName, coverageName);
         coverageConfig.setNativeCoverageName(qualifiedCoverageName);
-		System.out.println(XML_MAPPER.writeValueAsString(coverageConfig));
 		String postResult = HTTPUtils.post(coveragesUrl, XML_MAPPER.writeValueAsString(coverageConfig), "text/xml", gsuser, gspass);
 		if (postResult == null) {
 			throw new IngestionException("Cannot create coverage");
@@ -165,9 +168,36 @@ public class GeoserverMosaicManager extends GeoServerRESTAbstractManager {
     }
 
 	
-    public void deleteGranuleFromMosaic(String workspace, String storeName, String location) {
-        // TODO Implement this
-        
+    public void deleteGranuleFromMosaic(String workspace, String storeName, String coverageName, String location) {
+        // Retrieve the feature fid
+    	//This is done through the json representation because in the xml one the fid is used as tag name,
+    	//which makes parsing code less concise
+        String getUrl = gsBaseUrl + "/rest/workspaces/" + workspace + "/coveragestores/" + storeName
+                + "/coverages/" + coverageName + "/index/granules.json?filter=(location LIKE '%"+ location +"')";
+        try {
+            String escapedUrl = new URI(getUrl, false).toString();
+            String getResult = HTTPUtils.get(escapedUrl, gsuser, gspass);
+            FeatureCollection fc = OBJECT_MAPPER.readValue(getResult, FeatureCollection.class);
+            if(fc.getFeatures().isEmpty()) {
+                LOG.warn("Granule not found in mosaic");
+                return;
+            }
+            if(fc.getFeatures().size() > 1) {
+                LOG.warn("Granule not uniquely identified");
+                return;
+            }
+            Feature feature = fc.getFeatures().get(0);
+            String id = feature.getId();
+            //Delete the feature
+            String deleteUrl = gsBaseUrl + "/rest/workspaces/" + workspace + "/coveragestores/" + storeName
+                    + "/coverages/" + coverageName + "/index/granules/" + id + ".json";
+            boolean deleted = HTTPUtils.delete(deleteUrl, gsuser, gspass);
+            if (!deleted) {
+                throw new IngestionException("Cannot delete granule");
+            }
+        } catch (IOException e) {
+            LOG.error("Invalid response from geoserver", e);
+        }
     }
 	
 }

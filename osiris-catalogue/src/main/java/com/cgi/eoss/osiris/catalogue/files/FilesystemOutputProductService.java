@@ -225,7 +225,7 @@ public class FilesystemOutputProductService implements OutputProductService {
                 break;
             }
             case MOSAIC: {
-                geoserver.deleteGranuleFromMosaic(geoserverLayer.getWorkspace(), geoserverLayer.getStore(), file.getFilename());
+                geoserver.deleteGranuleFromMosaic(geoserverLayer.getWorkspace(), geoserverLayer.getStore(), geoserverLayer.getLayer(), file.getFilename());
                 break;
             }
             case POSTGIS:

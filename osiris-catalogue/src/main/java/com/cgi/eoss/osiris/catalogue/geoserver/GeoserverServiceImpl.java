@@ -306,8 +306,8 @@ public class GeoserverServiceImpl implements GeoserverService {
 	}
 
     @Override
-    public void deleteGranuleFromMosaic(String workspace, String storeName, String location) {
-        mosaicManager.deleteGranuleFromMosaic(workspace, storeName, location);
+    public void deleteGranuleFromMosaic(String workspace, String storeName, String layerName, String location) {
+        mosaicManager.deleteGranuleFromMosaic(workspace, storeName, layerName, location);
         
     }
 
