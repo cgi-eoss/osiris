@@ -207,7 +207,9 @@ public class GeoserverServiceImpl implements GeoserverService {
 
         try {
             RESTCoverageStore restCoverageStore = publishExternalGeoTIFFToMosaic(workspace, datastoreName, path.toFile());
-            mosaicManager.createCoverageIfNotExists(workspace, datastoreName, coverageName);
+            if (coverageName != null) {
+                mosaicManager.createCoverageIfNotExists(workspace, datastoreName, coverageName);
+            }
             LOG.info("Ingested GeoTIFF to geoserver with id: {}:{}", workspace, datastoreName);
             LOG.info("Reloading GeoServer configuration");
             publisher.reload();
