@@ -26,8 +26,8 @@ import com.cgi.eoss.osiris.rpc.worker.JobError;
 import com.cgi.eoss.osiris.rpc.worker.JobEvent;
 import com.cgi.eoss.osiris.rpc.worker.JobEventType;
 import com.cgi.eoss.osiris.rpc.worker.JobInputs;
-import com.cgi.eoss.osiris.rpc.worker.JobSpec;
-import com.cgi.eoss.osiris.rpc.worker.ResourceRequest;
+import com.cgi.eoss.osiris.rpc.JobSpec;
+import com.cgi.eoss.osiris.rpc.ResourceRequest;
 
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;

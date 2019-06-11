@@ -3,12 +3,8 @@ package com.cgi.eoss.osiris.rpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.google.protobuf.ByteString;
-import io.grpc.stub.StreamObserver;
 import lombok.experimental.UtilityClass;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+
 import java.util.List;
 
 /**
@@ -16,8 +12,6 @@ import java.util.List;
  */
 @UtilityClass
 public class GrpcUtil {
-    
-    private static final int DEFAULT_FILE_STREAM_BUFFER_SIZE = 8192;
     
     /**
      * <p>Convert a gRPC parameters collection to a more convenient {@link Multimap}.</p>
@@ -44,33 +38,6 @@ public class GrpcUtil {
         return paramsBuilder.build();
     }
 
-    /**
-     * <p>Convert a {@link com.cgi.eoss.osiris.model.Job} to its gRPC {@link Job} representation.</p>
-     *
-     * @param job The job to be converted.
-     * @return The input job mapped to {@link Job}.
-     */
-    public static Job toRpcJob(com.cgi.eoss.osiris.model.Job job) {
-        return Job.newBuilder()
-                .setId(job.getExtId())
-                .setIntJobId(String.valueOf(job.getId()))
-                .setUserId(job.getOwner().getName())
-                .setServiceId(job.getConfig().getService().getName())
-                .build();
-    }
     
-    /**
-     * <p>Convert a {@link com.cgi.eoss.osiris.model.Service} to its gRPC {@link Service} representation.</p>
-     *
-     * @param job The service to be converted.
-     * @return The input service mapped to {@link Service}.
-     */
-    public static Service toRpcService(com.cgi.eoss.osiris.model.OsirisService service) {
-        return Service.newBuilder()
-        			.setId(String.valueOf(service.getId()))
-                .setName(service.getName())
-                .setDockerImageTag(service.getDockerTag())
-                .build();
-    }
     
 }

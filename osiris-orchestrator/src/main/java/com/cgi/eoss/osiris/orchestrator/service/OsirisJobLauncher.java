@@ -13,6 +13,7 @@ import com.cgi.eoss.osiris.model.OsirisServiceDockerBuildInfo;
 import com.cgi.eoss.osiris.model.OsirisServiceResources;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.UserMount;
+import com.cgi.eoss.osiris.orchestrator.utils.ModelToGrpcUtils;
 import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
 import com.cgi.eoss.osiris.persistence.service.JobDataService;
 import com.cgi.eoss.osiris.persistence.service.ServiceDataService;
@@ -32,10 +33,10 @@ import com.cgi.eoss.osiris.rpc.RelaunchFailedJobResponse;
 import com.cgi.eoss.osiris.rpc.StopServiceParams;
 import com.cgi.eoss.osiris.rpc.StopServiceResponse;
 import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
-import com.cgi.eoss.osiris.rpc.worker.JobSpec;
+import com.cgi.eoss.osiris.rpc.JobSpec;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
-import com.cgi.eoss.osiris.rpc.worker.ResourceRequest;
+import com.cgi.eoss.osiris.rpc.ResourceRequest;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -150,7 +151,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                 job = jobDataService.buildNew(zooId, userId, serviceId, jobConfigLabel, inputs);
             } 
 
-            rpcJob = GrpcUtil.toRpcJob(job);
+            rpcJob = ModelToGrpcUtils.toRpcJob(job);
             // Post back the job metadata for async responses
             responseObserver.onNext(OsirisJobResponse.newBuilder().setJob(rpcJob).build());
 
@@ -200,7 +201,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                 int i = 0;
                 for (Job subJob : subJobs) {
                     chargeUser(subJob.getOwner(), subJob);
-                    submitJob(subJob, GrpcUtil.toRpcJob(subJob),
+                    submitJob(subJob, ModelToGrpcUtils.toRpcJob(subJob),
                             GrpcUtil.mapToParams(subJob.getConfig().getInputs()), getJobPriority(i));
                     i++;
                 }
@@ -209,7 +210,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
             else {
                 if (!Strings.isNullOrEmpty(parentId)) {
                     Job subJob = jobDataService.buildNew(zooId, userId, serviceId, jobConfigLabel, inputs, job);
-                    submitSingleJob(userId, rpcInputs, subJob, GrpcUtil.toRpcJob(subJob));
+                    submitSingleJob(userId, rpcInputs, subJob, ModelToGrpcUtils.toRpcJob(subJob));
                 }
                 else {
                     submitSingleJob(userId, rpcInputs, job, rpcJob);
@@ -343,7 +344,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                         failedSubJob.setStage(null);
                         failedSubJob.setWorkerId(null);
                         jobDataService.save(failedSubJob);
-                        submitJob(failedSubJob, GrpcUtil.toRpcJob(failedSubJob), failedSubJobInputs, getJobPriority(i));
+                        submitJob(failedSubJob, ModelToGrpcUtils.toRpcJob(failedSubJob), failedSubJobInputs, getJobPriority(i));
                     }
                     i++;
                 }
@@ -512,7 +513,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
             throws IOException {
         OsirisService service = job.getConfig().getService();
         JobSpec.Builder jobSpecBuilder = JobSpec.newBuilder()
-                .setService(GrpcUtil.toRpcService(service)).setJob(rpcJob).addAllInputs(rpcInputs);
+                .setService(ModelToGrpcUtils.toRpcService(service)).setJob(rpcJob).addAllInputs(rpcInputs);
         if (service.getType() == OsirisService.Type.APPLICATION) {
             jobSpecBuilder.addExposedPorts(OsirisGuiServiceManager.GUACAMOLE_PORT);
         }

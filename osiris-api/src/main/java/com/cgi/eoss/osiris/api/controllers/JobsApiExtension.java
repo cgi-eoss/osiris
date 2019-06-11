@@ -21,10 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.cgi.eoss.osiris.model.Job;
-import com.cgi.eoss.osiris.model.Job.Status;
+import com.cgi.eoss.osiris.orchestrator.utils.ModelToGrpcUtils;
 import com.cgi.eoss.osiris.rpc.CancelJobParams;
 import com.cgi.eoss.osiris.rpc.CancelJobResponse;
-import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.LocalServiceLauncher;
 import com.cgi.eoss.osiris.rpc.RelaunchFailedJobParams;
 import com.cgi.eoss.osiris.rpc.RelaunchFailedJobResponse;
@@ -134,7 +133,7 @@ public class JobsApiExtension {
     @PreAuthorize("hasAnyRole('CONTENT_AUTHORITY', 'ADMIN') or hasPermission(#job, 'write')")
     public ResponseEntity stop(@ModelAttribute("jobId") Job job) throws InterruptedException {
         StopServiceParams stopServiceParams = StopServiceParams.newBuilder()
-                .setJob(GrpcUtil.toRpcJob(job))
+                .setJob(ModelToGrpcUtils.toRpcJob(job))
                 .build();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -151,7 +150,7 @@ public class JobsApiExtension {
     @ResponseBody
     public void cancelJob(@ModelAttribute("jobId") Job job) throws IOException {
         CancelJobParams.Builder cancelJobParamsBuilder = CancelJobParams.newBuilder()
-                .setJob(GrpcUtil.toRpcJob(job));
+                .setJob(ModelToGrpcUtils.toRpcJob(job));
 
         CancelJobParams cancelJobParams = cancelJobParamsBuilder.build();
 
@@ -169,7 +168,7 @@ public class JobsApiExtension {
     @ResponseBody
     public void relaunchFailedJob(@ModelAttribute("jobId") Job job) throws IOException {
         RelaunchFailedJobParams.Builder relaunchJobParamsBuilder = RelaunchFailedJobParams.newBuilder()
-                .setJob(GrpcUtil.toRpcJob(job));
+                .setJob(ModelToGrpcUtils.toRpcJob(job));
         
         RelaunchFailedJobParams relaunchJobParams = relaunchJobParamsBuilder.build();
 

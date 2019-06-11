@@ -61,6 +61,7 @@ import com.cgi.eoss.osiris.model.Job.Status;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata;
 import com.cgi.eoss.osiris.model.internal.RetrievedOutputFile;
+import com.cgi.eoss.osiris.orchestrator.utils.ModelToGrpcUtils;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata.OutputFileMetadataBuilder;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata.OutputProductMetadataBuilder;
 import com.cgi.eoss.osiris.model.internal.ParameterRelationTypeToFileRelationTypeUtil;
@@ -132,42 +133,9 @@ public class OsirisJobUpdatesManager {
 	        this.fileRelationDataService = fileRelationDataService;
 	    }
 
-    @JmsListener(destination = OsirisQueueService.jobUpdatesQueueName)
-    public void receiveJobUpdate(@Payload ObjectMessage objectMessage, @Header("workerId") String workerId,
-            @Header("jobId") String internalJobId) {
-        Job job = jobDataService.reload(Long.parseLong(internalJobId));
-        // TODO change into Chain of Responsibility type pattern
-        Serializable update = null;
-        try {
-            update = objectMessage.getObject();
-        } catch (JMSException e) {
-            onJobError(job, e);
-        }
-        if (update instanceof JobEvent) {
-            JobEvent jobEvent = (JobEvent) update;
-            JobEventType jobEventType = jobEvent.getJobEventType();
-            if (jobEventType == JobEventType.DATA_FETCHING_STARTED) {
-                onJobDataFetchingStarted(job, workerId);
-            } else if (jobEventType == JobEventType.DATA_FETCHING_COMPLETED) {
-                onJobDataFetchingCompleted(job);
-            } else if (jobEventType == JobEventType.PROCESSING_STARTED) {
-                onJobProcessingStarted(job, workerId);
-            }
-        } else if (update instanceof JobError) {
-            JobError jobError = (JobError) update;
-            onJobError(job, jobError.getErrorDescription());
-        } else if (update instanceof ContainerExit) {
-            ContainerExit containerExit = (ContainerExit) update;
-            try {
-                onContainerExit(job, workerId, containerExit.getJobEnvironment(),
-                        containerExit.getExitCode());
-            } catch (Exception e) {
-                onJobError(job, e);
-            }
-        }
-    }
+    
 
-    private void onJobDataFetchingStarted(Job job, String workerId) {
+    void onJobDataFetchingStarted(Job job, String workerId) {
         LOG.info("Downloading input data for {}", job.getExtId());
         job.setWorkerId(workerId);
         job.setStartTime(LocalDateTime.now());
@@ -177,19 +145,19 @@ public class OsirisJobUpdatesManager {
 
     }
 
-    private void onJobDataFetchingCompleted(Job job) {
+    void onJobDataFetchingCompleted(Job job) {
         LOG.info("Launching docker container for job {}", job.getExtId());
     }
 
-    private void onJobProcessingStarted(Job job, String workerId) {
+    void onJobProcessingStarted(Job job) {
         OsirisService service = job.getConfig().getService();
         LOG.info("Job {} ({}) launched for service: {}", job.getId(), job.getExtId(),
                 service.getName());
         // Update GUI endpoint URL for client access
         if (service.getType() == OsirisService.Type.APPLICATION) {
             String zooId = job.getExtId();
-            OsirisWorkerBlockingStub worker = workerFactory.getWorkerById(workerId);
-            com.cgi.eoss.osiris.rpc.Job rpcJob = GrpcUtil.toRpcJob(job);
+            OsirisWorkerBlockingStub worker = workerFactory.getWorkerById(job.getWorkerId());
+            com.cgi.eoss.osiris.rpc.Job rpcJob = ModelToGrpcUtils.toRpcJob(job);
             PortBinding portBinding = guiService.getGuiPortBinding(worker, rpcJob);
             ReverseProxyEntry guiEntry = dynamicProxyService.getProxyEntry(rpcJob, portBinding.getBinding().getIp(), portBinding.getBinding().getPort());
             LOG.info("Updating GUI URL for job {} ({}): {}", zooId,
@@ -204,7 +172,7 @@ public class OsirisJobUpdatesManager {
 
     }
 
-    private void onContainerExit(Job job, String workerId, JobEnvironment jobEnvironment,
+    void onContainerExit(Job job, JobEnvironment jobEnvironment,
             int exitCode) throws Exception {
         switch (exitCode) {
             case 0:
@@ -227,20 +195,20 @@ public class OsirisJobUpdatesManager {
         job.setGuiEndpoint(null); // Any GUI services will no longer be available
         jobDataService.save(job);
         try {
-        	OsirisWorkerBlockingStub worker = workerFactory.getWorkerById(workerId);
-            ingestOutput(job, GrpcUtil.toRpcJob(job), worker, jobEnvironment);
+        	OsirisWorkerBlockingStub worker = workerFactory.getWorkerById(job.getWorkerId());
+            ingestOutput(job, ModelToGrpcUtils.toRpcJob(job), worker, jobEnvironment);
         } catch (IOException e) {
             throw new Exception("Error ingesting output for : " + e.getMessage());
         }
     }
 
-    private void onJobError(Job job, String description) {
+    void onJobError(Job job, String description) {
         LOG.error("Error in Job {}: {}",
                 job.getExtId(), description);
         endJobWithError(job);
     }
 
-    private void onJobError(Job job, Throwable t) {
+    void onJobError(Job job, Throwable t) {
         LOG.error("Error in Job " + job.getExtId(), t);
         endJobWithError(job);
     }

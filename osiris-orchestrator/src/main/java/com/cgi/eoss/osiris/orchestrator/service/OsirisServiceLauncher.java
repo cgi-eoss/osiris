@@ -60,6 +60,7 @@ import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata;
 import com.cgi.eoss.osiris.model.internal.RetrievedOutputFile;
+import com.cgi.eoss.osiris.orchestrator.utils.ModelToGrpcUtils;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata.OutputFileMetadataBuilder;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata.OutputProductMetadataBuilder;
 import com.cgi.eoss.osiris.persistence.service.JobDataService;
@@ -158,7 +159,7 @@ public class OsirisServiceLauncher extends OsirisServiceLauncherGrpc.OsirisServi
                 .put("userId", userId).put("serviceId", serviceId).put("zooId", zooId)) {
             // TODO Allow re-use of existing JobConfig
             job = jobDataService.buildNew(zooId, userId, serviceId, jobConfigLabel, inputs);
-            rpcJob = GrpcUtil.toRpcJob(job);
+            rpcJob = ModelToGrpcUtils.toRpcJob(job);
 
             // Post back the job metadata for async responses
             responseObserver.onNext(OsirisServiceResponse.newBuilder().setJob(rpcJob).build());
@@ -302,7 +303,7 @@ public class OsirisServiceLauncher extends OsirisServiceLauncherGrpc.OsirisServi
             parallelJobParams.put("input", parallelInput);
 
             Job parallelJob = jobDataService.buildNew(UUID.randomUUID().toString(), userId, service.getName(), job.getConfig().getLabel(), parallelJobParams);
-            com.cgi.eoss.osiris.rpc.Job parallelRpcJob = GrpcUtil.toRpcJob(parallelJob);
+            com.cgi.eoss.osiris.rpc.Job parallelRpcJob = ModelToGrpcUtils.toRpcJob(parallelJob);
             List<JobParam> parallelRpcInputs = GrpcUtil.mapToParams(parallelJobParams);
 
             LOG.info("Launching child job {} ({}) for job {} ({})", parallelJob.getExtId(), parallelJob.getId(), job.getExtId(), job.getId());
