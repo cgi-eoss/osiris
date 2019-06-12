@@ -15,6 +15,7 @@ import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingRequest;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingResponse;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingServiceGrpc;
+import com.cgi.eoss.osiris.scheduledjobs.service.ScheduledJobService;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
@@ -30,7 +31,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
@@ -60,7 +60,7 @@ public class SystematicProcessingServiceTest {
     private SystematicProcessingServiceGrpc.SystematicProcessingServiceBlockingStub stub;
 
     @Mock
-    private Scheduler scheduler;
+    private ScheduledJobService scheduledJobService;
     
     @Autowired 
     private TaskScheduler taskScheduler;
@@ -68,7 +68,7 @@ public class SystematicProcessingServiceTest {
     @Before
     public void setUp() throws IOException {
         MockitoAnnotations.initMocks(this);
-        serverBuilder.addService(new SystematicProcessingService(systematicProcessingDataService, scheduler, 3000, taskScheduler));
+        serverBuilder.addService(new SystematicProcessingService(systematicProcessingDataService, scheduledJobService, 3000, taskScheduler));
         server = serverBuilder.build().start();
         stub = SystematicProcessingServiceGrpc.newBlockingStub(channelBuilder.build());
     }

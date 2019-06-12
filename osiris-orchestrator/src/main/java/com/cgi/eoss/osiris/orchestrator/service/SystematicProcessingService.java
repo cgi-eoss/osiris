@@ -1,8 +1,8 @@
 package com.cgi.eoss.osiris.orchestrator.service;
 
 import com.cgi.eoss.osiris.model.SystematicProcessing;
-import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.SystematicProcessing.Status;
+import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
 import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.JobParam;
@@ -13,6 +13,7 @@ import com.cgi.eoss.osiris.rpc.SystematicProcessingResponse;
 import com.cgi.eoss.osiris.rpc.SystematicProcessingServiceGrpc;
 import com.cgi.eoss.osiris.rpc.TerminateSystematicProcessingParams;
 import com.cgi.eoss.osiris.rpc.TerminateSystematicProcessingResponse;
+import com.cgi.eoss.osiris.scheduledjobs.service.ScheduledJobService;
 import com.google.common.base.Strings;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
@@ -20,27 +21,19 @@ import com.google.common.collect.Multimaps;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.log4j.Log4j2;
 import org.lognet.springboot.grpc.GRpcService;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.CronTrigger;
-import org.quartz.JobBuilder;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.SimpleTrigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.TriggerKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,15 +41,16 @@ import java.util.UUID;
 @GRpcService
 public class SystematicProcessingService extends SystematicProcessingServiceGrpc.SystematicProcessingServiceImplBase {
 
-    private static final String TRIGGER_SYSTEMATIC_PROCESSING_PREFIX = "trigger-systematic-processing-";
+    private static final String SYSTEMATIC_PROCESSING_JOB_PREFIX = "trigger-systematic-processing-";
+    private static final String SYSTEMATIC_PROCESSING_JOB_GROUP = "osiris";
     private final SystematicProcessingDataService systematicProcessingDataService;
-    private final Scheduler scheduler;
+    private final ScheduledJobService scheduledJobService;
     private long searchPeriodMillis;
    
     @Autowired
-    public SystematicProcessingService(SystematicProcessingDataService systematicProcessingDataService, Scheduler scheduler, @Value("${osiris.orchestrator.systematic.checkPeriod:3600000}")long searchPeriodMillis, TaskScheduler taskScheduler) {
+    public SystematicProcessingService(SystematicProcessingDataService systematicProcessingDataService, ScheduledJobService scheduledJobService, @Value("${osiris.orchestrator.systematic.checkPeriod:3600000}")long searchPeriodMillis, TaskScheduler taskScheduler) {
         this.systematicProcessingDataService = systematicProcessingDataService;
-        this.scheduler = scheduler;
+        this.scheduledJobService = scheduledJobService;
         this.searchPeriodMillis = searchPeriodMillis;
         taskScheduler.scheduleAtFixedRate(this::unblockSystematicProcessings, searchPeriodMillis);
         
@@ -83,13 +77,7 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
                 GrpcUtil.paramsListToMap(request.getInputList()), searchParams, request.getCronExpression(), LocalDateTime.ofInstant(dateStart, ZoneOffset.UTC));
 
         LOG.info("Systematic processing {} saved", systematicProcessing.getId());
-        try {
-            scheduleSystematicProcessing(systematicProcessing);
-        }
-        catch (SchedulerException e) {
-            LOG.error(e);
-            responseObserver.onError(e);
-        }
+        scheduleSystematicProcessing(systematicProcessing);
         responseObserver.onNext(SystematicProcessingResponse.newBuilder().setSystematicProcessingId(systematicProcessing.getId()).build());
         responseObserver.onCompleted();
     }
@@ -102,28 +90,24 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
         for (SystematicProcessing blockedSystematicProcessing : blockedSystematicProcessings) {
             User user = blockedSystematicProcessing.getOwner();
             if (user.getWallet().getBalance() > 0) {
-                try {
-                    unblock(blockedSystematicProcessing);
-                    LOG.info("Unblocked systematic processing {}", blockedSystematicProcessing.getId());
-                } catch (SchedulerException e) {
-                    LOG.error("Could not unblock systematic processing " +  blockedSystematicProcessing.getId(), e);
-                }
+                unblock(blockedSystematicProcessing);
+                LOG.info("Unblocked systematic processing {}", blockedSystematicProcessing.getId());
             }
         }
     }
-    public void block(SystematicProcessing systematicProcessing) throws SchedulerException {
-        scheduler.pauseTrigger(TriggerKey.triggerKey(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX + systematicProcessing.getId(), "osiris"));
+    public void block(SystematicProcessing systematicProcessing) {
+        scheduledJobService.pauseJob(getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP);
         systematicProcessing.setStatus(Status.BLOCKED);
         systematicProcessingDataService.save(systematicProcessing);
     }
     
-    public void unblock(SystematicProcessing systematicProcessing) throws SchedulerException {
-        scheduler.resumeTrigger(TriggerKey.triggerKey(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX + systematicProcessing.getId(), "osiris"));
+    public void unblock(SystematicProcessing systematicProcessing){
+        scheduledJobService.resumeJob(getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP);
         systematicProcessing.setStatus(Status.ACTIVE);
         systematicProcessingDataService.save(systematicProcessing);
     }
     
-    private void scheduleSystematicProcessing(SystematicProcessing systematicProcessing) throws SchedulerException{
+    private void scheduleSystematicProcessing(SystematicProcessing systematicProcessing) {
         if (!Strings.isNullOrEmpty(systematicProcessing.getCronExpression())) {
             scheduleFixedInputsCronJob(systematicProcessing);
         }
@@ -136,36 +120,27 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
         }
     }
 
-    private void scheduleSearchJob(SystematicProcessing systematicProcessing) throws SchedulerException {
-        JobDataMap jobDataMap = new JobDataMap();
-        jobDataMap.put("systematicProcessingId", String.valueOf(systematicProcessing.getId()));
-        JobDetail jobDetail = JobBuilder.newJob(SearchBasedQuartzJob.class).withIdentity(UUID.randomUUID().toString(), "osiris-jobs")
-                        .storeDurably().withDescription("Run Osiris Job").usingJobData(jobDataMap).storeDurably().build();
-        
-        
-        SimpleTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX+ systematicProcessing.getId(), "osiris")
-                        .withSchedule(SimpleScheduleBuilder.repeatSecondlyForever((int) searchPeriodMillis/1000).withMisfireHandlingInstructionNextWithExistingCount()).build();
-        scheduler.scheduleJob(jobDetail, cronTrigger);
+    private void scheduleSearchJob(SystematicProcessing systematicProcessing) {
+        Map<String, Object> jobContext = new HashMap<>();
+        jobContext.put("systematicProcessingId", String.valueOf(systematicProcessing.getId()));
+        scheduledJobService.scheduleJobEveryNSeconds(SearchBasedQuartzJob.class, getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP, jobContext, (int) searchPeriodMillis/1000);
     }
 
-    private void scheduleFixedInputsCronJob(SystematicProcessing systematicProcessing) throws SchedulerException {
-        JobDataMap jobDataMap = new JobDataMap();
-        jobDataMap.put("systematicProcessingId", String.valueOf(systematicProcessing.getId()));
-        JobDetail jobDetail = JobBuilder.newJob(FixedInputsQuartzJob.class).withIdentity(UUID.randomUUID().toString(), "osiris-jobs")
-                        .storeDurably().withDescription("Run Osiris Job").usingJobData(jobDataMap).storeDurably().build();
-        CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX + systematicProcessing.getId(), "osiris")
-                        .withSchedule(CronScheduleBuilder.cronSchedule(systematicProcessing.getCronExpression()).withMisfireHandlingInstructionDoNothing()).build();
-        scheduler.scheduleJob(jobDetail, cronTrigger);
+    private String getSystematicProcessingIdentity(SystematicProcessing systematicProcessing) {
+        return SYSTEMATIC_PROCESSING_JOB_PREFIX + systematicProcessing.getId();
+    }
+
+    private void scheduleFixedInputsCronJob(SystematicProcessing systematicProcessing) {
+        Map<String, Object> jobContext = new HashMap<>();
+        jobContext.put("systematicProcessingId", String.valueOf(systematicProcessing.getId()));
+        scheduledJobService.scheduleCronJob(FixedInputsQuartzJob.class, getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP, jobContext, systematicProcessing.getCronExpression(), false);
     }
     
     @Override
     public void terminate(TerminateSystematicProcessingParams params, StreamObserver<TerminateSystematicProcessingResponse> responseObserver) {
         SystematicProcessing systematicProcessing = systematicProcessingDataService.getById(params.getSystematicProcessingId());
-        try {
-            scheduler.unscheduleJob(TriggerKey.triggerKey(TRIGGER_SYSTEMATIC_PROCESSING_PREFIX + systematicProcessing.getId(), "osiris"));
-        } catch (SchedulerException e) {
-            responseObserver.onError(e);
-        }
+        scheduledJobService.unscheduleJob(getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP);
+        scheduledJobService.deleteJob(getSystematicProcessingIdentity(systematicProcessing), SYSTEMATIC_PROCESSING_JOB_GROUP);
         systematicProcessing.setStatus(Status.COMPLETED);
         systematicProcessingDataService.save(systematicProcessing);
         responseObserver.onNext(TerminateSystematicProcessingResponse.newBuilder().setSystematicProcessingId(systematicProcessing.getId()).build());
@@ -175,12 +150,7 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
     @Override
     public void restart(RestartSystematicProcessingParams params, StreamObserver<RestartSystematicProcessingResponse> responseObserver) {
         SystematicProcessing systematicProcessing = systematicProcessingDataService.getById(params.getSystematicProcessingId());
-        try {
-            scheduleSystematicProcessing(systematicProcessing);
-        }
-        catch (SchedulerException e) {
-            responseObserver.onError(e);
-        }
+        scheduleSystematicProcessing(systematicProcessing);
         systematicProcessing.setStatus(Status.ACTIVE);
         systematicProcessingDataService.save(systematicProcessing);
         responseObserver.onNext(RestartSystematicProcessingResponse.newBuilder().setSystematicProcessingId(systematicProcessing.getId()).build());

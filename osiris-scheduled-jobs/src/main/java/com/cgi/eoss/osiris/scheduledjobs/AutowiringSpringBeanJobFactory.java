@@ -1,4 +1,4 @@
-package com.cgi.eoss.osiris.orchestrator.service;
+package com.cgi.eoss.osiris.scheduledjobs;
 import org.quartz.spi.TriggerFiredBundle;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;

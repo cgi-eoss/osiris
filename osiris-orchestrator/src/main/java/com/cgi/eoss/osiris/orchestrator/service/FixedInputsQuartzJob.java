@@ -5,20 +5,18 @@ import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.orchestrator.service.ServiceLauncherClient.JobSubmissionException;
 import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
+import com.cgi.eoss.osiris.scheduledjobs.service.ScheduledJob;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import lombok.extern.log4j.Log4j2;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 @Log4j2
-public class FixedInputsQuartzJob extends QuartzJobBean{
+public class FixedInputsQuartzJob extends ScheduledJob{
     
     @Autowired
     private SystematicProcessingService systematicProcessingService;
@@ -30,22 +28,16 @@ public class FixedInputsQuartzJob extends QuartzJobBean{
     private CostingService costingService;
     
    
-    
     @Override
-    protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
-        long systematicProcessingId = Long.parseLong(jobDataMap.getString("systematicProcessingId"));
+    public void executeJob(Map<String, Object> jobContext) {
+        long systematicProcessingId = Long.parseLong((String) jobContext.get("systematicProcessingId"));
         SystematicProcessing systematicProcessing = systematicProcessingDataService.getById(systematicProcessingId);
         LOG.info("Updating systematic processing {}", systematicProcessing.getId());
         
         JobConfig configTemplate = systematicProcessing.getParentJob().getConfig();
         int jobCost = costingService.estimateSingleRunJobCost(configTemplate);
         if (jobCost > systematicProcessing.getOwner().getWallet().getBalance()) {
-            try {
-                systematicProcessingService.block(systematicProcessing);
-            } catch (SchedulerException e) {
-                LOG.error("Error blocking systematic processing", e);
-            }
+            systematicProcessingService.block(systematicProcessing);
             
             return;
         }
@@ -56,5 +48,6 @@ public class FixedInputsQuartzJob extends QuartzJobBean{
         } catch (InterruptedException | JobSubmissionException e) {
             LOG.error("Error submitting job", e);
         }
-    }
+        
+    }    
 }

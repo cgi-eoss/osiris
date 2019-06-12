@@ -5,6 +5,7 @@ import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.SystematicProcessing;
 import com.cgi.eoss.osiris.orchestrator.service.ServiceLauncherClient.JobSubmissionException;
 import com.cgi.eoss.osiris.persistence.service.SystematicProcessingDataService;
+import com.cgi.eoss.osiris.scheduledjobs.service.ScheduledJob;
 import com.cgi.eoss.osiris.search.api.SearchFacade;
 import com.cgi.eoss.osiris.search.api.SearchParameters;
 import com.cgi.eoss.osiris.search.api.SearchResults;
@@ -14,13 +15,9 @@ import com.google.common.collect.Multimap;
 import lombok.extern.log4j.Log4j2;
 import okhttp3.HttpUrl;
 import org.geojson.Feature;
-import org.quartz.JobDataMap;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -30,7 +27,7 @@ import java.util.Map;
 
 @Component
 @Log4j2
-public class SearchBasedQuartzJob extends QuartzJobBean{
+public class SearchBasedQuartzJob extends ScheduledJob{
 
     @Autowired
     private SystematicProcessingService systematicProcessingService;
@@ -46,11 +43,10 @@ public class SearchBasedQuartzJob extends QuartzJobBean{
     
     @Autowired
     private CostingService costingService;
-    
+
     @Override
-    protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
-        long systematicProcessingId = Long.parseLong(jobDataMap.getString("systematicProcessingId"));
+    public void executeJob(Map<String, Object> jobContext) {
+        long systematicProcessingId = Long.parseLong((String) jobContext.get("systematicProcessingId"));
         SystematicProcessing systematicProcessing = systematicProcessingDataService.getById(systematicProcessingId);
         updateSystematicProcessing(systematicProcessing);
     }
@@ -97,8 +93,6 @@ public class SearchBasedQuartzJob extends QuartzJobBean{
             LOG.error("Failure submitting job for systematic processing {}", systematicProcessing.getId());
         } catch (JobSubmissionException e) {
             LOG.error("Failure submitting job for systematic processing {} ", systematicProcessing.getId());
-        } catch (SchedulerException e) {
-            LOG.error("Failure blocking systematic processing {} ", systematicProcessing.getId());
         } 
     }
 
@@ -112,4 +106,6 @@ public class SearchBasedQuartzJob extends QuartzJobBean{
         return searchFacade.search(sp);
 
     }
+
+    
 }
