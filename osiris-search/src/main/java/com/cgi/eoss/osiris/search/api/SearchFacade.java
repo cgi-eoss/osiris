@@ -95,6 +95,7 @@ public class SearchFacade {
     private SearchProvider getProvider(SearchParameters parameters) {
         return searchProviders.stream()
                 .filter(sp -> sp.supports(parameters))
+                .sorted()
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No search providers found for parameters: " + parameters));
     }

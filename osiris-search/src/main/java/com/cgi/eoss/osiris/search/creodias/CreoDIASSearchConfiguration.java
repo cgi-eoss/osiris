@@ -1,4 +1,4 @@
-package com.cgi.eoss.osiris.search.ipt;
+package com.cgi.eoss.osiris.search.creodias;
 
 import com.cgi.eoss.osiris.catalogue.external.ExternalProductDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,22 +10,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(value = "osiris.search.ipt.enabled", havingValue = "true", matchIfMissing = true)
-public class IptSearchConfiguration {
+@ConditionalOnProperty(value = "osiris.search.creodias.enabled", havingValue = "true", matchIfMissing = true)
+public class CreoDIASSearchConfiguration {
 
-    @Value("${osiris.search.ipt.baseUrl:https://finder.eocloud.eu/resto/}")
+    @Value("${osiris.search.creodias.baseUrl:https://finder.creodias.eu/resto/}")
     private String baseUrl;
-    @Value("${osiris.search.ipt.username:}")
+    @Value("${osiris.search.creodias.username:}")
     private String username;
-    @Value("${osiris.search.ipt.password:}")
+    @Value("${osiris.search.creodias.password:}")
     private String password;
-    @Value("${osiris.search.ipt.priority:1}")
+    @Value("${osiris.search.creodias.priority:0}")
     private int priority;
 
     @Bean
-    public IptSearchProvider iptSearchProvider(OkHttpClient httpClient, ObjectMapper objectMapper, ExternalProductDataService externalProductService) {
-        return new IptSearchProvider(priority,
-                IptSearchProperties.builder()
+    public CreoDIASSearchProvider creodiasSearchProvider(OkHttpClient httpClient, ObjectMapper objectMapper, ExternalProductDataService externalProductService) {
+        return new CreoDIASSearchProvider(priority,
+                CreoDIASSearchProperties.builder()
                         .baseUrl(HttpUrl.parse(baseUrl))
                         .username(username)
                         .password(password)
