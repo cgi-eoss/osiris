@@ -40,6 +40,11 @@ public class InProcessRpcConfig {
     public LocalWorker localWorker(ManagedChannelBuilder inProcessChannelBuilder) {
         return new LocalWorker(inProcessChannelBuilder);
     }
+    
+    @Bean
+    public LocalFtpHarvester localFtpHarvester(ManagedChannelBuilder inProcessChannelBuilder) {
+        return new LocalFtpHarvester(inProcessChannelBuilder);
+    }
 
     private static final class InProcessRpcServer {
 

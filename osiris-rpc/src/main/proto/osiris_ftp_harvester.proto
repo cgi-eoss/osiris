@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc.ftp.harvester";
+
+service OsirisFtpHarvester {
+    rpc HarvestFiles (HarvestFilesParams) returns (FileList);
+    rpc GetFile (GetFileParams) returns (stream FileStream);
+    rpc DeleteFile (DeleteFileParams) returns (DeleteFileResponse);
+}
+
+message HarvestFilesParams {
+    string ftpRootUri = 1;
+    google.protobuf.Timestamp timestamp = 2;
+}
+
+message FileList {
+    repeated FileItem items = 1;
+}
+
+message FileItem {
+    string fileUri = 1;
+}
+
+message GetFileParams {
+    string fileUri = 1;
+}
+
+message DeleteFileParams {
+    string fileUri = 1;
+}
+
+message DeleteFileResponse {
+
+}
