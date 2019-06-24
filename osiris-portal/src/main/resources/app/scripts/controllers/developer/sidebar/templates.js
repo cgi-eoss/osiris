@@ -10,7 +10,7 @@
 define(['../../../osirismodules'], function (osirismodules) {
 
 
-    osirismodules.service('DeveloperTemplatesCtrlState', ['ProductTemplateService', 'CommunityService', '$q', function ( ProductTemplateService, CommunityService, $q ) {
+    osirismodules.service('DeveloperTemplatesCtrlState', ['ProductTemplateService', 'ProductService', 'CommunityService', '$q', function ( ProductTemplateService, ProductService, CommunityService, $q ) {
 
         var self = this;
 
@@ -22,7 +22,7 @@ define(['../../../osirismodules'], function (osirismodules) {
             displayRight: false,
             selectedService: undefined,
             selectedOwnershipFilter: ProductTemplateService.templateOwnershipFilters.ALL_SERVICES,
-            selectedTypeFilter: ProductTemplateService.templateTypeFilters.ALL_SERVICES,
+            selectedTypeFilter: ProductService.serviceTypeFilters.ALL_SERVICES,
             selectedServiceFileTab: 1,
             contentsSearchText: '',
             contentsDisplayFilters: false,
@@ -219,13 +219,9 @@ define(['../../../osirismodules'], function (osirismodules) {
 
         $scope.serviceParams = DeveloperTemplatesCtrlState.params;
         $scope.serviceOwnershipFilters = ProductTemplateService.templateOwnershipFilters;
-        $scope.serviceTypeFilters = ProductTemplateService.templateTypeFilters;
+        $scope.serviceTypeFilters = ProductService.serviceTypeFilters;
 
-        $scope.serviceTypes = {
-            APPLICATION: { id: 0, name: 'Application', value: 'APPLICATION'},
-            PROCESSOR: { id: 0, name: 'Processor', value: 'PROCESSOR'},
-            PARALLEL_PROCESSOR: { id: 0, name: 'Parallel Processor', value: 'PARALLEL_PROCESSOR'}
-        };
+        $scope.serviceTypes = ProductService.serviceTypes;
 
 
         $scope.toggleServiceFilter = function(){
@@ -266,18 +262,9 @@ define(['../../../osirismodules'], function (osirismodules) {
 
                 function CreateServiceController($scope, $mdDialog) {
 
-                    $scope.serviceTypes = [];
+                    $scope.serviceTypes = ProductService.serviceTypes;
 
                     $scope.servicesForType = {}
-
-                    for (var id in ProductTemplateService.templateTypeFilters) {
-                        if (ProductTemplateService.templateTypeFilters[id].value) {
-                            $scope.serviceTypes.push({
-                                name: ProductTemplateService.templateTypeFilters[id].name,
-                                value: ProductTemplateService.templateTypeFilters[id].value
-                            });
-                        }
-                    }
 
                     $scope.resetServiceFrom = function() {
                         $scope.newItem.fromService = 'none';

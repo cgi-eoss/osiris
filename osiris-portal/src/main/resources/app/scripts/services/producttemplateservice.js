@@ -24,13 +24,6 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             ALL_SERVICES: { id: 0, name: 'All', searchUrl: 'search/findByFilterOnly'}
         };
 
-        this.templateTypeFilters = {
-            ALL_SERVICES: { id: 0, name: 'All Template Types' },
-            APPLICATION: { id: 1, name: 'Application Template', value: 'APPLICATION' },
-            PROCESSOR: { id: 2, name: 'Processor Template', value: 'PROCESSOR' },
-            PARALLEL_PROCESSOR: { id: 3, name: 'Parallel Processor Template', value: 'PARALLEL_PROCESSOR' }
-        };
-
         this.templatePublicationFilters = {
             ALL_SERVICES: { id: 0, name: 'All Publication Statuses' },
             PUBLIC_SERVICES: { id: 1, name: 'Public', value: 'PUBLIC_SERVICES'},

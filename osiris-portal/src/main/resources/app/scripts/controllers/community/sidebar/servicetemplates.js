@@ -10,12 +10,12 @@
 
 define(['../../../osirismodules'], function (osirismodules) {
 
-    osirismodules.controller('CommunityServiceTemplatesCtrl', ['ProductTemplateService', 'DeveloperTemplatesCtrlState', 'PublishingService', 'CommonService', 'TabService', '$scope', '$mdDialog', function (ProductTemplateService, DeveloperTemplatesCtrlState, PublishingService, CommonService, TabService, $scope, $mdDialog) {
+    osirismodules.controller('CommunityServiceTemplatesCtrl', ['ProductTemplateService', 'ProductService', 'DeveloperTemplatesCtrlState', 'PublishingService', 'CommonService', 'TabService', '$scope', '$mdDialog', function (ProductTemplateService, ProductService, DeveloperTemplatesCtrlState, PublishingService, CommonService, TabService, $scope, $mdDialog) {
 
         /* Get stored Service details */
         $scope.serviceParams = DeveloperTemplatesCtrlState.params;
         $scope.serviceOwnershipFilters = ProductTemplateService.templateOwnershipFilters;
-        $scope.serviceTypeFilters = ProductTemplateService.templateTypeFilters;
+        $scope.serviceTypeFilters = ProductService.serviceTypeFilters;
         $scope.publicationFilters = ProductTemplateService.templatePublicationFilters;
         $scope.item = "Service template";
 

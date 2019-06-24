@@ -15,12 +15,7 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.serviceOwnershipFilters = ProductService.serviceOwnershipFilters;
         $scope.serviceTypeFilters = ProductService.serviceTypeFilters;
 
-        $scope.serviceTypes = {
-            APPLICATION: { id: 0, name: 'Application', value: 'APPLICATION'},
-            PROCESSOR: { id: 0, name: 'Processor', value: 'PROCESSOR'},
-            BULK_PROCESSOR: { id: 0, name: 'Bulk Processor', value: 'BULK_PROCESSOR'},
-            PARALLEL_PROCESSOR: { id: 0, name: 'Parallel Processor', value: 'PARALLEL_PROCESSOR'}
-        };
+        $scope.serviceTypes = ProductService.serviceTypes;
 
 
         $scope.toggleServiceFilter = function(){
@@ -67,19 +62,11 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.createService = function($event) {
             function CreateServiceController($scope, $mdDialog) {
 
-                $scope.serviceTypes = [];
+                $scope.serviceTypes = ProductService.serviceTypes;
 
                 $scope.serviceTemplates = {}
                 $scope.defaultTemplate = {}
 
-                for (var id in ProductService.serviceTypeFilters) {
-                    if (ProductService.serviceTypeFilters[id].value) {
-                        $scope.serviceTypes.push({
-                            name: ProductService.serviceTypeFilters[id].name,
-                            value: ProductService.serviceTypeFilters[id].value
-                        });
-                    }
-                }
 
                 $scope.setDefaultServiceTemplate = function() {
 

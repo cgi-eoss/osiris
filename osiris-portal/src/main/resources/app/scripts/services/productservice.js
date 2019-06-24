@@ -24,12 +24,19 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             ALL_SERVICES: { id: 0, name: 'All', searchUrl: 'search/findByFilterOnly'}
         };
 
+        this.serviceTypes = {
+            APPLICATION: { name: 'Application', value: 'APPLICATION'},
+            PROCESSOR: { name: 'Processor', value: 'PROCESSOR'},
+            PARALLEL_PROCESSOR: { name: 'Parallel Processor', value: 'PARALLEL_PROCESSOR'},
+            FTP_HARVESTER: { name: 'FTP Harvester', value: 'FTP_SERVICE'}
+        }
+
         this.serviceTypeFilters = {
             ALL_SERVICES: { id: 0, name: 'All Service Types' },
             APPLICATION: { id: 1, name: 'Application Services', value: 'APPLICATION' },
             PROCESSOR: { id: 2, name: 'Processor Services', value: 'PROCESSOR' },
-            BULK_PROCESSOR: { id: 3, name: 'Bulk Processor Services', value: 'BULK_PROCESSOR' },
-            PARALLEL_PROCESSOR: { id: 4, name: 'Parallel Processor Services', value: 'PARALLEL_PROCESSOR' }
+            PARALLEL_PROCESSOR: { id: 4, name: 'Parallel Processor Services', value: 'PARALLEL_PROCESSOR' },
+            FTP_HARVESTER: { id: 5, name: 'FTP Harvester Services', value: 'FTP_SERVICE'}
         };
 
         this.servicePublicationFilters = {

@@ -12,26 +12,34 @@ define(['../../../osirismodules'], function (osirismodules) {
     osirismodules.controller('DeveloperManageServiceCtrl', ['$scope', 'ProductService', 'ProductTemplateService', 'UserMountsService', 'CommonService', '$mdDialog', function ($scope, ProductService, ProductTemplateService, UserMountsService, CommonService, $mdDialog) {
 
         $scope.serviceParams = ProductService.params.development;
-
-        $scope.serviceForms = {
-            files: {title: 'Files'},
-            dataInputs: {title: 'Input Definitions'},
-            userMounts: {title: 'User Mounts'},
-            dataOutputs: {title: 'Output Definitions'}
-        };
-        $scope.serviceParams.activeArea = $scope.serviceForms.files;
         $scope.constants = ProductService.serviceParametersConstants;
-
-        $scope.serviceTypes = {
-            APPLICATION: { id: 0, name: 'Application', value: 'APPLICATION'},
-            PROCESSOR: { id: 0, name: 'Processor', value: 'PROCESSOR'},
-            BULK_PROCESSOR: { id: 0, name: 'Bulk Processor', value: 'BULK_PROCESSOR'},
-            PARALLEL_PROCESSOR: { id: 0, name: 'Parallel Processor', value: 'PARALLEL_PROCESSOR'}
-        };
+        $scope.serviceTypes = ProductService.serviceTypes;
 
         $scope.userMounts = [];
         UserMountsService.getUserMounts().then(function(mounts) {
             $scope.userMounts = mounts;
+        });
+
+        $scope.$watch( function() {
+            return $scope.serviceParams.selectedService.type;
+        }, function( type ) {
+            if (type !== ProductService.serviceTypes.FTP_HARVESTER.value) {
+                $scope.serviceForms = {
+                    files: {title: 'Files'},
+                    dataInputs: {title: 'Input Definitions'},
+                    userMounts: {title: 'User Mounts'},
+                    dataOutputs: {title: 'Output Definitions'}
+                };
+                $scope.serviceParams.activeArea = $scope.serviceForms.files;
+            } else {
+                $scope.serviceForms = {
+                    dataInputs: {title: 'Input Definitions'},
+                    dataOutputs: {title: 'Output Definitions'}
+                };
+
+                $scope.serviceParams.activeArea = $scope.serviceForms.dataInputs;
+            }
+
         });
 
 
