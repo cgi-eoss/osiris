@@ -1,0 +1,22 @@
+<md-dialog id="item-dialog" aria-label="Collection dialog">
+    <h4>Incident collection</h4>
+    <md-dialog-content>
+        <form name="incidentCollectionForm">
+            <div class="dialog-content-area">
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Name</label>
+                    <input ng-model="collection.name" md-autofocus type="text" aria-label="Collection name"  required>
+                </md-input-container>
+                <br>
+                <md-input-container class="md-block" flex-gt-sm>
+                    <label>Description</label>
+                    <textarea ng-model="collection.description" />
+                </md-input-container>
+            </div>
+        </form>
+    </md-dialog-content>
+    <md-dialog-actions>
+        <md-button ng-click="createOrUpdateCollection()" ng-disabled="incidentCollectionForm.$invalid" class="md-primary">OK</md-button>
+        <md-button ng-click="closeDialog()" class="md-primary">Cancel</md-button>
+    </md-dialog-actions>
+</md-dialog>

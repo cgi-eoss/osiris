@@ -65,6 +65,8 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
                 MapService.fitExtent([-647452,1599348.255904,3071953.613876,10293520])
             }
 
+            incidentData.dataCollections = incident.collections;
+
             $scope.incidentData = incidentData;
 
 
@@ -105,6 +107,60 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
                     $scope.incidentData.processingTemplates = processingTemplates;
                 });
             }
+        }
+
+        $scope.removeIncidentCollection = function($event, collection) {
+            var idx = $scope.incidentData.dataCollections.indexOf(collection);
+            if (idx !== -1) {
+                $scope.incidentData.dataCollections.splice(idx, 1);
+            }
+        }
+
+        $scope.incidentCollectionDialog = function($event, collection) {
+
+            var dataCollections = $scope.incidentData.dataCollections;
+
+            function IncidentCollectionController($scope, $mdDialog) {
+
+                if (collection) {
+                    $scope.collection = {
+                        name: collection.name,
+                        description: collection.description
+                    }
+                } else {
+                    $scope.collection = {}
+                }
+
+                $scope.createOrUpdateCollection = function() {
+                    if (!collection) {
+                        dataCollections.push($scope.collection);
+                    } else {
+                        collection.name = $scope.collection.name;
+                        collection.description = $scope.collection.description;
+                    }
+                    $mdDialog.hide();
+                }
+
+                $scope.closeDialog = function() {
+                    $mdDialog.hide();
+                };
+            }
+
+            $mdDialog.show({
+                controller: IncidentCollectionController,
+                templateUrl: 'views/community/manage/incidentcollection.html',
+                parent: angular.element(document.body),
+                targetEvent: $event,
+                clickOutsideToClose: false
+            });
+
+        }
+
+        $scope.uploadDataToCollection = function($event, collection) {
+            CollectionService.addReferenceFileToCollection($event, collection, {
+                startTime: $scope.incidentData.startDate,
+                endTime: $scope.incidentData.startDate
+            });
         }
 
         $scope.editProcessingTemplateDialog = function($event, processingTemplate) {
@@ -257,16 +313,35 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
             var data = getIncidentParams(incident);
 
             if (!data.id) {
-                IncidentService.createIncident(data).then(function(newIncident) {
-                    populateImplicitInputs(data).then(function() {
-                        var processingInstances = getProcessingInstances(newIncident._links.self.href, $scope.incidentData.processingTemplates);
-                        IncidentProcessingService.createIncidentProcessings(processingInstances).then(function(response) {
-                            IncidentService.startIncidentProcessing(response[0]._embedded.incident).then(function() {
-                                IncidentService.refreshIncidents('community', 'Create', newIncident)
-                            })
+
+                var incidentCollections = $scope.incidentData.dataCollections;
+                let collectionRequests = incidentCollections.map(function(collection) {
+                    return CollectionService.createCollection({
+                        name: data.title + '-' + collection.name,
+                        description: collection.description,
+                        dataType: 'MIXED',
+                        fileType: 'REFERENCE_DATA'
+                    });
+                })
+
+                $q.all(collectionRequests).then(function(responses) {
+                    data.collections = responses.map(function(response) {
+                        return response._links.self.href;
+                    });
+
+                    IncidentService.createIncident(data).then(function(newIncident) {
+                        populateImplicitInputs(data).then(function() {
+                            var processingInstances = getProcessingInstances(newIncident._links.self.href, $scope.incidentData.processingTemplates);
+                            IncidentProcessingService.createIncidentProcessings(processingInstances).then(function(response) {
+                                IncidentService.startIncidentProcessing(response[0]._embedded.incident).then(function() {
+                                    IncidentService.refreshIncidents('community', 'Create', newIncident)
+                                })
+                            });
                         });
                     });
                 });
+
+
             } else {
                 IncidentService.updateIncident(data).then(function(updatedIncident) {
                     IncidentService.refreshIncidents('community');

@@ -58,7 +58,15 @@ define(['../../../osirismodules'], function (osirismodules) {
         };
 
         $scope.createIncident = function($event) {
-            $scope.incidentParams.selectedIncident = {};
+            $scope.incidentParams.selectedIncident = {
+                collections: [{
+                    name: 'EO Data',
+                    description: 'EO Data associated to the incident'
+                }, {
+                    name: 'Reference data',
+                    description: 'Incident reference data'
+                }]
+            };
         };
 
         $scope.deleteIncident = function(event, incident) {

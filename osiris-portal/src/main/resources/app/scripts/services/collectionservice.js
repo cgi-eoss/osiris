@@ -7,9 +7,9 @@
  */
 'use strict';
 
-define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJsonHalAdapter) {
+define(['../osirismodules', 'traversonHal', 'moment'], function(osirismodules, TraversonJsonHalAdapter, moment) {
 
-    osirismodules.service('CollectionService', ['$rootScope', '$http', 'osirisProperties', '$q', '$timeout', 'MessageService', 'UserService', 'TabService', 'CommunityService', 'FileService', 'traverson', function($rootScope, $http, osirisProperties, $q, $timeout, MessageService, UserService, TabService, CommunityService, FileService, traverson) {
+    osirismodules.service('CollectionService', ['$rootScope', '$http', 'osirisProperties', '$q', '$timeout', '$mdDialog', 'MessageService', 'UserService', 'TabService', 'CommunityService', 'FileService', 'traverson', function($rootScope, $http, osirisProperties, $q, $timeout, $mdDialog, MessageService, UserService, TabService, CommunityService, FileService, traverson) {
 
         var self = this;
 
@@ -29,6 +29,12 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
             {name: 'Output product', value: 'OUTPUT_PRODUCT'},
             {name: 'Reference data', value: 'REFERENCE_DATA'}
         ]
+
+        var uploadFileTypes = [
+            { name: "GeoTIFF", value: "GEOTIFF"},
+            { name: "Shapefile", value: "SHAPEFILE"},
+            { name: "Other", value: "OTHER"}
+        ];
 
         this.fileTypeFilters = this.fileTypes.slice();
         this.fileTypeFilters.unshift({
@@ -278,6 +284,106 @@ define(['../osirismodules', 'traversonHal'], function(osirismodules, TraversonJs
                     return document._embedded.collections;
                 });
         }
+
+        this.addReferenceFileToCollection = function ($event, collection, userProperties) {
+            function AddReferenceFileDialog($scope, $mdDialog, FileService) {
+
+                $scope.item = "File";
+                $scope.fileTypes = uploadFileTypes;
+                $scope.fileParams = FileService.params.community;
+                $scope.newReference = {
+                    userProperties: userProperties || {},
+                    collection: collection
+                };
+                $scope.validation = "Valid";
+                $scope.rangeFieldEnabled = userProperties ? (userProperties.startTime || userProperties.endTime ? true : false) : false
+
+                $scope.validateFile = function (file) {
+                    if(!file) {
+                        $scope.validation = "No file selected";
+                    } else if (file.name.indexOf(' ') >= 0) {
+                        $scope.validation = "Filename cannot contain white space";
+                    } else if (file.size >= (1024*1024*1024*2)) {
+                        $scope.validation = "Filesize cannot exceed 2GB";
+                    } else {
+                        $scope.validation = "Valid";
+                    }
+                };
+
+                $scope.searchCollection = function() {
+                    return self.findCollections({
+                        searchText: $scope.collectionSearchString,
+                        fileType: 'REFERENCE_DATA'
+                    }).then(function(collections) {
+                        return collections.map(function(collection) {
+                            return {
+                                id: collection.id,
+                                identifier: collection.identifier,
+                                name: collection.name
+                            };
+                        })
+                    });
+                }
+
+                $scope.updateFieldsForFileType = function() {
+                    $scope.geometryFieldEnabled = false;
+                    $scope.showGeometryField = $scope.newReference.fileType === 'OTHER';
+                }
+
+                $scope.onStartDateChange = function() {
+                    var data = $scope.newReference.userProperties;
+                    if (!data.endTime || data.endTime < data.startTime) {
+                        data.endTime = data.startTime;
+                    }
+                }
+
+                $scope.onEndDateChange = function() {
+                    var data = $scope.newReference.userProperties;
+                    if (!data.startTime || data.startTime > data.endTime) {
+                        data.startTime = data.endTime;
+                    }
+                }
+                /* Upload the file */
+                $scope.addReferenceFile = function () {
+
+                    var userProperties = Object.assign({}, $scope.newReference.userProperties);
+                    if ($scope.newReference.fileType === 'OTHER' && !userProperties.geometry) {
+                        userProperties.geometry = 'POINT(0 100)';
+                    }
+
+                    userProperties.startTime = userProperties.endTime || userProperties.startTime;
+                    userProperties.endTime = userProperties.endTime || userProperties.startTime;
+
+                    if (userProperties.startTime) {
+                        userProperties.startTime = moment(userProperties.startTime).format('YYYY-MM-DD[T00:00:00Z]');
+                        userProperties.endTime = moment(userProperties.endTime).format('YYYY-MM-DD[T23:59:59Z]');
+                    }
+
+                    FileService.uploadFile("community", {
+                        file: $scope.newReference.file,
+                        fileType: $scope.newReference.fileType,
+                        collection: $scope.newReference.collection.identifier,
+                        userProperties: userProperties
+                    }).then(function (response) {
+                        /* Get updated list of reference data */
+                        FileService.refreshOsirisFiles("community");
+                    });
+                };
+
+                $scope.closeDialog = function () {
+                    $mdDialog.hide();
+                };
+
+            }
+            AddReferenceFileDialog.$inject = ['$scope', '$mdDialog', 'FileService'];
+            $mdDialog.show({
+                controller: AddReferenceFileDialog,
+                templateUrl: 'views/community/templates/addreferencedata.tmpl.html',
+                parent: angular.element(document.body),
+                targetEvent: $event,
+                clickOutsideToClose: true
+            });
+        };
 
         return this;
     }]);
