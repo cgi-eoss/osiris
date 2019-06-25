@@ -152,11 +152,12 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
 
         $scope.goToProcessingCollection = function(collection) {
 
-            CollectionService.params.community.selectedOwnershipFilter = CollectionService.dbOwnershipFilters.ALL_COLLECTIONS;
-            CollectionService.params.community.searchText = collection.name;
+            CollectionService.params.community.searchParams.ownership = CollectionService.dbOwnershipFilters.ALL_COLLECTIONS;
+            CollectionService.params.community.searchParams.searchText = collection.name;
+            CollectionService.params.community.searchParams.fileType = 'OUTPUT_PRODUCT';
             TabService.navInfo.community.activeSideNav = TabService.getCommunityNavTabs().COLLECTIONS;
             CollectionService.params.community.selectedCollection = collection;
-            CollectionService.getCollectionsByFilter('community');
+            CollectionService.refreshCollections('community');
 
         };
 

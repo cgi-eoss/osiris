@@ -10,7 +10,7 @@
 
 define(['../../../osirismodules'], function (osirismodules) {
 
-    osirismodules.controller('CommunityFilesCtrl', ['FileService', 'CommonService', '$scope', '$mdDialog', 'moment', function (FileService, CommonService, $scope, $mdDialog, moment) {
+    osirismodules.controller('CommunityFilesCtrl', ['FileService', 'CollectionService', 'CommonService', '$scope', '$mdDialog', 'moment', function (FileService, CollectionService, CommonService, $scope, $mdDialog, moment) {
 
         /* Get stored Files details */
         $scope.fileParams = FileService.params.community;
@@ -44,6 +44,7 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.getPage = function(url){
             FileService.getOsirisFilesPage('community', url);
         };
+
 
         $scope.filter = function(){
             FileService.getOsirisFilesByFilter('community');
@@ -85,6 +86,21 @@ define(['../../../osirismodules'], function (osirismodules) {
                     }
                 };
 
+                $scope.searchCollection = function() {
+                    return CollectionService.findCollections({
+                        searchText: $scope.collectionSearchString,
+                        fileType: 'REFERENCE_DATA'
+                    }).then(function(collections) {
+                        return collections.map(function(collection) {
+                            return {
+                                id: collection.id,
+                                identifier: collection.identifier,
+                                name: collection.name
+                            };
+                        })
+                    });
+                }
+
                 $scope.updateFieldsForFileType = function() {
                     $scope.geometryFieldEnabled = false;
                     $scope.showGeometryField = $scope.newReference.fileType === 'OTHER';
@@ -122,6 +138,7 @@ define(['../../../osirismodules'], function (osirismodules) {
                     FileService.uploadFile("community", {
                         file: $scope.newReference.file,
                         fileType: $scope.newReference.fileType,
+                        collection: $scope.newReference.collection.identifier,
                         userProperties: userProperties
                     }).then(function (response) {
                         /* Get updated list of reference data */

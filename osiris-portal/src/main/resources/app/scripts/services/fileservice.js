@@ -147,6 +147,7 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                     data: {
                         file: file,
                         fileType: newReference.fileType,
+                        collection: newReference.collection,
                         userProperties: Upload.jsonBlob(newReference.userProperties)
                     }
                 }).then(function (resp) {

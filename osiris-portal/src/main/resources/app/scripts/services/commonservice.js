@@ -83,7 +83,7 @@ define(['../osirismodules'], function (osirismodules) {
             return html;
         }
 
-        this.createItemDialog = function ($event, serviceName, serviceMethod, optDialogTemplate) {
+        this.createItemDialog = function ($event, serviceName, serviceMethod, optDialogTemplate, optDialogData) {
             var deferred = $q.defer();
 
             function CreateItemController($scope, $mdDialog) {
@@ -91,8 +91,17 @@ define(['../osirismodules'], function (osirismodules) {
                 $scope.item = serviceName.substring(0, serviceName.indexOf('Service'));
                 var service = $injector.get(serviceName);
 
+                $scope.data = optDialogData;
+
                 $scope.addItem = function () {
                     service[serviceMethod]($scope.newItem).then(function (createdItem) {
+                            if (!createdItem.id) {
+                                try {
+                                    createdItem.id = (/[^\/]*$/).exec(createdItem._links.self.href)[0];
+                                } catch(e) {
+
+                                }
+                            }
                             deferred.resolve(createdItem);
                         },
                         function (error) {
@@ -119,7 +128,7 @@ define(['../osirismodules'], function (osirismodules) {
             return deferred.promise;
         };
 
-        this.editItemDialog = function ($event, item, serviceName, serviceMethod, optDialogTemplate) {
+        this.editItemDialog = function ($event, item, serviceName, serviceMethod, optDialogTemplate, optDialogData) {
             var deferred = $q.defer();
 
             function EditController($scope, $mdDialog) {
@@ -128,6 +137,8 @@ define(['../osirismodules'], function (osirismodules) {
                 $scope.tempItem = angular.copy(item);
                 $scope.itemName = item.name;
                 var service = $injector.get(serviceName);
+
+                $scope.data = optDialogData;
 
                 /* Patch databasket and update item list */
                 $scope.updateItem = function () {
@@ -151,11 +162,13 @@ define(['../osirismodules'], function (osirismodules) {
                         }
                         var deleteMethod = serviceMethod.replace("update", "remove");
                         service[deleteMethod](item).then(function (data) {
+                                data._deleted = true
                                 deferred.resolve(data);
                             },
                             function (error) {
                                 deferred.reject();
-                            });
+                            }
+                        );
                         $mdDialog.hide();
                     });
                 };

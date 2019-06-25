@@ -887,6 +887,12 @@
   font-size: 0.6rem;
   color: rgba(0, 0, 0, 0.4);
 }
+#referencedata-dialog md-autocomplete {
+  background: transparent;
+}
+#referencedata-dialog md-autocomplete md-autocomplete-wrap {
+  box-shadow: none;
+}
 
 #file-manage-container #file-details,
 #file-share-container #file-details {
