@@ -6,7 +6,6 @@ import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata;
 import com.cgi.eoss.osiris.model.internal.OutputProductMetadata;
 import com.cgi.eoss.osiris.model.internal.ReferenceDataMetadata;
-import okhttp3.HttpUrl;
 import org.geojson.GeoJsonObject;
 import org.springframework.core.io.Resource;
 import org.springframework.hateoas.Link;
@@ -63,6 +62,12 @@ public interface CatalogueService {
     String getDefaultOutputProductCollection();
     
     /**
+     * <p>Returns the identifier of the default reference data collection</p>
+     * 
+     */
+	String getDefaultReferenceDataCollection();
+    
+    /**
      * <p>Store an external product's metadata for later reference by OSIRIS.</p>
      *
      * @param geoJson
@@ -104,23 +109,24 @@ public interface CatalogueService {
      * @return
      */
     boolean canUserRead(User user, URI uri);
-
+    
     /**
      * <p>Creates the underlying collection represented by the collection parameter
      *
      * @param collection
      * @return
+     * @throws IOException 
      */
-    public boolean createOutputCollection(Collection collection);
+    public void createCollection(Collection collection) throws IOException;
     
     /**
      * <p>Deletes the underlying collection represented by the collection parameter
      *
      * @param collection
      * @return 
-     * 
+     * @throws IOException
      */
-    public boolean deleteOutputCollection(Collection collection);
+    public void deleteCollection(Collection collection) throws IOException;
 
     /**
      * <p>Check that the user has write access on the collection

@@ -2,11 +2,14 @@ package com.cgi.eoss.osiris.persistence.service;
 
 import static com.cgi.eoss.osiris.model.QCollection.collection;
 import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.OsirisFile.Type;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.persistence.dao.CollectionDao;
 import com.cgi.eoss.osiris.persistence.dao.OsirisEntityDao;
 import com.querydsl.core.types.Predicate;
 import java.util.List;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,5 +53,10 @@ public class JpaCollectionDataService extends AbstractJpaDataService<Collection>
     public List<Collection> findByOwner(User user) {
         return dao.findByOwner(user);
     }
+
+	@Override
+	public Set<Collection> findByFileType(Type fileType) {
+		return dao.findByFileType(fileType);
+	}
 
 }

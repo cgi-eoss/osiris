@@ -2,6 +2,7 @@ package com.cgi.eoss.osiris.api.controllers;
 
 import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.OsirisFile.Type;
 import com.cgi.eoss.osiris.model.QCollection;
 import com.cgi.eoss.osiris.model.QUser;
 import com.cgi.eoss.osiris.model.User;
@@ -10,14 +11,17 @@ import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.google.common.base.Strings;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberPath;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.UUID;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Getter
@@ -48,11 +52,16 @@ public class CollectionsApiImpl extends BaseRepositoryApiImpl<Collection> implem
         if (collection.getOwner() == null) {
             getSecurityService().updateOwnerWithCurrentUser(collection);
         }
+        if (collection.getFileType() == null) {
+        	throw new RuntimeException("Collection file type is mandatory");
+        }
         if (collection.getIdentifier() == null) {
             collection.setIdentifier("osiris" + UUID.randomUUID().toString().replaceAll("-", ""));
-            //TODO can be extended to ref data collections
-            if (!catalogueService.createOutputCollection(collection)) {
-                throw new RuntimeException("Failed to create underlyig output collection ");
+            try {
+	            catalogueService.createCollection(collection);
+	        }
+            catch (IOException e) {
+            	throw new RuntimeException("Failed to create underlying collection ");
             }
         }
         return dao.save(collection);
@@ -60,14 +69,13 @@ public class CollectionsApiImpl extends BaseRepositoryApiImpl<Collection> implem
     
     @Override
     public void delete(Collection collection) {
-        //TODO can be extended to ref data collections
-        if (catalogueService.deleteOutputCollection(collection)) {
-            dao.delete(collection);
-        }
-        else {
-            throw new RuntimeException("Failed to delete underlying output collection");
-        }
-    }
+    	try {
+ 			catalogueService.deleteCollection(collection);
+ 			dao.delete(collection);
+    	} catch (IOException e) {
+    		throw new RuntimeException("Failed to delete underlying collection");
+ 		}
+ 	}
 
     @Override
     public Page<Collection> findByFilterOnly(String filter, Pageable pageable) {
@@ -92,4 +100,31 @@ public class CollectionsApiImpl extends BaseRepositoryApiImpl<Collection> implem
         }
         return builder.getValue();
     }
+
+	@Override
+	public Page<Collection> parametricFind(String filter, Type fileType, User owner, User notOwner,
+			Pageable pageable) {
+		Predicate p = buildPredicate(filter, fileType, owner, notOwner);
+		return getFilteredResults(p, pageable);
+	}
+	
+	private Predicate buildPredicate(String filter, Type fileType, User owner, User notOwner) {
+		BooleanBuilder builder = new BooleanBuilder(Expressions.asBoolean(true).isTrue());
+		if (!Strings.isNullOrEmpty(filter)) {
+			builder.and(
+					QCollection.collection.id.stringValue().toLowerCase().contains(filter.toLowerCase())
+					.or(QCollection.collection.name.stringValue().toLowerCase().contains(filter.toLowerCase()))
+					);
+		}
+		if (fileType != null) {
+			builder.and(QCollection.collection.fileType.eq(fileType));
+		}
+		if (owner != null) {
+			builder.and(getOwnerPath().eq(owner));
+		}
+		if (notOwner !=null) {
+			builder.and(getOwnerPath().ne(notOwner));
+		}
+		return builder.getValue();
+	}
 }

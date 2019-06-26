@@ -12,6 +12,7 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.log4j.Log4j2;
@@ -67,7 +68,7 @@ public class RestoServiceImpl implements RestoService {
     @Value("${osiris.catalogue.resto.collection.outputProductsModel:RestoModel_Osiris_Output}")
     private String outputProductModel;
     
-    private final int RESTO_COLLECTION_SHORT_NAME_LIMIT= 16;
+    private static final int RESTO_COLLECTION_SHORT_NAME_LIMIT = 16;
 
     @Autowired
     public RestoServiceImpl(@Value("${osiris.catalogue.resto.url:http://osiris-resto/resto/}") String restoBaseUrl,
@@ -87,8 +88,8 @@ public class RestoServiceImpl implements RestoService {
     }
 
     @Override
-    public UUID ingestReferenceData(GeoJsonObject object) {
-        return ingest(refDataCollection, object);
+    public UUID ingestReferenceData(String collection, GeoJsonObject object) {
+        return ingest(collection, object);
     }
 
     @Override
@@ -102,13 +103,18 @@ public class RestoServiceImpl implements RestoService {
     }
 
     @Override
-    public void deleteOutputProduct(UUID restoId) {
-        delete(outputProductCollection, restoId);
+    public void deleteOutputProduct(String collection, UUID restoId) {
+        delete(collection, restoId);
     }
 
     @Override
-    public void deleteReferenceData(UUID restoId) {
-        delete(refDataCollection, restoId);
+    public void deleteReferenceData(String collection, UUID restoId) {
+        delete(collection, restoId);
+    }
+    
+    @Override
+    public void deleteExternalProduct(UUID restoId) {
+        delete(externalProductCollection, restoId);
     }
 
     @Override
@@ -195,14 +201,18 @@ public class RestoServiceImpl implements RestoService {
         Request request = new Request.Builder().url(url).delete().build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                ;
+        	if (response.isSuccessful()) {
                 LOG.info("Deleted Resto object with ID {}", uuid);
-            } else {
-                LOG.error("Failed to delete Resto object from collection '{}': {} {}: {}", collection, response.code(),
-                        response.message(), response.body());
-                throw new CatalogueException("Failed to delete Resto object");
+                return;
             }
+            
+            if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+            	LOG.info("Resto object was not existing {}", uuid);
+            	return;
+            }
+            LOG.error("Failed to delete Resto object from collection '{}': {} {}: {}", collection, response.code(),
+                        response.message(), response.body());
+            throw new CatalogueException("Failed to delete Resto object");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -308,6 +318,27 @@ public class RestoServiceImpl implements RestoService {
     }
     
     @Override
+    public boolean createReferenceDataCollection(Collection collection) {
+        RestoCollection restoCollection = getReferenceDataRestoCollectionForCollection(collection);
+        if (!getRestoCollections().contains(restoCollection.getName())) {
+            return createRestoCollection(restoCollection);
+        }
+        return false;
+    }
+
+    private RestoCollection getReferenceDataRestoCollectionForCollection(Collection collection) {
+        RestoCollection.RestoCollectionBuilder builder = RestoCollection.builder().name(collection.getIdentifier()).status("public")
+                .licenseId("unlicensed").rights(ImmutableMap.of("download", 0, "visualize", 1));
+        builder.model(refDataModel)
+        .osDescription(ImmutableMap.of("en",
+        		RestoCollection.OpensearchDescription.builder().shortName(collection.getName().substring(0, Math.min(RESTO_COLLECTION_SHORT_NAME_LIMIT, collection.getName().length())))
+                        .longName(collection.getOwner().getName()+" - " + collection.getName()).description(collection.getDescription())
+                        .tags("osiris osiris refData reference generated " + collection.getName()).query(collection.getName()).build()))
+        .propertiesMapping(ImmutableMap.of("osirisFileType", OsirisFile.Type.REFERENCE_DATA.toString()));
+        return builder.build();
+    }
+    
+    @Override
     public boolean deleteCollection(Collection collection) {
         try (Response response = client.newCall(new Request.Builder()
                 .url(HttpUrl.parse(restoBaseUrl).newBuilder().addPathSegment("collections").addPathSegment(collection.getIdentifier()).build())
@@ -316,11 +347,14 @@ public class RestoServiceImpl implements RestoService {
             if (response.isSuccessful()) {
                 LOG.info("Deleted Resto collection '{}'", collection.getName());
                 return true;
-            } else {
-                LOG.warn("Failed to delete Resto collection '{}': {} {}: {}", collection.getName(), response.code(),
-                        response.message(), response.body());
-                return false;
+            } 
+            if (response.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+            	LOG.info("Resto collection was not existing {}", collection.getIdentifier());
+            	return true;
             }
+            LOG.warn("Failed to delete Resto collection '{}': {} {}: {}", collection.getName(), response.code(),
+            response.message(), response.body());
+            return false;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

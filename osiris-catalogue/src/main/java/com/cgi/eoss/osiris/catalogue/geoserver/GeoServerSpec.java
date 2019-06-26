@@ -2,6 +2,8 @@ package com.cgi.eoss.osiris.catalogue.geoserver;
 
 import lombok.Builder;
 import lombok.Data;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @Builder
@@ -20,4 +22,7 @@ public class GeoServerSpec {
     private String crs;
     
     private String style;
+    
+    @Builder.Default
+    private Map<String, String> options = new HashMap<>();
 }

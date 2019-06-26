@@ -7,7 +7,9 @@ import com.cgi.eoss.osiris.logging.Logging;
 import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.DataSource;
 import com.cgi.eoss.osiris.model.Databasket;
+import com.cgi.eoss.osiris.model.GeoserverLayer;
 import com.cgi.eoss.osiris.model.OsirisFile;
+import com.cgi.eoss.osiris.model.OsirisFile.Type;
 import com.cgi.eoss.osiris.model.OsirisFilesRelation;
 import com.cgi.eoss.osiris.model.User;
 import com.cgi.eoss.osiris.model.internal.OutputFileMetadata;
@@ -16,6 +18,7 @@ import com.cgi.eoss.osiris.model.internal.ReferenceDataMetadata;
 import com.cgi.eoss.osiris.persistence.service.CollectionDataService;
 import com.cgi.eoss.osiris.persistence.service.DataSourceDataService;
 import com.cgi.eoss.osiris.persistence.service.DatabasketDataService;
+import com.cgi.eoss.osiris.persistence.service.GeoserverLayerDataService;
 import com.cgi.eoss.osiris.persistence.service.OsirisFileDataService;
 import com.cgi.eoss.osiris.persistence.service.OsirisFilesRelationDataService;
 import com.cgi.eoss.osiris.persistence.service.UserDataService;
@@ -69,8 +72,10 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
     private final OsirisSecurityService securityService;
     private final UserDataService userDataService;
     private final OsirisFilesRelationDataService osirisFilesRelationDataService;
+    private final GeoserverLayerDataService geoserverLayerDataService;
+    
     @Autowired
-    public CatalogueServiceImpl(OsirisFileDataService osirisFileDataService, CollectionDataService collectionDataService, DataSourceDataService dataSourceDataService, DatabasketDataService databasketDataService, OutputProductService outputProductService, ReferenceDataService referenceDataService, ExternalProductDataService externalProductDataService, OsirisSecurityService securityService, UserDataService userDataService, OsirisFilesRelationDataService osirisFilesRelationDataService) {
+    public CatalogueServiceImpl(OsirisFileDataService osirisFileDataService, CollectionDataService collectionDataService, DataSourceDataService dataSourceDataService, DatabasketDataService databasketDataService, OutputProductService outputProductService, ReferenceDataService referenceDataService, ExternalProductDataService externalProductDataService, OsirisSecurityService securityService, UserDataService userDataService, OsirisFilesRelationDataService osirisFilesRelationDataService, GeoserverLayerDataService geoserverLayerDataService) {
         this.osirisFileDataService = osirisFileDataService;
         this.collectionDataService = collectionDataService;
         this.dataSourceDataService = dataSourceDataService;
@@ -81,13 +86,20 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
         this.securityService = securityService;
         this.userDataService = userDataService;
         this.osirisFilesRelationDataService = osirisFilesRelationDataService;
+        this.geoserverLayerDataService = geoserverLayerDataService;
     }
 
     @Override
-    public OsirisFile ingestReferenceData(ReferenceDataMetadata referenceData, MultipartFile file) throws IOException {
-        OsirisFile osirisFile = referenceDataService.ingest(referenceData.getOwner(), referenceData.getFilename(), referenceData.getFiletype(), referenceData.getUserProperties(), file);
+    public OsirisFile ingestReferenceData(ReferenceDataMetadata referenceDataMetadata, MultipartFile file) throws IOException {
+    	String collection = (String) referenceDataMetadata.getUserProperties().get("collection");
+        if (collection == null) {
+            collection = getDefaultReferenceDataCollection();
+        }
+        ensureReferenceDataCollectionExists(collection);
+        OsirisFile osirisFile = referenceDataService.ingest(collection, referenceDataMetadata.getOwner(), referenceDataMetadata.getFilename(), referenceDataMetadata.getFiletype(), referenceDataMetadata.getUserProperties(), file);
         osirisFile.setDataSource(dataSourceDataService.getForRefData(osirisFile));
-        return osirisFileDataService.save(osirisFile);
+        osirisFile.setCollection(collectionDataService.getByIdentifier(collection));
+        return osirisFileDataService.syncGeoserverLayersAndSave(osirisFile);
     }
 
     @Override
@@ -98,6 +110,11 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
     @Override
     public String getDefaultOutputProductCollection() {
         return outputProductService.getDefaultCollection();
+    }
+    
+    @Override
+    public String getDefaultReferenceDataCollection() {
+        return referenceDataService.getDefaultCollection();
     }
     
     @Override
@@ -129,18 +146,37 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
             createOutputCollection(collectionIdentifier);
         }
     }
+    
+    private void ensureReferenceDataCollectionExists(String collectionIdentifier) {
+        Collection collection = collectionDataService.getByIdentifier(collectionIdentifier);
+        if (collection == null) {
+            createReferenceDataCollection(collectionIdentifier);
+        }
+    }
 
     private void createOutputCollection(String collectionIdentifier) {
        if (collectionIdentifier.equals(getDefaultOutputProductCollection())) {
            Collection collection = new Collection(getDefaultOutputProductCollection(), userDataService.getDefaultUser());
            collection.setDescription("Output Products");
            collection.setProductsType("Misc");
+           collection.setFileType(Type.OUTPUT_PRODUCT);
            collection.setIdentifier(getDefaultOutputProductCollection());
            collectionDataService.save(collection);
            securityService.publish(Collection.class, collection.getId());
        }
-        
     }
+    
+    private void createReferenceDataCollection(String collectionIdentifier) {
+        if (collectionIdentifier.equals(getDefaultReferenceDataCollection())) {
+            Collection collection = new Collection(getDefaultReferenceDataCollection(), userDataService.getDefaultUser());
+            collection.setDescription("Reference Data");
+            collection.setProductsType("Misc");
+            collection.setFileType(Type.REFERENCE_DATA);
+            collection.setIdentifier(getDefaultReferenceDataCollection());
+            collectionDataService.save(collection);
+            securityService.publish(Collection.class, collection.getId());
+        }
+     }
 
     @Override
     public OsirisFile indexExternalProduct(GeoJsonObject geoJson) {
@@ -178,7 +214,23 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
                 break;
         }
         osirisFileDataService.delete(file);
+        for (GeoserverLayer geoserverLayer: file.getGeoserverLayers()) {
+        	evaluateLayerDeletion(geoserverLayer);
+        }
     }
+    
+    private void evaluateLayerDeletion(GeoserverLayer geoserverLayer) {
+    	//Only single geotiff layers can be deleted - mosaics are shared and postgis is not fully manage by geoserver
+    	switch (geoserverLayer.getStoreType()) {
+			case GEOTIFF: 
+				geoserverLayerDataService.delete(geoserverLayer);
+				return;
+			case MOSAIC:
+			case POSTGIS:
+			default:
+				return;
+		}
+	}
 
     @Override
     public Set<Link> getOGCLinks(OsirisFile osirisFile) {
@@ -189,6 +241,13 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
             	for (OsirisFilesRelation relation: osirisFilesRelationDataService.findByTargetFileAndType(osirisFile, OsirisFilesRelation.Type.VISUALIZATION_OF)) {
             		links.addAll(getOGCLinks(relation.getSourceFile()));
             	}
+            	break;
+            case REFERENCE_DATA:
+            	links.addAll(referenceDataService.getOGCLinks(osirisFileDataService.refreshFull(osirisFile)));
+            	for (OsirisFilesRelation relation: osirisFilesRelationDataService.findByTargetFileAndType(osirisFile, OsirisFilesRelation.Type.VISUALIZATION_OF)) {
+            		links.addAll(getOGCLinks(relation.getSourceFile()));
+            	}
+            	break;
             default: break;
         }
         return links;
@@ -343,13 +402,33 @@ public class CatalogueServiceImpl extends CatalogueServiceGrpc.CatalogueServiceI
     }
 
     @Override
-    public boolean createOutputCollection(Collection collection) {
-        return outputProductService.createCollection(collection); 
+    public void createCollection(Collection collection) throws IOException {
+    	switch(collection.getFileType()) {
+    		case OUTPUT_PRODUCT: 
+    			outputProductService.createCollection(collection);
+    			return;
+    		case REFERENCE_DATA:
+    			referenceDataService.createCollection(collection);
+    			return;
+    		case EXTERNAL_PRODUCT:
+    		default:
+    			return;
+    	}
     }
-
+    
     @Override
-    public boolean deleteOutputCollection(Collection collection) {
-        return outputProductService.deleteCollection(collection);
+    public void deleteCollection(Collection collection) throws IOException {
+    	collection = collectionDataService.refreshFull(collection);
+    	switch(collection.getFileType()) {
+    		case OUTPUT_PRODUCT: 
+    			outputProductService.deleteCollection(collection);
+    			return;
+    		case REFERENCE_DATA:
+    			referenceDataService.deleteCollection(collection);
+    			return;
+    		case EXTERNAL_PRODUCT:
+    		default:
+    			return;
+    	}
     }
-
 }

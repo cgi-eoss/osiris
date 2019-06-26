@@ -1,30 +1,5 @@
 package com.cgi.eoss.osiris.catalogue.files;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import org.geojson.Feature;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.PathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.hateoas.Link;
-import org.springframework.stereotype.Component;
 import com.cgi.eoss.osiris.catalogue.CatalogueUri;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoserverService;
@@ -34,25 +9,47 @@ import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.GeoserverLayer;
 import com.cgi.eoss.osiris.model.OsirisFile;
 import com.cgi.eoss.osiris.model.User;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.Hashing;
 import com.google.common.io.MoreFiles;
 import lombok.extern.log4j.Log4j2;
+import org.geojson.Feature;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.hateoas.Link;
+import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Component
 @Log4j2
 public class FilesystemOutputProductService implements OutputProductService {
-    private final Path outputProductBasedir;
+    private static final String EXTRA_PARAMS = "extraParams";
+	private final Path outputProductBasedir;
     private final RestoService resto;
     private final GeoserverService geoserver;
+    private final OGCLinkService ogcLinkService;
     
     @Autowired
-    public FilesystemOutputProductService(@Qualifier("outputProductBasedir") Path outputProductBasedir, RestoService resto, GeoserverService geoserver) {
+    public FilesystemOutputProductService(@Qualifier("outputProductBasedir") Path outputProductBasedir, RestoService resto, GeoserverService geoserver, OGCLinkService ogcLinkService) {
         this.outputProductBasedir = outputProductBasedir;
         this.resto = resto;
         this.geoserver = geoserver;
+        this.ogcLinkService = ogcLinkService;
     }
 
     @Override
@@ -64,7 +61,7 @@ public class FilesystemOutputProductService implements OutputProductService {
     public OsirisFile ingest(String collection, User owner, String jobId, String crs, String geometry, OffsetDateTime startDateTime, OffsetDateTime endDateTime, Map<String, Object> properties, Path src) throws IOException {
         Path dest = outputProductBasedir.resolve(jobId).resolve(src);
         if (!src.equals(dest)) {
-            if (Files.exists(dest)) {
+            if (dest.toFile().exists()) {
                 LOG.warn("Found already-existing output product, overwriting: {}", dest);
             }
 
@@ -93,16 +90,16 @@ public class FilesystemOutputProductService implements OutputProductService {
         properties.put("filename", relativePath.toFile().getName());
         properties.put("resourceChecksum", "sha256=" + MoreFiles.asByteSource(dest).hash(Hashing.sha256()));
         Map<String, Object> extraProperties;
-        if ((properties.get("extraParams") == null)) {
+        if ((properties.get(EXTRA_PARAMS) == null)) {
             // TODO Add local extra properties if needed
             extraProperties = ImmutableMap.of();
 
         } else {
-            Map<String, Object> existingExtraProperties = (Map<String, Object>) properties.get("extraParams");
-            extraProperties = new HashMap<String, Object>();
+            Map<String, Object> existingExtraProperties = (Map<String, Object>) properties.get(EXTRA_PARAMS);
+            extraProperties = new HashMap<>();
             extraProperties.putAll(existingExtraProperties);
         }
-        properties.put("extraParams", extraProperties);
+        properties.put(EXTRA_PARAMS, extraProperties);
         Feature feature = new Feature();
         feature.setId(jobId + "_" + relativePath.toString().replaceAll(File.pathSeparator, "_"));
         feature.setGeometry(Strings.isNullOrEmpty(geometry) ? GeoUtil.defaultGeometry() : GeoUtil.getGeoJsonGeometry(geometry));
@@ -143,7 +140,7 @@ public class FilesystemOutputProductService implements OutputProductService {
     @Override
     public Path provision(String jobId, String filename) throws IOException {
         Path outputPath = outputProductBasedir.resolve(jobId).resolve(filename);
-        if (Files.exists(outputPath)) {
+        if (outputPath.toFile().exists()) {
             LOG.warn("Found already-existing output product, may be overwritten: {}", outputPath);
         }
         Files.createDirectories(outputPath.getParent());
@@ -152,53 +149,9 @@ public class FilesystemOutputProductService implements OutputProductService {
 
     @Override
     public Set<Link> getOGCLinks(OsirisFile osirisFile) {
-        Set<Link> links = new HashSet<Link>();
-        for (GeoserverLayer geoserverLayer : osirisFile.getGeoserverLayers()) {
-            switch (geoserverLayer.getStoreType()) {
-                case MOSAIC:
-                    links.add(new Link(getWMSLinkToFileInMosaic(osirisFile, geoserverLayer), "wms"));
-                    break;
-                case GEOTIFF:
-                    links.add(new Link(getWMSLinkToLayer(osirisFile, geoserverLayer), "wms"));
-                    break;
-                case POSTGIS:
-                    links.add(new Link(getWMSLinkToLayer(osirisFile, geoserverLayer), "wms"));
-                    links.add(new Link(getWFSLinkToLayer(osirisFile, geoserverLayer), "wfs"));
-                    break;
-            }
-        }
-        return links;
+        return ogcLinkService.getOGCLinks(osirisFile);
     }
-
-    private String getWMSLinkToFileInMosaic(OsirisFile osirisFile, GeoserverLayer geoserverLayer) {
-        OffsetDateTime start = OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.MIDNIGHT), ZoneOffset.UTC);
-        OffsetDateTime end = start.plusYears(140);
-        
-        return geoserver.getExternalUrl().newBuilder().addPathSegment(geoserverLayer.getWorkspace()).addPathSegment("wms")
-                        .addQueryParameter("service", "WMS").addQueryParameter("version", "1.1.0")
-                        .addQueryParameter("layers", geoserverLayer.getWorkspace() + ":" + geoserverLayer.getLayer())
-                        .addQueryParameter("time", DateTimeFormatter.ISO_INSTANT.format(start) + "/" + DateTimeFormatter.ISO_INSTANT.format(end))
-                        .addQueryParameter("cql_filter", "(location LIKE '%" + osirisFile.getFilename() + "%')")
-                        .build().toString();
-    }
-
-    private String getWMSLinkToLayer(OsirisFile osirisFile, GeoserverLayer geoserverLayer) {
-        return geoserver.getExternalUrl().newBuilder().addPathSegment(geoserverLayer.getWorkspace()).addPathSegment("wms")
-                        .addQueryParameter("service", "WMS").addQueryParameter("version", "1.1.0")
-                        .addQueryParameter("layers", geoserverLayer.getWorkspace() + ":" + geoserverLayer.getLayer())
-                        .build().toString();
-        
-        
-    }
-
-    private String getWFSLinkToLayer(OsirisFile osirisFile, GeoserverLayer geoserverLayer) {
-        return geoserver.getExternalUrl().newBuilder().addPathSegment(geoserverLayer.getWorkspace()).addPathSegment("wfs")
-                        .addQueryParameter("service", "WFS").addQueryParameter("version", "1.0.0")
-                        .addQueryParameter("typeName", geoserverLayer.getWorkspace() + ":" + geoserverLayer.getLayer())                        
-                        .addQueryParameter("cql_filter", "(osiris_id  = '" + osirisFile.getRestoId() + "')")
-                        .build().toString();
-    }
-
+    
     @Override
     public Resource resolve(OsirisFile file) {
         Path path = outputProductBasedir.resolve(file.getFilename());
@@ -210,32 +163,14 @@ public class FilesystemOutputProductService implements OutputProductService {
         Path relativePath = Paths.get(file.getFilename());
 
         Files.deleteIfExists(outputProductBasedir.resolve(relativePath));
-
-        resto.deleteOutputProduct(file.getRestoId());
+        String collection = null;
+        if (file.getCollection() != null) {
+        	collection = file.getCollection().getIdentifier();
+        }
+        resto.deleteOutputProduct(collection, file.getRestoId());
         for (GeoserverLayer geoserverLayer: file.getGeoserverLayers()) {
-            cleanUpGeoserverLayer(file, geoserverLayer);
+            geoserver.cleanUpGeoserverLayer(file.getFilename(), geoserverLayer);
         }
-    }
-
-    private void cleanUpGeoserverLayer(OsirisFile file, GeoserverLayer geoserverLayer) {
-        switch (geoserverLayer.getStoreType()) {
-            case GEOTIFF: {
-                geoserver.deleteLayer(geoserverLayer.getWorkspace(), geoserverLayer.getLayer());
-                geoserver.deleteCoverageStore(geoserverLayer.getWorkspace(), geoserverLayer.getStore());
-                break;
-            }
-            case MOSAIC: {
-                geoserver.deleteGranuleFromMosaic(geoserverLayer.getWorkspace(), geoserverLayer.getStore(), geoserverLayer.getLayer(), file.getFilename());
-                break;
-            }
-            case POSTGIS:
-                //Simply delete the layer - update of Postgis table is not supported in geoserver
-                geoserver.deleteLayer(geoserverLayer.getWorkspace(), geoserverLayer.getLayer());
-                break;
-            default:
-            	return;
-        }
-        
     }
 
     @Override

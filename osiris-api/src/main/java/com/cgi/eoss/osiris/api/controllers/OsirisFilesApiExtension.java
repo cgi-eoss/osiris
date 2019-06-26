@@ -68,7 +68,7 @@ public class OsirisFilesApiExtension {
 
     @PostMapping("/refData")
     @ResponseBody
-    public ResponseEntity saveRefData(@RequestPart(required=false) Map<String, Object> userProperties,@RequestParam UploadableFileType fileType, @RequestPart(name = "file", required = true) MultipartFile file) throws Exception {
+    public ResponseEntity saveRefData(@RequestPart(required=false) Map<String, Object> userProperties, @RequestParam UploadableFileType fileType, @RequestPart(name = "file", required = true) MultipartFile file, @RequestParam(required=false) String collection) throws Exception {
         User owner = osirisSecurityService.getCurrentUser();
         String filename = file.getOriginalFilename();
 
@@ -84,13 +84,23 @@ public class OsirisFilesApiExtension {
         if (!Objects.isNull(osirisFileDataService.getByUri(uri))) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(String.format("Reference data filename '%s' already exists for user %s", filename, owner.getName()));
         }
-
+        
+        if (collection != null && !catalogueService.canUserWrite(owner, collection)) {
+        	return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User does not have access to the requested collection");
+        }
+        
+        if (userProperties == null) {
+        	userProperties = new HashMap<>();
+        }
+        
+        userProperties.put("collection", collection);
+        
         try {
         	ReferenceDataMetadata metadata = ReferenceDataMetadata.builder()
                     .owner(owner)
                     .filename(filename)
                     .filetype(fileType)
-                    .userProperties(userProperties == null? Collections.emptyMap(): userProperties) 
+                    .userProperties(userProperties) 
                     .build();
 
             OsirisFile osirisFile = catalogueService.ingestReferenceData(metadata, file);

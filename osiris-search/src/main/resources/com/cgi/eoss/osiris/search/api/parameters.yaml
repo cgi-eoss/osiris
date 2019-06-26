@@ -24,6 +24,15 @@ collection:
   onlyIf:
     'catalogue':
       - 'OSIRIS_PRODUCTS'
+      
+refDataCollection:
+  title: 'Collection'
+  type: 'dynamic'
+  allowed: 
+    values: ''
+  onlyIf:
+    'catalogue':
+      - 'REF_DATA'     
 
 clmscollection:
   title: 'Collection'

@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.model;
 
+import com.cgi.eoss.osiris.model.OsirisFile.Type;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
 import java.util.HashSet;
@@ -7,6 +8,8 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -64,6 +67,14 @@ public class Collection implements OsirisEntityWithOwner<Collection>, Searchable
     @Column(name = "productsType")
     private String productsType;
 
+    /**
+     * <p>Type of files inside this collection</p>
+     */
+    @Column(name = "file_type")
+    @Enumerated(EnumType.STRING)
+    private OsirisFile.Type fileType = Type.OUTPUT_PRODUCT;
+    
+    
     /**
      * <p>The user owning the collection, typically the collection creator.</p>
      */

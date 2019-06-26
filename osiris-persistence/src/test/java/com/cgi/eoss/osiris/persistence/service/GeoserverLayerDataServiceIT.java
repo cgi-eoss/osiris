@@ -93,4 +93,30 @@ public class GeoserverLayerDataServiceIT {
         assertThat(layer.getFiles().size(), is (2));
     }
 
+    @Test
+    public void testDeleteGeoserverLayer() throws Exception {
+        User owner = new User("owner-uid");
+        userService.save(ImmutableSet.of(owner));
+
+        OsirisFile osirisFile1 = new OsirisFile();
+        osirisFile1.setUri(URI.create("osiris://osirisFile"));
+        osirisFile1.setRestoId(UUID.randomUUID());
+        osirisFile1.setOwner(owner);
+        
+        GeoserverLayer geoserverLayer1 = new GeoserverLayer(owner, "test", "test", StoreType.GEOTIFF);
+        osirisFile1.getGeoserverLayers().add(geoserverLayer1);
+        
+        geoserverLayerDataService.syncGeoserverLayers(osirisFile1);
+        fileDataService.save(ImmutableSet.of(osirisFile1));
+        
+        assertThat(geoserverLayerDataService.getAll().size(), is (1));
+        GeoserverLayer layer = geoserverLayerDataService.getAll().get(0);
+        layer = geoserverLayerDataService.refreshFull(layer);
+        assertThat(layer.getFiles().size(), is (1));
+       
+        fileDataService.delete(osirisFile1);
+        osirisFile1.getGeoserverLayers().forEach( l -> geoserverLayerDataService.delete(l));
+        assertThat(geoserverLayerDataService.getAll().size(), is (0));
+        
+    }
 }

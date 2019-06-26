@@ -1,6 +1,7 @@
 package com.cgi.eoss.osiris.model.projections;
 
 import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.OsirisFile;
 import com.cgi.eoss.osiris.security.OsirisAccess;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.rest.core.config.Projection;
@@ -15,6 +16,7 @@ public interface DetailedCollection extends Identifiable<Long> {
     String getIdentifier();
     String getDescription();
     String getProductsType();
+    OsirisFile.Type getFileType();
     ShortUser getOwner();
     @Value("#{target.osirisFiles.size()}")
     Integer getSize();

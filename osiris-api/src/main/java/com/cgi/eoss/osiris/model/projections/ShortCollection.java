@@ -1,6 +1,7 @@
 package com.cgi.eoss.osiris.model.projections;
 
 import com.cgi.eoss.osiris.model.Collection;
+import com.cgi.eoss.osiris.model.OsirisFile;
 import com.cgi.eoss.osiris.security.OsirisAccess;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.rest.core.config.Projection;
@@ -14,6 +15,7 @@ public interface ShortCollection extends Identifiable<Long> {
     String getName();
     String getIdentifier();
     String getDescription();
+    OsirisFile.Type getFileType();
     String getProductsType();
     ShortUser getOwner();
     @Value("#{@osirisSecurityService.getCurrentAccess(T(com.cgi.eoss.osiris.model.Collection), target.id)}")

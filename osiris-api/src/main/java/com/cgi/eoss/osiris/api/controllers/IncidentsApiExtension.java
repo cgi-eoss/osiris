@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.api.controllers;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import com.cgi.eoss.osiris.model.Collection;
 import com.cgi.eoss.osiris.model.Incident;
 import com.cgi.eoss.osiris.model.IncidentProcessing;
 import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.OsirisFile.Type;
 import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.OsirisServiceDescriptor;
 import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter;
@@ -103,9 +105,13 @@ public class IncidentsApiExtension {
         Collection collection = new Collection(incidentProcessing.getIncident().getTitle() + "-" + incidentProcessing.getId(),
                 incidentProcessing.getOwner());
         collection.setIdentifier("osiris" + UUID.randomUUID().toString().replaceAll("-", ""));
-        if (!catalogueService.createOutputCollection(collection)) {
+        collection.setFileType(Type.OUTPUT_PRODUCT);
+        try {
+        	catalogueService.createCollection(collection);
+        }
+        catch( IOException e) {
             LOG.error("Failed to create underlying output collection {} for incident processing {}", collection, incidentProcessing.getId());
-            throw new RuntimeException("Failed to create underlying output collection");
+            throw new RuntimeException("Failed to create underlying output collection", e);
         }
         collectionDataService.save(collection);
         incidentProcessing.setCollection(collection);
