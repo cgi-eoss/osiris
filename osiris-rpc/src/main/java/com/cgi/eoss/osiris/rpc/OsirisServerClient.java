@@ -1,19 +1,14 @@
 package com.cgi.eoss.osiris.rpc;
 
 import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc;
-import com.google.common.collect.Iterables;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 
 public class OsirisServerClient {
-    private final DiscoveryClient discoveryClient;
-    private final String osirisServerServiceId;
+	
+	private final ManagedChannelProvider managedChannelProvider;
 
-    public OsirisServerClient(DiscoveryClient discoveryClient, String osirisServerServiceId) {
-        this.discoveryClient = discoveryClient;
-        this.osirisServerServiceId = osirisServerServiceId;
+    public OsirisServerClient(ManagedChannelProvider managedChannelProvider) {
+        this.managedChannelProvider = managedChannelProvider;
     }
 
     public ServiceContextFilesServiceGrpc.ServiceContextFilesServiceBlockingStub serviceContextFilesServiceBlockingStub() {
@@ -33,11 +28,6 @@ public class OsirisServerClient {
     }
 
     private ManagedChannel getChannel() {
-        ServiceInstance osirisServer = Iterables.getOnlyElement(discoveryClient.getInstances(osirisServerServiceId));
-
-        return ManagedChannelBuilder.forAddress(osirisServer.getHost(), Integer.parseInt(osirisServer.getMetadata().get("grpcPort")))
-                .usePlaintext(true)
-                .build();
+    	return managedChannelProvider.getChannel();
     }
-
 }

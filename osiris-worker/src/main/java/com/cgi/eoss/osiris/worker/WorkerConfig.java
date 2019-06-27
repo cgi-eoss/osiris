@@ -9,8 +9,9 @@ import com.cgi.eoss.osiris.io.download.Downloader;
 import com.cgi.eoss.osiris.io.download.DownloaderFacade;
 import com.cgi.eoss.osiris.io.download.UnzipStrategy;
 import com.cgi.eoss.osiris.queues.QueuesConfig;
-import com.cgi.eoss.osiris.rpc.OsirisServerClient;
+import com.cgi.eoss.osiris.rpc.DiscoveryClientManagedChannelProvider;
 import com.cgi.eoss.osiris.rpc.InProcessRpcConfig;
+import com.cgi.eoss.osiris.rpc.OsirisServerClient;
 import com.cgi.eoss.osiris.worker.worker.OsirisWorkerNodeManager;
 import com.cgi.eoss.osiris.worker.worker.JobEnvironmentService;
 import com.google.common.base.Strings;
@@ -131,7 +132,7 @@ public class WorkerConfig {
     @Bean
     public OsirisServerClient osirisServerClient(DiscoveryClient discoveryClient,
                                                @Value("${osiris.worker.server.eurekaServiceId:osiris server}") String osirisServerServiceId) {
-        return new OsirisServerClient(discoveryClient, osirisServerServiceId);
+        return new OsirisServerClient(new DiscoveryClientManagedChannelProvider(discoveryClient, osirisServerServiceId));
     }
 
     @Bean
