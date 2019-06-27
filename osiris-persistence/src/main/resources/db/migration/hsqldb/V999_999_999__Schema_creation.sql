@@ -43,7 +43,7 @@ CREATE TABLE osiris_services (
   required_resources CLOB,
   strip_proxy_path BOOLEAN DEFAULT TRUE,
   status         CHARACTER VARYING(255) NOT NULL CHECK (status IN ('IN_DEVELOPMENT', 'AVAILABLE')),
-  type           CHARACTER VARYING(255) NOT NULL CHECK (type IN ('PROCESSOR', 'BULK_PROCESSOR', 'APPLICATION', 'PARALLEL_PROCESSOR')),
+  type           CHARACTER VARYING(255) NOT NULL CHECK (type IN ('PROCESSOR', 'BULK_PROCESSOR', 'APPLICATION', 'PARALLEL_PROCESSOR', 'FTP_SERVICE')),
   owner          BIGINT                 NOT NULL FOREIGN KEY REFERENCES osiris_users (uid)
 );
 CREATE UNIQUE INDEX osiris_services_name_idx

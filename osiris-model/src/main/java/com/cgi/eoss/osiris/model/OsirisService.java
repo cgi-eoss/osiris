@@ -165,7 +165,7 @@ public class OsirisService implements OsirisEntityWithOwner<OsirisService>, Sear
     }
 
     public enum Type {
-        PROCESSOR, BULK_PROCESSOR, APPLICATION, PARALLEL_PROCESSOR
+        PROCESSOR, BULK_PROCESSOR, APPLICATION, PARALLEL_PROCESSOR, FTP_SERVICE
     }
 
     public enum Status {
