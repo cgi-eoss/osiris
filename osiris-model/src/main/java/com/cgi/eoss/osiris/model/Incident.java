@@ -1,5 +1,6 @@
 package com.cgi.eoss.osiris.model;
 
+import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -14,12 +15,17 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>Representation of a user-defined incident.</p>
@@ -90,7 +96,17 @@ public class Incident implements OsirisEntityWithOwner<Incident> {
      */
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<IncidentProcessing> incidentProcessings = new ArrayList<>();
-
+    
+    /**
+     * <p>A set of {@link Collection}s associated with this incident.</p>
+     */
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "osiris_incidents_collections",
+            joinColumns = @JoinColumn(name = "incident_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "collection_id", referencedColumnName = "id"),
+            uniqueConstraints = @UniqueConstraint(name = "osiris_incidents_collections_idx", columnNames = {"incident_id", "collection_id"}))
+    private Set<Collection> collections = Sets.newHashSet();
+    
     public Incident(User owner, IncidentType type, String title, String description, String aoi, Instant startDate, Instant endDate) {
         this.owner = owner;
         this.type = type;

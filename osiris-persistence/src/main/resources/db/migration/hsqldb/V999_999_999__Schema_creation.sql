@@ -557,6 +557,14 @@ create table osiris_incident_processings (
 CREATE INDEX osiris_incident_processings_owner_idx
   ON osiris_incident_processings (owner);
 
+ -- Incidents to collections
+CREATE TABLE osiris_incidents_collections (
+  incident_id BIGINT FOREIGN KEY REFERENCES osiris_incidents (id),
+  collection_id       BIGINT FOREIGN KEY REFERENCES osiris_collections (id)
+);
+
+CREATE UNIQUE INDEX osiris_incidents_collections_idx
+  ON osiris_incidents_collections (incident_id, collection_id);
 
  --API keys
  

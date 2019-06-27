@@ -22,6 +22,7 @@ public interface DetailedIncident extends Identifiable<Long> {
     Instant getStartDate();
     Instant getEndDate();
     List<ShortIncidentProcessing> getIncidentProcessings();
+    List<ShortCollection> getCollections();
     @Value("#{@osirisSecurityService.getCurrentAccess(T(com.cgi.eoss.osiris.model.Incident), target.id)}")
     OsirisAccess getAccess();
 
