@@ -184,6 +184,9 @@ public class GeoserverServiceImpl implements GeoserverService {
         }
 
         try {
+        	if (style == null) {
+        		style = RASTER_STYLE;
+        	}
             RESTCoverageStore restCoverageStore = publishExternalGeoTIFF(workspace, datastoreName, path.toFile(), layerName, crs,
                     REPROJECT_TO_DECLARED, style);
             LOG.info("Ingested GeoTIFF to geoserver with id: {}:{}", workspace, layerName);
