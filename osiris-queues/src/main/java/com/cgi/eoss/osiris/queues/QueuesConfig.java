@@ -1,10 +1,6 @@
 package com.cgi.eoss.osiris.queues;
 
-import com.cgi.eoss.osiris.queues.service.OsirisJMSQueueService;
-import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageProducer;
+import com.cgi.eoss.osiris.queues.listener.RateLimitedJmsListenerContainerFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.BrokerPlugin;
 import org.apache.activemq.broker.BrokerRegistry;
@@ -13,6 +9,7 @@ import org.apache.activemq.broker.TransportConnector;
 import org.apache.activemq.broker.region.policy.PolicyEntry;
 import org.apache.activemq.broker.region.policy.PolicyMap;
 import org.apache.activemq.plugin.StatisticsBrokerPlugin;
+import org.apache.activemq.pool.PooledConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -22,11 +19,16 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
-import org.springframework.jms.connection.CachingConnectionFactory;
-import org.apache.activemq.pool.PooledConnectionFactory;
+import org.springframework.jms.connection.JmsTransactionManager;
 import org.springframework.jms.core.JmsTemplate;
+
 import java.net.URI;
 import java.util.Arrays;
+
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
 
 /**
  * <p>
@@ -41,11 +43,6 @@ import java.util.Arrays;
 @EnableJms
 @ComponentScan(basePackageClasses = QueuesConfig.class)
 public class QueuesConfig {
-
-    @Bean
-    public OsirisQueueService queueService(JmsTemplate jmsTemplate) {
-        return new OsirisJMSQueueService(jmsTemplate);
-    }
     
     @Value("${spring.activemq.broker-url:vm://embeddedBroker}")
     private String brokerUrl;
@@ -64,7 +61,6 @@ public class QueuesConfig {
       activeMQConnectionFactory.setPassword(brokerPassword);
       activeMQConnectionFactory.setTrustedPackages(Arrays.asList("com.google.protobuf"));
       activeMQConnectionFactory.setBrokerURL(brokerUrl);
-
       return activeMQConnectionFactory;
     }
     
@@ -93,16 +89,29 @@ public class QueuesConfig {
         }
     }
 
-    @Bean
-    public JmsTemplate jmsTemplate() {
-      return new JmsTemplate(new PooledConnectionFactory(activeMQConnectionFactory())) {
-          @Override
-        protected void doSend(MessageProducer producer, Message message) throws JMSException {
-            producer.send(message, getDeliveryMode(), message.getJMSPriority(), getTimeToLive());
-        }
-      };
-    }
-   
+	@Bean(name = "nonblockingJmsTemplate")
+	public JmsTemplate nonBlockingJmsTemplate() {
+		JmsTemplate jmsTemplate = new JmsTemplate(new PooledConnectionFactory(activeMQConnectionFactory())) {
+			@Override
+			protected void doSend(MessageProducer producer, Message message) throws JMSException {
+				producer.send(message, getDeliveryMode(), message.getJMSPriority(), getTimeToLive());
+			}
+		};
+		jmsTemplate.setReceiveTimeout(100);
+		return jmsTemplate;
+	}
+
+	@Bean(name = "blockingJmsTemplate")
+	public JmsTemplate blockingJmsTemplate() {
+		JmsTemplate jmsTemplate = new JmsTemplate(new PooledConnectionFactory(activeMQConnectionFactory())) {
+			@Override
+			protected void doSend(MessageProducer producer, Message message) throws JMSException {
+				producer.send(message, getDeliveryMode(), message.getJMSPriority(), getTimeToLive());
+			}
+		};
+		jmsTemplate.setReceiveTimeout(JmsTemplate.RECEIVE_TIMEOUT_INDEFINITE_WAIT);
+		return jmsTemplate;
+	}
     
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory() {
@@ -112,5 +121,15 @@ public class QueuesConfig {
       return factory;
     }
     
-
+    @Bean
+    public RateLimitedJmsListenerContainerFactory rateLimitedJmsListenerContainerFactory(ActiveMQConnectionFactory activeMQConnectionFactory) {
+      JmsTransactionManager jmsTransactionManager = new JmsTransactionManager();
+      jmsTransactionManager.setConnectionFactory(activeMQConnectionFactory);
+      RateLimitedJmsListenerContainerFactory factory = new RateLimitedJmsListenerContainerFactory();
+      factory.setConnectionFactory(activeMQConnectionFactory);
+      factory.setTransactionManager(jmsTransactionManager);
+      factory.setConcurrency("1-5");
+      factory.setSessionAcknowledgeMode(Session.SESSION_TRANSACTED);
+      return factory;
+    }
 }

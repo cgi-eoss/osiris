@@ -65,7 +65,7 @@ public class OsirisWorkerDispatcher {
     public void getNewJobs() {
         while (nodeManager.hasCapacity()) {
             LOG.debug("Checking for available jobs in the queue");
-            JobSpec nextJobSpec = (JobSpec) queueService.receiveObjectWithTimeout(OsirisQueueService.jobQueueName, 100);
+            JobSpec nextJobSpec = (JobSpec) queueService.receiveObjectNoWait(OsirisQueueService.jobQueueName);
             if (nextJobSpec != null) {
                 LOG.info("Dequeued job {}", nextJobSpec.getJob().getId());
                 nodeManager.reserveNodeForJob(nextJobSpec.getJob().getId());

@@ -1,5 +1,8 @@
 package com.cgi.eoss.osiris.orchestrator.service;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+
 import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.costing.CostingService;
 import com.cgi.eoss.osiris.logging.Logging;
@@ -23,20 +26,23 @@ import com.cgi.eoss.osiris.rpc.BuildServiceParams;
 import com.cgi.eoss.osiris.rpc.BuildServiceResponse;
 import com.cgi.eoss.osiris.rpc.CancelJobParams;
 import com.cgi.eoss.osiris.rpc.CancelJobResponse;
+import com.cgi.eoss.osiris.rpc.FtpJobSpec;
+import com.cgi.eoss.osiris.rpc.FtpJobSpec.Builder;
 import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.JobParam;
+import com.cgi.eoss.osiris.rpc.JobSpec;
 import com.cgi.eoss.osiris.rpc.OsirisJobLauncherGrpc;
 import com.cgi.eoss.osiris.rpc.OsirisJobResponse;
 import com.cgi.eoss.osiris.rpc.OsirisServiceParams;
 import com.cgi.eoss.osiris.rpc.RelaunchFailedJobParams;
 import com.cgi.eoss.osiris.rpc.RelaunchFailedJobResponse;
+import com.cgi.eoss.osiris.rpc.ResourceRequest;
+import com.cgi.eoss.osiris.rpc.StopFtpJob;
 import com.cgi.eoss.osiris.rpc.StopServiceParams;
 import com.cgi.eoss.osiris.rpc.StopServiceResponse;
 import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
-import com.cgi.eoss.osiris.rpc.JobSpec;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
-import com.cgi.eoss.osiris.rpc.ResourceRequest;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -73,9 +79,6 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 /**
  * <p>
  * Primary entry point for WPS services to launch in OSIRIS.
@@ -256,26 +259,51 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 	public void stopJob(StopServiceParams request,
 	        StreamObserver<StopServiceResponse> responseObserver) {
 	    com.cgi.eoss.osiris.rpc.Job rpcJob = request.getJob();
+	    Job job = jobDataService.getById(Long.parseLong(rpcJob.getIntJobId()));
+	    OsirisService service = job.getConfig().getService();
 	    try {
-	        Job job = jobDataService.getById(Long.parseLong(rpcJob.getIntJobId()));
-	        OsirisWorkerGrpc.OsirisWorkerBlockingStub worker =
-	                workerFactory.getWorkerById(job.getWorkerId());
-	        if (worker == null)
-	            throw new IllegalStateException(
-	                    "OSIRIS worker not found for job " + rpcJob.getId());
-	        LOG.info("Stop requested for job {}", rpcJob.getId());
-	        worker.stopContainer(rpcJob);
-	        LOG.info("Successfully stopped job {}", rpcJob.getId());
+	    	routeStopRequest(rpcJob, job, service);
+	    	LOG.info("Successfully stopped job {}", rpcJob.getId());
 	        responseObserver.onNext(StopServiceResponse.newBuilder().build());
 	        responseObserver.onCompleted();
-	    } catch (
-	
-	    Exception e) {
+	    }
+	    catch (Exception e) {
 	        LOG.error("Failed to stop job {} - message {}; notifying gRPC client", rpcJob.getId(),
 	                e.getMessage());
 	        responseObserver.onError(new StatusRuntimeException(
 	                io.grpc.Status.fromCode(io.grpc.Status.Code.ABORTED).withCause(e)));
 	    }
+	}
+
+	private void routeStopRequest(com.cgi.eoss.osiris.rpc.Job rpcJob, Job job, OsirisService service) {
+		switch (service.getType()) {
+	    case APPLICATION:
+	    case PROCESSOR:
+	    case PARALLEL_PROCESSOR:
+	    case BULK_PROCESSOR:
+	    	stopDockerJob(rpcJob, job);
+	    	return;
+	    case FTP_SERVICE:
+	    	stopFtpJob(rpcJob, job);
+	    	return;
+		}
+		throw new IllegalArgumentException(String.format("Unrecognized service type %s for service %s ", service.getType(), service.getName()));
+	}
+
+	private void stopFtpJob(com.cgi.eoss.osiris.rpc.Job rpcJob, Job job) {
+		StopFtpJob stopFtpJob = StopFtpJob.newBuilder().setJob(rpcJob).build();
+		enqueueJobMessage(OsirisQueueService.ftpJobQueueName, job.getId(), stopFtpJob, 1);
+		
+	}
+
+	private void stopDockerJob(com.cgi.eoss.osiris.rpc.Job rpcJob, Job job) {
+		OsirisWorkerGrpc.OsirisWorkerBlockingStub worker =
+		        workerFactory.getWorkerById(job.getWorkerId());
+		if (worker == null)
+		    throw new IllegalStateException(
+		            "OSIRIS worker not found for job " + rpcJob.getId());
+		LOG.info("Stop requested for job {}", rpcJob.getId());
+		worker.stopContainer(rpcJob);
 	}
 
 	@Override
@@ -509,48 +537,93 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
         }
     }
 
-    private void submitJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs, int priority)
-            throws IOException {
-        OsirisService service = job.getConfig().getService();
-        JobSpec.Builder jobSpecBuilder = JobSpec.newBuilder()
-                .setService(ModelToGrpcUtils.toRpcService(service)).setJob(rpcJob).addAllInputs(rpcInputs);
-        if (service.getType() == OsirisService.Type.APPLICATION) {
-            jobSpecBuilder.addExposedPorts(OsirisGuiServiceManager.GUACAMOLE_PORT);
-        }
-        Multimap<String, String> inputs = GrpcUtil.paramsListToMap(rpcInputs);
+    private void submitJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs, int priority){
+		OsirisService service = job.getConfig().getService();
+		switch (service.getType()) {
+		case APPLICATION:
+			submitApplicationJob(job, rpcJob, rpcInputs, priority);
+			return;
+		case PROCESSOR:
+		case PARALLEL_PROCESSOR:
+		case BULK_PROCESSOR:
+			submitProcessorJob(job, rpcJob, rpcInputs, priority);
+			return;
+		case FTP_SERVICE:
+			submitFtpJob(job, rpcJob, rpcInputs, priority);
+			return;
+		}
+	}
 
-        if (inputs.containsKey(TIMEOUT_PARAM)) {
-            int timeout = Integer.parseInt(Iterables.getOnlyElement(inputs.get(TIMEOUT_PARAM)));
-            jobSpecBuilder = jobSpecBuilder.setHasTimeout(true).setTimeoutValue(timeout);
-        }
-        
-        Map<Long, String> additionalMounts = job.getConfig().getService().getAdditionalMounts();
-        
-        for (Long userMountId : additionalMounts.keySet()) {
-            UserMount userMount = userMountDataService.getById(userMountId);
-            String targetPath = additionalMounts.get(userMountId);
-            String bind = userMount.getMountPath() + ":" + targetPath + ":" + userMount.getType().toString().toLowerCase();
-            jobSpecBuilder.addUserBinds(bind);
-        }
-        
-        if (service.getType().equals(Type.APPLICATION) && dynamicProxyService.supportsProxyRoute()) {
-        	jobSpecBuilder.putEnvironmentVariables("PLATFORM_REVERSE_PROXY_PREFIX", dynamicProxyService.getProxyRoute(rpcJob));
-        }        
-        //TODO Add CPU, RAM Management
-        //TODO Add per job requests
-        if (service.getRequiredResources() != null) {
-            OsirisServiceResources requiredResources = service.getRequiredResources();
-            jobSpecBuilder.setResourceRequest(ResourceRequest.newBuilder().setStorage(Integer.valueOf(requiredResources.getStorage())));
-        }
-        
-        JobSpec jobSpec = jobSpecBuilder.build();
-        HashMap<String, Object> messageHeaders = new HashMap<String, Object>();
-        messageHeaders.put("jobId", job.getId());
-        queueService.sendObject(OsirisQueueService.jobQueueName, messageHeaders, jobSpec, priority);
-        LOG.info("Sent job {} to queue {}", job.getId(), OsirisQueueService.jobQueueName);
-    }
+	private void submitFtpJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs, int priority) {
+		Builder ftpJobSpecBuilder = FtpJobSpec.newBuilder();
+		ftpJobSpecBuilder.setJob(rpcJob);
+		Multimap<String, String> inputs = GrpcUtil.paramsListToMap(rpcInputs);
+		String ftpRootUri = Iterables.getOnlyElement(inputs.get("ftpRootUri"), null);
+		FtpJobSpec ftpJobSpec = ftpJobSpecBuilder.setFtpRootUri(ftpRootUri).build();
+		enqueueJobMessage(OsirisQueueService.ftpJobQueueName, job.getId(), ftpJobSpec, priority);
+		LocalDateTime jobDate = LocalDateTime.now();
+		job.setStartTime(jobDate);
+		job.setEndTime(jobDate);
+		jobDataService.save(job);
+	}
 
-    private void cancelJob(Job job) {
+	private void submitApplicationJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs,
+			int priority) {
+		JobSpec.Builder jobSpecBuilder = createJobSpecBuilder(job.getConfig().getService(), rpcJob, rpcInputs);
+		jobSpecBuilder.addExposedPorts(OsirisGuiServiceManager.GUACAMOLE_PORT);
+		if (dynamicProxyService.supportsProxyRoute()) {
+			jobSpecBuilder.putEnvironmentVariables("PLATFORM_REVERSE_PROXY_PREFIX",
+					dynamicProxyService.getProxyRoute(rpcJob));
+		}
+		JobSpec jobSpec = jobSpecBuilder.build();
+		enqueueJobMessage(OsirisQueueService.jobQueueName, job.getId(), jobSpec, priority);
+	}
+
+	private void submitProcessorJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs,
+			int priority) {
+		JobSpec.Builder jobSpecBuilder = createJobSpecBuilder(
+				job.getConfig().getService(), rpcJob, rpcInputs);
+		JobSpec jobSpec = jobSpecBuilder.build();
+		enqueueJobMessage(OsirisQueueService.jobQueueName, job.getId(), jobSpec, priority);
+	}
+
+	private void enqueueJobMessage(String queueName, Long jobId, Object message, int priority) {
+		HashMap<String, Object> messageHeaders = new HashMap<String, Object>();
+		messageHeaders.put("jobId", jobId);
+		queueService.sendObject(queueName, messageHeaders, message, priority);
+		LOG.info("Sent message for job {} to queue {}", jobId, queueName);
+	}
+	
+	private JobSpec.Builder createJobSpecBuilder(OsirisService service,
+			com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs) {
+		JobSpec.Builder jobSpecBuilder = JobSpec.newBuilder().setService(ModelToGrpcUtils.toRpcService(service))
+				.setJob(rpcJob).addAllInputs(rpcInputs);
+		Multimap<String, String> inputs = GrpcUtil.paramsListToMap(rpcInputs);
+
+		if (inputs.containsKey(TIMEOUT_PARAM)) {
+			int timeout = Integer.parseInt(Iterables.getOnlyElement(inputs.get(TIMEOUT_PARAM)));
+			jobSpecBuilder = jobSpecBuilder.setHasTimeout(true).setTimeoutValue(timeout);
+		}
+		Map<Long, String> additionalMounts = service.getAdditionalMounts();
+
+		for (Long userMountId : additionalMounts.keySet()) {
+			UserMount userMount = userMountDataService.getById(userMountId);
+			String targetPath = additionalMounts.get(userMountId);
+			String bind = userMount.getMountPath() + ":" + targetPath + ":"
+					+ userMount.getType().toString().toLowerCase();
+			jobSpecBuilder = jobSpecBuilder.addUserBinds(bind);
+		}
+		// TODO Add CPU, RAM Management
+		// TODO Add per job requests
+		if (service.getRequiredResources() != null) {
+			OsirisServiceResources requiredResources = service.getRequiredResources();
+			jobSpecBuilder = jobSpecBuilder.setResourceRequest(
+					ResourceRequest.newBuilder().setStorage(Integer.valueOf(requiredResources.getStorage())));
+		}
+		return jobSpecBuilder;
+	}
+	
+	private void cancelJob(Job job) {
         LOG.info("Cancelling job with id {}", job.getId());
         JobSpec queuedJobSpec = (JobSpec) queueService
                 .receiveSelectedObject(OsirisQueueService.jobQueueName, "jobId = " + job.getId());

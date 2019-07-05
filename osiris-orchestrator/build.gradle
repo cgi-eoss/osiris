@@ -9,6 +9,7 @@ dependencies {
 
     compile project(':osiris-catalogue')
     compile project(':osiris-costing')
+    compile project(':osiris-harvesters')
     compile project(':osiris-logging')
     compile project(':osiris-model')
     compile project(':osiris-persistence')
@@ -18,8 +19,7 @@ dependencies {
     compile project(':osiris-security')
     compile project(':osiris-search')
     
-
-    compile 'org.awaitility:awaitility'
+	compile 'org.awaitility:awaitility'
     compile 'org.jooq:jool'
     compile 'org.lognet:grpc-spring-boot-starter'
     compile 'org.springframework:spring-context'
@@ -31,6 +31,7 @@ dependencies {
     testCompile 'com.squareup.okhttp3:mockwebserver'
     testCompile 'org.hamcrest:hamcrest-junit'
     testCompile 'org.hsqldb:hsqldb'
+    testCompile 'org.mockftpserver:MockFtpServer'
     testCompile 'org.mockito:mockito-core'
     testCompile 'org.springframework:spring-test'
 }

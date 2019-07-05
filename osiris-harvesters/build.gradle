@@ -1,0 +1,32 @@
+group 'com.cgi.eoss.osiris'
+version '0.1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'jacoco'
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile project(':osiris-io')
+    compile project(':osiris-logging')
+    compile project(':osiris-queues')
+    compile project(':osiris-rpc')
+	compile project(':osiris-scheduled-jobs')
+
+
+	compile 'org.springframework:spring-context'
+    compile 'org.springframework:spring-context-support'
+    compile 'org.springframework.boot:spring-boot-autoconfigure'
+    compile 'org.springframework.boot:spring-boot-starter-log4j2'
+    
+	
+    testCompile 'com.google.jimfs:jimfs'
+    testCompile 'com.squareup.okhttp3:mockwebserver'
+    testCompile 'junit:junit'
+    testCompile 'org.hamcrest:hamcrest-junit'
+    testCompile 'org.mockftpserver:MockFtpServer'
+    testCompile 'org.mockito:mockito-core'
+    testCompile 'org.springframework:spring-test'
+    testCompile 'org.springframework.boot:spring-boot-test'
+    testRuntime 'org.hsqldb:hsqldb'
+}

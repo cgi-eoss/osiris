@@ -43,3 +43,7 @@ message StopFtpJob {
 message FtpJobStopped {
 	Job job = 1;
 }
+
+message FtpJobStarted {
+	Job job = 1;
+}
