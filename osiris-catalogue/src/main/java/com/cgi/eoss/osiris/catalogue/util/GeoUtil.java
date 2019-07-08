@@ -84,7 +84,7 @@ import lombok.extern.log4j.Log4j2;
 public class GeoUtil {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
-    private static final WKTReader WKT_READER = new WKTReader(new GeometryFactory(new PrecisionModel(),4326));
+    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(),4326);
 
     private static final GeometryBuilder GEOMETRY_BUILDER = new GeometryBuilder(DefaultGeographicCRS.WGS84);
 
@@ -108,7 +108,8 @@ public class GeoUtil {
     
     public static GeoJsonObject wktToGeojson(String wkt) {
         try {
-        	Geometry geom = WKT_READER.read(wkt);
+        	WKTReader wktReader = new WKTReader(GEOMETRY_FACTORY);
+        	Geometry geom = wktReader.read(wkt);
         	ByteArrayOutputStream baos = new ByteArrayOutputStream();
         	new GeometryJSON(16).write(geom, baos);
         	return OBJECT_MAPPER.readValue(baos.toByteArray(), GeoJsonObject.class);
