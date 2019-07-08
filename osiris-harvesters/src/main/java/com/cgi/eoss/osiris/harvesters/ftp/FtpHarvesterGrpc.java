@@ -2,6 +2,7 @@ package com.cgi.eoss.osiris.harvesters.ftp;
 
 import com.cgi.eoss.osiris.rpc.FileStream;
 import com.cgi.eoss.osiris.rpc.FileStreamServer;
+import com.cgi.eoss.osiris.rpc.GrpcUtil;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.DeleteFileParams;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.DeleteFileResponse;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.FileItem;
@@ -41,8 +42,8 @@ public class FtpHarvesterGrpc extends OsirisFtpHarvesterGrpc.OsirisFtpHarvesterI
 	@Override
 	public void harvestFiles(HarvestFilesParams harvestFilesParams, StreamObserver<FileList> responseObserver) {
 		try {
-			List<String> fileUris = ftpHarvesterService.harvestFiles(URI.create(harvestFilesParams.getFtpRootUri()), Instant.now());
-			responseObserver.onNext(FileList.newBuilder().addAllItems(fileUris.stream().map(f -> FileItem.newBuilder().setFileUri(f).build()).collect(Collectors.toList())).build());
+			List<com.cgi.eoss.osiris.harvesters.ftp.FileItem> fileUris = ftpHarvesterService.harvestFiles(URI.create(harvestFilesParams.getFtpRootUri()), Instant.now());
+			responseObserver.onNext(FileList.newBuilder().addAllItems(fileUris.stream().map(f -> FileItem.newBuilder().setFileUri(f.getUri()).setTimestamp(GrpcUtil.timestampFromInstant(f.getTimestamp())).build()).collect(Collectors.toList())).build());
 			responseObserver.onCompleted();
 		} catch (IOException | FailedLoginException e) {
 			responseObserver.onError(new StatusRuntimeException(Status.fromCode(Status.Code.ABORTED).withCause(e)));

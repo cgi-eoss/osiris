@@ -35,8 +35,7 @@ public class FtpJobDispatcher {
     
     OsirisQueueService queueService;
 
-    //Keep this over a minute to avoid issues with limited precision of FTP timestamps
-    private static final int FTP_CHECK_FREQUENCY_SEC = 70;
+    private static final int FTP_CHECK_FREQUENCY_SEC = 30;
     
 
     @Autowired

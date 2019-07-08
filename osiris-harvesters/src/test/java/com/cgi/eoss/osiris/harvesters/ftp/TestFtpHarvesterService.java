@@ -99,7 +99,7 @@ public class TestFtpHarvesterService {
 	@Test
 	public void testHarvestFiles() throws FailedLoginException, IOException {
 		URI ftpRootUri = URI.create("ftp://127.0.0.1:" + fakeFtpServer.getServerControlPort() + "/test_ftp_root");
-		List<String> results = ftpHarvesterService.harvestFiles(ftpRootUri, null);
+		List<FileItem> results = ftpHarvesterService.harvestFiles(ftpRootUri, null);
 		assertThat(results.size(), is(2)); 
 	}
 	

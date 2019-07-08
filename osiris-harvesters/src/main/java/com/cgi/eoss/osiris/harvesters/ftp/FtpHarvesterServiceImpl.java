@@ -9,6 +9,8 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPSClient;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,7 +23,9 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -40,7 +44,7 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
 	}
 	
 	@Override
-    public List<String> harvestFiles(URI ftpRootUri, Instant start) throws IOException, FailedLoginException {
+    public List<FileItem> harvestFiles(URI ftpRootUri, Instant start) throws IOException, FailedLoginException {
     	FTPClient ftpClient = getFtpClient(ftpRootUri);
     	String ftpRoot = ftpRootUri.getPath();
         if(!ftpRoot.endsWith("/")) {
@@ -49,26 +53,38 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
         return harvestDirectory(ftpClient, ftpRootUri, ftpRoot, start);
     }
     
-    private List<String> harvestDirectory(FTPClient ftpClient, URI ftpRootUri, String directory, Instant start) throws IOException {
+    private List<FileItem> harvestDirectory(FTPClient ftpClient, URI ftpRootUri, String directory, Instant start) throws IOException {
         boolean cwd = ftpClient.changeWorkingDirectory(directory);
         if (!cwd) {
             throw new IOException("Cannot change FTP directory");
         }
-        FTPFile[] ftpFiles = ftpClient.listFiles(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
         
-        List<String> result = new ArrayList<>();
+        FTPFile[] ftpFiles;
+        
+        if (ftpClient.listHelp().contains("MLSD")) {
+        	ftpFiles = ftpClient.mlistDir(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
+        }
+        else {
+        	ftpFiles = ftpClient.listFiles(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
+        }
+        
+        List<FileItem> result = new ArrayList<>();
         for (FTPFile ftpFile: ftpFiles) {
         	if (ftpFile.isDirectory()){
                 result.addAll(harvestDirectory(ftpClient, ftpRootUri, directory + ftpFile.getName() + "/", start));
             }
         	else if (ftpFile.isFile()) {
-            	result.add(buildFileUri(ftpRootUri, directory + ftpFile.getName()).toString());
+            	result.add(buildFileItem(ftpRootUri, directory, ftpFile));
             }
         }
         
         return result;
     }
     
+    
+    private FileItem buildFileItem(URI ftpUri, String directory, FTPFile ftpFile) {
+    	return new FileItem(buildFileUri(ftpUri, directory + ftpFile.getName()).toString(), ftpFile.getTimestamp().toInstant());
+   }
     
     private URI buildFileUri(URI ftpUri, String fullFilePath) {
     	StringBuilder builder = new StringBuilder();
@@ -88,9 +104,13 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
         else {
         	ftpClient.connect(ftpUri.getHost());
         }
+        Map<String, String> params = URLEncodedUtils.parse(ftpUri, "UTF-8").stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+        String timezone = params.getOrDefault("timezone", "UTC");
+        
         FTPClientConfig conf = new FTPClientConfig();
-        conf.setServerTimeZoneId("UTC");
+        conf.setServerTimeZoneId(timezone);
         ftpClient.configure(conf);
+        
         Credentials creds = osirisServerClient.credentialsServiceBlockingStub().getCredentials(GetCredentialsParams.newBuilder().setHost(ftpUri.getHost()).build());
         if (creds.getType() != Credentials.Type.BASIC || !ftpClient.login(creds.getUsername(), creds.getPassword())) {
         	throw new FailedLoginException();

@@ -18,7 +18,7 @@ public class TimeAndExtensionFtpFileFilter implements FTPFileFilter{
     
 	@Override
 	public boolean accept(FTPFile file) {
-		return !isExtensionExcluded(file.getName()) && (instant == null || file.getTimestamp().toInstant().compareTo(instant) >= 0);
+		return !isExtensionExcluded(file.getName()) && (file.isDirectory() || instant == null || file.getTimestamp().toInstant().compareTo(instant) >= 0);
 		
 	}
 

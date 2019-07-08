@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 @Log4j2
 public class OsirisFtpJobUpdatesManager {
 
+	private static final String FALLBACK_OUTPUT_ID = "1";
 	private final JobDataService jobDataService;
 	private final CatalogueService catalogueService;
 	private final OsirisFilesRelationDataService fileRelationDataService;
@@ -143,13 +144,16 @@ public class OsirisFtpJobUpdatesManager {
 		Path path = Paths.get(fileUri.getPath());
 		Path relativePath = Paths.get(ftpRoot).relativize(path);
 		OsirisService service = job.getConfig().getService();
+		if (service.getServiceDescriptor().getDataOutputs() == null) {
+			return FALLBACK_OUTPUT_ID;
+		}
 		Set<String> expectedServiceOutputIds = service.getServiceDescriptor().getDataOutputs().stream()
 				.map(OsirisServiceDescriptor.Parameter::getId).collect(toSet());
 		Path pathRoot = relativePath.getParent();
-		if (expectedServiceOutputIds.contains(pathRoot.toString())) {
+		if (pathRoot != null && expectedServiceOutputIds.contains(pathRoot.toString())) {
 			return pathRoot.toString();
 		}
-		return "1";
+		return FALLBACK_OUTPUT_ID;
 	}
 
 	

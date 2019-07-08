@@ -3,8 +3,10 @@ package com.cgi.eoss.osiris.rpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.protobuf.Timestamp;
 import lombok.experimental.UtilityClass;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -38,6 +40,9 @@ public class GrpcUtil {
         return paramsBuilder.build();
     }
 
+    public static Timestamp timestampFromInstant(Instant instant) {
+    	return Timestamp.newBuilder().setSeconds(instant.getEpochSecond()).setNanos(instant.getNano()).build();
+    }
     
-    
+
 }

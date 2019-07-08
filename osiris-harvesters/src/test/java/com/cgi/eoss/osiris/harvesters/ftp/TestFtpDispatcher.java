@@ -21,6 +21,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.time.OffsetDateTime;
+import java.util.Date;
+
 import com.cgi.eoss.osiris.harvesters.HarvestersConfig;
 import com.cgi.eoss.osiris.model.DownloaderCredentials;
 import com.cgi.eoss.osiris.persistence.service.DownloaderCredentialsDataService;
@@ -87,8 +90,10 @@ public class TestFtpDispatcher {
 		fileSystem.add(new DirectoryEntry("/test_ftp_root"));
 		fileSystem.add(new DirectoryEntry("/out1"));
 		FileEntry testFile = new FileEntry("/test_ftp_root/out1/file1.txt", "contents");
-		FileEntry testFile2 = new FileEntry("/test_ftp_root/out1/file2.txt", "contents2");
-		fileSystem.add(testFile);
+		testFile.setLastModified(Date.from(OffsetDateTime.now().minusDays(20).toInstant()));
+        FileEntry testFile2 = new FileEntry("/test_ftp_root/out1/file2.txt", "contents2");
+        testFile2.setLastModified(Date.from(OffsetDateTime.now().minusDays(10).toInstant()));
+        fileSystem.add(testFile);
 		fileSystem.add(testFile2);
 		fakeFtpServer.setFileSystem(fileSystem);
 		fakeFtpServer.start();

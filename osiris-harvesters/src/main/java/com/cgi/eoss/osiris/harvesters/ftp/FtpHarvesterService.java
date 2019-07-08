@@ -9,7 +9,7 @@ import javax.security.auth.login.FailedLoginException;
 
 public interface FtpHarvesterService {
 
-    List<String> harvestFiles(URI ftpRootUri, Instant start) throws IOException, FailedLoginException;
+    List<FileItem> harvestFiles(URI ftpRootUri, Instant start) throws IOException, FailedLoginException;
   
     FtpFileMeta getFile(URI fileUri) throws IOException, FailedLoginException;
 
