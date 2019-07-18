@@ -72,6 +72,13 @@ public class IncidentProcessing implements OsirisEntityWithOwner<IncidentProcess
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "systematic_processing", nullable = true)
     private SystematicProcessing systematicProcessing;
+    
+    /**
+     * <p>The single job launched for this incident processing, if present.</p>
+     */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job", nullable = true)
+    private Job job;
 
     /**
      * <p>The inputs associated with this processing, and their values.</p>
