@@ -42,7 +42,7 @@ public class OsirisJobUpdatesDispatcher {
         } catch (JMSException e) {
             osirisJobUpdatesManager.onJobError(job, e);
         }
-        if (update instanceof Job) {
+        if (update instanceof JobEvent) {
             JobEvent jobEvent = (JobEvent) update;
             JobEventType jobEventType = jobEvent.getJobEventType();
             if (jobEventType == JobEventType.DATA_FETCHING_STARTED) {
