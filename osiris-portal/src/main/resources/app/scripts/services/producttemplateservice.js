@@ -303,6 +303,7 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                   var template = {
                           name: data.name,
                           description: data.description,
+                          type: data.serviceType,
                           serviceDescriptor: {
                             description: data.description,
                             id: data.name,

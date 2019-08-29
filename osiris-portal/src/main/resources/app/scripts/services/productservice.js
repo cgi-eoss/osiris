@@ -72,6 +72,9 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                 title: 'Detected wind',
                 value: 'DETECTED_WIND'
             }, {
+                title: 'Predicted oildrift',
+                value: 'PREDICTED_OILSPILL'
+            }, {
                 title: 'Other',
                 value: 'OTHER'
             }],
@@ -445,6 +448,7 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                           name: name,
                           description: description,
                           dockerTag: 'osiris/' + name.toLowerCase(),
+                          type: data.serviceType,
                           serviceDescriptor: {
                               description: description,
                               id: name,

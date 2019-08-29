@@ -99,7 +99,6 @@ define(['../../../osirismodules', 'ol', 'moment'], function (osirismodules, ol, 
                     processingTemplates.forEach(function(template) {
                         template.instance = {
                             active: true,
-                            searchParameters: {},
                             inputs: {}
                         }
                     })

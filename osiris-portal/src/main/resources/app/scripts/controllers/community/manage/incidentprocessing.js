@@ -22,6 +22,9 @@ define(['../../../osirismodules'], function (osirismodules) {
         }, {
             value: 'TIME_DRIVEN' ,
             title: 'Time driven'
+        }, {
+            value: 'ONE_OFF',
+            title: 'One-off'
         }];
 
         $scope.searchForm = {
@@ -58,8 +61,10 @@ define(['../../../osirismodules'], function (osirismodules) {
                 }
                 if ($scope.processingTemplate.cronExpression) {
                     $scope.processingTemplate.runMode = 'TIME_DRIVEN';
-                } else {
+                } else if (processingTemplate.searchParameters) {
                     $scope.processingTemplate.runMode = 'DATA_DRIVEN';
+                } else {
+                    $scope.processingTemplate.runMode = 'ONE_OFF';
                 }
                 $scope.processingTemplate.service = processingTemplate.service;
 
@@ -170,7 +175,7 @@ define(['../../../osirismodules'], function (osirismodules) {
                     for (var key in searchParams) {
                         searchParams[key] = [searchParams[key]];
                     }
-                } else {
+                } else if ($scope.processingTemplate.runMode === 'TIME_DRIVEN') {
                     cronExpression = $scope.processingTemplate.cronExpression;
                 }
 
@@ -190,16 +195,14 @@ define(['../../../osirismodules'], function (osirismodules) {
                 if (searchParams) {
                     serviceData.searchParameters = searchParams;
                     serviceData.systematicInput = $scope.processingTemplate.systematicInput;
-                    if ($scope.processingTemplateToEdit && $scope.processingTemplateToEdit.cronExpression) {
-                        serviceData.cronExpression = null;
-                    }
+                } else {
+                    serviceData.searchParameters = null;
                 }
 
                 if (cronExpression) {
                     serviceData.cronExpression = cronExpression;
-                    if ($scope.processingTemplateToEdit && $scope.processingTemplateToEdit.searchParameters) {
-                        serviceData.searchParameters = null;
-                    }
+                } else {
+                    serviceData.cronExpression = null;
                 }
 
                 if ($scope.processingTemplateToEdit) {
@@ -214,6 +217,7 @@ define(['../../../osirismodules'], function (osirismodules) {
             } else {
 
                 if ($scope.processingTemplate.runMode === 'DATA_DRIVEN') {
+                    $scope.processingInstance.cronExpression = null;
                     $scope.processingInstance.searchParameters = {};
 
                     var formSearchParams = $scope.searchForm.api.getFormData();
@@ -223,13 +227,17 @@ define(['../../../osirismodules'], function (osirismodules) {
                             $scope.processingInstance.searchParameters[key] = [formSearchParams[key]];
                         }
                     }
-                } else {
+                } else if ($scope.processingTemplate.runMode === 'TIME_DRIVEN') {
+                    $scope.processingInstance.searchParameters = null;
                     let cronExpression = $scope.processingTemplateToEdit.cronExpression;
                     if (!cronExpression || $scope.processingTemplate.cronExpression !== cronExpression) {
                         $scope.processingInstance.cronExpression = $scope.processingTemplate.cronExpression;
                     } else {
                         delete $scope.processingInstance.cronExpression;
                     }
+                } else {
+                    $scope.processingInstance.searchParameters = null;
+                    $scope.processingInstance.cronExpression = null;
                 }
 
                 $scope.processingInstance.inputs = {}
