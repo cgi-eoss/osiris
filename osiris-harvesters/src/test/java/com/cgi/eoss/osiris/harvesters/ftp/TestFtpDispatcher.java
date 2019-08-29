@@ -36,6 +36,7 @@ import com.cgi.eoss.osiris.rpc.FtpJobStarted;
 import com.cgi.eoss.osiris.rpc.FtpJobStopped;
 import com.cgi.eoss.osiris.rpc.Job;
 import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
+import com.cgi.eoss.osiris.rpc.NoMoreJobFtpFilesAvailable;
 import com.cgi.eoss.osiris.rpc.StopFtpJob;
 import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc;
 import com.cgi.eoss.osiris.rpc.worker.JobError;
@@ -119,7 +120,6 @@ public class TestFtpDispatcher {
 		queueService.sendObject(OsirisQueueService.ftpJobQueueName, stopFtpJob);
 		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName,
 				"messageType IS NULL OR messageType <> 'FTPFileAvailable'");
-		System.out.println(resp.getClass());
 		assertThat(resp instanceof FtpJobStarted, is(true));
 		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName,
 				"messageType IS NULL OR messageType <> 'FTPFileAvailable'");
@@ -143,7 +143,12 @@ public class TestFtpDispatcher {
 		queueService.sendObject(OsirisQueueService.ftpJobQueueName, stopFtpJob);
 		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName,
 				"messageType IS NULL OR messageType <> 'FTPFileAvailable'");
+		assertThat(resp instanceof JobError, is(true));
+		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName,
+				"messageType IS NULL OR messageType <> 'FTPFileAvailable'");
 		assertThat(resp instanceof FtpJobStopped, is(true));
+		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName, "messageType = 'FTPFileAvailable'");
+		assertThat(resp instanceof NoMoreJobFtpFilesAvailable, is(true));
 	}
 
 	@Test
@@ -165,7 +170,8 @@ public class TestFtpDispatcher {
 		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName,
 				"messageType IS NULL OR messageType <> 'FTPFileAvailable'");
 		assertThat(resp instanceof FtpJobStopped, is(true));
-
+		resp = queueService.receiveSelectedObject(OsirisQueueService.ftpJobUpdatesQueueName, "messageType = 'FTPFileAvailable'");
+		assertThat(resp instanceof NoMoreJobFtpFilesAvailable, is(true));
 	}
 
 }

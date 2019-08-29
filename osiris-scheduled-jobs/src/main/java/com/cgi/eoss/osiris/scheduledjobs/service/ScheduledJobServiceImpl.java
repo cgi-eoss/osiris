@@ -1,7 +1,6 @@
 package com.cgi.eoss.osiris.scheduledjobs.service;
 
 import com.google.common.collect.ImmutableSet;
-import lombok.extern.log4j.Log4j2;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.JobBuilder;
@@ -29,9 +28,7 @@ import java.util.Set;
 
 
 @Service
-@Log4j2
 public class ScheduledJobServiceImpl implements ScheduledJobService{
-
 	
 	private Scheduler scheduler;
 
@@ -159,6 +156,22 @@ public class ScheduledJobServiceImpl implements ScheduledJobService{
 	}
 	
 	@Override
+	public void updateJobContext(String identity, String group, Map<String, Object> jobContext) {
+		try {
+			JobDetail jobDetail = scheduler.getJobDetail(JobKey.jobKey(identity, group));
+			if (jobDetail != null) {
+				jobDetail.getJobDataMap().putAll(jobContext);
+				scheduler.addJob(jobDetail, true);
+			}
+			else {
+				throw new ScheduledJobException("Job not found");
+			}
+		} catch (SchedulerException e) {
+			throw new ScheduledJobException(e);
+		}
+	}
+	
+	@Override
 	@Transactional
     public void deleteJob(String identity, String group) {
         try {
@@ -167,6 +180,14 @@ public class ScheduledJobServiceImpl implements ScheduledJobService{
             throw new ScheduledJobException(e);
         }
     }
+	
+	public Map<String, Object> getJobContext(String identity, String group){
+		try {
+			return scheduler.getJobDetail(JobKey.jobKey(identity, group)).getJobDataMap();
+		} catch (SchedulerException e) {
+			throw new ScheduledJobException(e);
+		}
+	}
 	
 	@Override
 	public List<Date> getNextScheduledTimes(int number, String identity, String group) {

@@ -1,5 +1,17 @@
 package com.cgi.eoss.osiris.harvesters.ftp;
 
+import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
+import com.cgi.eoss.osiris.rpc.Job;
+import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
+import com.cgi.eoss.osiris.rpc.NoMoreJobFtpFilesAvailable;
+import com.cgi.eoss.osiris.rpc.worker.JobError;
+import com.cgi.eoss.osiris.scheduledjobs.service.PersistentScheduledJob;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimaps;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
@@ -10,19 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.login.FailedLoginException;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
-import com.cgi.eoss.osiris.rpc.Job;
-import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
-import com.cgi.eoss.osiris.rpc.worker.JobError;
-import com.cgi.eoss.osiris.scheduledjobs.service.PersistentScheduledJob;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Multimaps;
-
-import lombok.extern.log4j.Log4j2;
 
 @Component
 @Log4j2
@@ -36,10 +35,19 @@ public class FtpScheduledJob extends PersistentScheduledJob {
     @Autowired
     OsirisQueueService queueService;
     
+    @Autowired
+    FtpJobDispatcher ftpJobDispatcher;
+    
+    
     @Override
     public void executeJob(Map<String, Object> jobContext) {
-        LOG.info("New ftp job received");
-        Job job = (Job) jobContext.get("job");
+        harvestFtp(jobContext);
+    }
+
+	@SuppressWarnings("unchecked")
+	private void harvestFtp(Map<String, Object> jobContext) {
+		Job job = (Job) jobContext.get("job");
+        LOG.debug("FTP Harvest started for job {}", job.getIntJobId());
         String ftpRootUriStr = (String) jobContext.get("ftpRootUri");
         Instant start = (Instant) jobContext.get("start");
         Set<String> latestTimestampHarvested = (Set<String>) jobContext.getOrDefault(LATEST_TIMESTAMP_HARVESTED_FILES, new HashSet<>());
@@ -71,12 +79,23 @@ public class FtpScheduledJob extends PersistentScheduledJob {
             	}
             }
         } catch (IOException | FailedLoginException e) {
-            LOG.error(e);
+            LOG.error("Error in job {}: ", job.getIntJobId(), e);
             Map<String, Object> headers = new HashMap<>();
         	headers.put("jobId", job.getIntJobId());
             queueService.sendObject(OsirisQueueService.ftpJobUpdatesQueueName, headers, JobError.newBuilder().setErrorDescription(e.getMessage()).build());
         }
-    }
+        finally {
+        	if ((boolean) jobContext.getOrDefault("terminate", false)) {
+            	LOG.info("Termination requested, unscheduling FTP job {}", job.getIntJobId());
+            	ftpJobDispatcher.terminateJob(job);
+                //Enqueue last message to signal no more FTP files will be produced
+            	Map<String, Object> headers = new HashMap<>();
+            	headers.put("jobId", job.getIntJobId());
+            	headers.put("messageType", "FTPFileAvailable");
+            	queueService.sendObject(OsirisQueueService.ftpJobUpdatesQueueName, headers, NoMoreJobFtpFilesAvailable.newBuilder().setJob(job).build());
+            }
+        }
+	}
 
 	private ImmutableListMultimap<Instant, FileItem> fileListToMultimapSortedByTimestamp(List<FileItem> fileItems) {
 		//Sort by timestamp

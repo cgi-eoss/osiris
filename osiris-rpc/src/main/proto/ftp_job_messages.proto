@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc";
+
+message FtpJobSpec {
+	Job job = 1;
+	string ftpRootUri = 2; 
+}
+
+message JobFtpFileAvailable{
+	Job job = 1;
+	string ftpRoot = 2;
+	string fileUri = 3;
+}
+
+message NoMoreJobFtpFilesAvailable{
+	Job job = 1;
+}
+
+message StopFtpJob {
+	Job job = 1;
+}
+
+message FtpJobStopped {
+	Job job = 1;
+}
+
+message FtpJobStarted {
+	Job job = 1;
+}
+
+

@@ -7,18 +7,18 @@ import com.cgi.eoss.osiris.rpc.worker.ContainerExit;
 import com.cgi.eoss.osiris.rpc.worker.JobError;
 import com.cgi.eoss.osiris.rpc.worker.JobEvent;
 import com.cgi.eoss.osiris.rpc.worker.JobEventType;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+
 import java.io.Serializable;
+
 import javax.jms.JMSException;
 import javax.jms.ObjectMessage;
 
 @Component
-@Log4j2
 public class OsirisJobUpdatesDispatcher {
 
     private final JobDataService jobDataService;

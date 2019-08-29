@@ -74,7 +74,6 @@ public class OsirisGuiTraefikProxyTestIT {
         worker = OsirisWorkerGrpc.newBlockingStub(channelBuilder.build());
         webServer = new MockWebServer();
         webServer.start();
-        System.out.println(webServer.url(""));
     }
 
     @After

@@ -86,12 +86,15 @@ public class SystematicProcessingService extends SystematicProcessingServiceGrpc
         List<SystematicProcessing> blockedSystematicProcessings = systematicProcessingDataService.findByStatus(Status.BLOCKED);
 
         //Try to resume blocked systematic processings
-        LOG.info("Trying to unblock systematic processing activities", blockedSystematicProcessings.size());
         for (SystematicProcessing blockedSystematicProcessing : blockedSystematicProcessings) {
             User user = blockedSystematicProcessing.getOwner();
             if (user.getWallet().getBalance() > 0) {
                 unblock(blockedSystematicProcessing);
                 LOG.info("Unblocked systematic processing {}", blockedSystematicProcessing.getId());
+            }
+            else {
+                LOG.info("Canmot unblock systematic processing {} - insufficient user credit", blockedSystematicProcessing.getId());
+                
             }
         }
     }

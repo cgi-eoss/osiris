@@ -34,8 +34,13 @@ public interface ScheduledJobService {
 	public void unscheduleJob(String identity, String group);
 	
 	@Transactional
+	public void updateJobContext(String identity, String group, Map<String, Object> jobContext);
+	
+	@Transactional
 	public void deleteJob(String identity, String group);
 
+	public Map<String, Object> getJobContext(String identity, String group);
+	
 	Date getNextScheduledTime(String identity, String group);
 
 	List<Date> getNextScheduledTimes(int number, String identity, String group);

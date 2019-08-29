@@ -10,4 +10,8 @@ public class ScheduledJobException extends RuntimeException {
 	public ScheduledJobException(Throwable cause) {
 		super(cause);
 	}
+	
+	public ScheduledJobException(String message) {
+		super(message);
+	}
 }

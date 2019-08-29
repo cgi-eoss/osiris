@@ -1,12 +1,14 @@
 package com.cgi.eoss.osiris.orchestrator.service;
 
 import com.cgi.eoss.osiris.model.Job;
+import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.persistence.service.JobDataService;
 import com.cgi.eoss.osiris.queues.service.Message;
 import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
 import com.cgi.eoss.osiris.rpc.FtpJobStarted;
 import com.cgi.eoss.osiris.rpc.FtpJobStopped;
 import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
+import com.cgi.eoss.osiris.rpc.NoMoreJobFtpFilesAvailable;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
@@ -46,6 +48,9 @@ public class OsirisFtpJobUpdatesDispatcher {
     public void receiveJobUpdate(@Payload ObjectMessage objectMessage,
     		@Header("jobId") String internalJobId) {
     	Job job = jobDataService.reload(Long.parseLong(internalJobId));
+    	if (!job.getConfig().getService().getType().equals(OsirisService.Type.FTP_SERVICE)){
+    		return;
+    	}
         Serializable update = null;
         try {
         	update = objectMessage.getObject();
@@ -61,12 +66,22 @@ public class OsirisFtpJobUpdatesDispatcher {
     }
     
     @JmsListener(containerFactory = "rateLimitedJmsListenerContainerFactory", destination = OsirisQueueService.ftpJobUpdatesQueueName, selector = "messageType = 'FTPFileAvailable'", concurrency = "1-1")
-    public void receiveDownloadRequest(@Payload ObjectMessage objectMessage, @Headers Map<String, Object> headers){
+    public void receiveFtpFileAvailable(@Payload ObjectMessage objectMessage, @Headers Map<String, Object> headers){
     	Job job = jobDataService.reload(Long.parseLong((String) headers.get("jobId")));
         JobFtpFileAvailable jobFtpFileAvailable;
+        Object messageObject;
 		try {
-			jobFtpFileAvailable = (JobFtpFileAvailable) objectMessage.getObject();
-			osirisFtpJobUpdatesManager.onJobFtpFileAvailable(job, jobFtpFileAvailable.getFtpRoot(), URI.create(jobFtpFileAvailable.getFileUri()));
+			messageObject = objectMessage.getObject();
+			if (messageObject instanceof JobFtpFileAvailable) {
+				jobFtpFileAvailable = (JobFtpFileAvailable) messageObject;
+    			osirisFtpJobUpdatesManager.onJobFtpFileAvailable(job, jobFtpFileAvailable.getFtpRoot(), URI.create(jobFtpFileAvailable.getFileUri()));
+			}
+			else if (messageObject instanceof NoMoreJobFtpFilesAvailable) {
+				osirisFtpJobUpdatesManager.onJobCompleted(job);
+			}
+		} catch (JMSException e) {
+			LOG.error("Error processing message: ", e);
+			throw new RuntimeException(e);
 		}
 		catch (IOException e) {
 			int priority;
@@ -83,9 +98,8 @@ public class OsirisFtpJobUpdatesDispatcher {
 				LOG.error("Error processing message: ", e);
 				throw new RuntimeException(e);
 			}
-	    }
-		catch (Exception e) {
-			LOG.error("Error processing message: ", e);
+	    } catch (InterruptedException e) {
+	    	LOG.error("Error processing message: ", e);
 			throw new RuntimeException(e);
 		}
     }

@@ -3,6 +3,7 @@ package com.cgi.eoss.osiris.harvesters.ftp;
 import java.time.Instant;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileFilter;
 
@@ -18,12 +19,22 @@ public class TimeAndExtensionFtpFileFilter implements FTPFileFilter{
     
 	@Override
 	public boolean accept(FTPFile file) {
-		return !isExtensionExcluded(file.getName()) && (file.isDirectory() || instant == null || file.getTimestamp().toInstant().compareTo(instant) >= 0);
+		if (isExtensionExcluded(file.getName())){
+			return false;
+		}
 		
+		if (file.isFile()) {
+			return instant == null || file.getTimestamp().toInstant().compareTo(instant) >= 0;
+		}
+		
+		if(file.isDirectory()) {
+			return !ImmutableList.of(".", "..").contains(file.getName());
+		}
+		return false;
 	}
 
 	private boolean isExtensionExcluded(String name) {
 		return excludedExtensions
-				.stream().map(e -> name.endsWith(e)).filter(v -> v).anyMatch(v -> v);
+				.stream().map(name::endsWith).filter(v -> v).anyMatch(v -> v);
 	}
 }

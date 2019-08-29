@@ -23,27 +23,3 @@ message JobSpec {
 message ResourceRequest{
 	int32 storage = 1;
 }
-
-
-message FtpJobSpec {
-	Job job = 1;
-	string ftpRootUri = 2; 
-}
-
-message JobFtpFileAvailable{
-	Job job = 1;
-	string ftpRoot = 2;
-	string fileUri = 3;
-}
-
-message StopFtpJob {
-	Job job = 1;
-}
-
-message FtpJobStopped {
-	Job job = 1;
-}
-
-message FtpJobStarted {
-	Job job = 1;
-}
