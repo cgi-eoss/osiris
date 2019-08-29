@@ -42,8 +42,9 @@ CREATE TABLE osiris_services (
   docker_build_info CLOB,
   required_resources CLOB,
   strip_proxy_path BOOLEAN DEFAULT TRUE,
+  external_uri   CHARACTER VARYING(255),
   status         CHARACTER VARYING(255) NOT NULL CHECK (status IN ('IN_DEVELOPMENT', 'AVAILABLE')),
-  type           CHARACTER VARYING(255) NOT NULL CHECK (type IN ('PROCESSOR', 'BULK_PROCESSOR', 'APPLICATION', 'PARALLEL_PROCESSOR', 'FTP_SERVICE')),
+  type           CHARACTER VARYING(255) NOT NULL CHECK (type IN ('PROCESSOR', 'BULK_PROCESSOR', 'APPLICATION', 'PARALLEL_PROCESSOR', 'FTP_SERVICE', 'WPS_SERVICE')),
   owner          BIGINT                 NOT NULL FOREIGN KEY REFERENCES osiris_users (uid)
 );
 CREATE UNIQUE INDEX osiris_services_name_idx
@@ -81,8 +82,9 @@ CREATE TABLE osiris_credentials (
   certificate_path CHARACTER VARYING(255),
   host             CHARACTER VARYING(255) NOT NULL,
   password         CHARACTER VARYING(255),
-  type             CHARACTER VARYING(255) NOT NULL CHECK (type IN ('BASIC', 'X509')),
-  username         CHARACTER VARYING(255)
+  type             CHARACTER VARYING(255) NOT NULL CHECK (type IN ('BASIC', 'X509', 'PKCS8')),
+  username         CHARACTER VARYING(255),
+  data			   CLOB
 );
 CREATE UNIQUE INDEX osiris_credentials_host_idx
   ON osiris_credentials (host);

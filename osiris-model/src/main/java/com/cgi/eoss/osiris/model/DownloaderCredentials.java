@@ -14,6 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
+import javax.persistence.Lob;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -31,7 +32,8 @@ public class DownloaderCredentials implements OsirisEntity<DownloaderCredentials
 
     public enum Type {
         BASIC,
-        X509
+        X509,
+        PKCS8
     }
 
     /**
@@ -72,6 +74,13 @@ public class DownloaderCredentials implements OsirisEntity<DownloaderCredentials
      */
     @Column(name = "certificate_path")
     private String certificatePath;
+    
+    /**
+     * <p>Generic data field for credentials</p>
+     */
+    @Lob
+    @Column(name = "data")
+    private String data;
 
     @Builder(builderMethodName = "basicBuilder")
     public DownloaderCredentials(String host, String username, String password) {

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wps:ProcessDescriptions
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:ows="http://www.opengis.net/ows/1.1"
+	xmlns:wps="http://www.opengis.net/wps/1.0.0"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xml:lang="en"
+	service="WPS" version="1.0.0"
+	xsi:schemaLocation="http://www.opengis.net/wps/1.0.0 http://schemas.opengis.net/wps/1.0.0/wpsAll.xsd">
+	<ProcessDescription wps:processVersion="1.0.0"
+		statusSupported="false" storeSupported="false">
+		<ows:Identifier>JTS:buffer</ows:Identifier>
+		<ows:Title>Buffer</ows:Title>
+		<ows:Abstract>Returns a polygonal geometry representing the input
+			geometry enlarged by a given distance around its exterior.
+		</ows:Abstract>
+		<DataInputs>
+			<Input maxOccurs="1" minOccurs="1">
+				<ows:Identifier>geom</ows:Identifier>
+				<ows:Title>geom</ows:Title>
+				<ows:Abstract>Input geometry</ows:Abstract>
+				<ComplexData>
+					<Default>
+						<Format>
+							<MimeType>text/xml; subtype=gml/3.1.1</MimeType>
+						</Format>
+					</Default>
+					<Supported>
+						<Format>
+							<MimeType>text/xml; subtype=gml/3.1.1</MimeType>
+						</Format>
+						<Format>
+							<MimeType>text/xml; subtype=gml/2.1.2</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/wkt</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/json</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/gml-3.1.1</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/gml-2.1.2</MimeType>
+						</Format>
+					</Supported>
+				</ComplexData>
+			</Input>
+			<Input maxOccurs="1" minOccurs="1">
+				<ows:Identifier>distance</ows:Identifier>
+				<ows:Title>distance</ows:Title>
+				<ows:Abstract>Distance to buffer the input geometry, in the units of
+					the geometry</ows:Abstract>
+				<LiteralData>
+					<ows:DataType>xs:double</ows:DataType>
+					<ows:AnyValue />
+				</LiteralData>
+			</Input>
+			<Input maxOccurs="1" minOccurs="0">
+				<ows:Identifier>quadrantSegments</ows:Identifier>
+				<ows:Title>quadrantSegments</ows:Title>
+				<ows:Abstract>Number determining the style and smoothness of buffer
+					corners. Positive numbers create round corners with that number of
+					segments per quarter-circle, 0 creates flat corners.</ows:Abstract>
+				<LiteralData>
+					<ows:DataType>xs:int</ows:DataType>
+					<ows:AnyValue />
+				</LiteralData>
+			</Input>
+			<Input maxOccurs="1" minOccurs="0">
+				<ows:Identifier>capStyle</ows:Identifier>
+				<ows:Title>capStyle</ows:Title>
+				<ows:Abstract>Style for the buffer end caps. Values are: Round -
+					rounded ends (default), Flat - flat ends; Square - square ends.
+				</ows:Abstract>
+				<LiteralData>
+					<ows:AllowedValues>
+						<ows:Value>Round</ows:Value>
+						<ows:Value>Flat</ows:Value>
+						<ows:Value>Square</ows:Value>
+					</ows:AllowedValues>
+				</LiteralData>
+			</Input>
+		</DataInputs>
+		<ProcessOutputs>
+			<Output>
+				<ows:Identifier>result</ows:Identifier>
+				<ows:Title>result</ows:Title>
+				<ComplexOutput>
+					<Default>
+						<Format>
+							<MimeType>text/xml; subtype=gml/3.1.1</MimeType>
+						</Format>
+					</Default>
+					<Supported>
+						<Format>
+							<MimeType>text/xml; subtype=gml/3.1.1</MimeType>
+						</Format>
+						<Format>
+							<MimeType>text/xml; subtype=gml/2.1.2</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/wkt</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/json</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/gml-3.1.1</MimeType>
+						</Format>
+						<Format>
+							<MimeType>application/gml-2.1.2</MimeType>
+						</Format>
+					</Supported>
+				</ComplexOutput>
+			</Output>
+		</ProcessOutputs>
+	</ProcessDescription>
+</wps:ProcessDescriptions>

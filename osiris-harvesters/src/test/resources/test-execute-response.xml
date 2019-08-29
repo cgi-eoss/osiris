@@ -1,0 +1,27 @@
+<wps:ExecuteResponse service="WPS" serviceInstance="http://localhost/ows?" version="1.0.0" xml:lang="en" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <wps:Process wps:processVersion="1.0.0">
+    <ows:Identifier>JTS:buffer</ows:Identifier>
+    <ows:Title>Buffer</ows:Title>
+    <ows:Abstract>Returns a polygonal geometry representing the input geometry enlarged by a given distance around its exterior.</ows:Abstract>
+  </wps:Process>
+  <wps:Status creationTime="2019-08-27T15:01:52.960Z">
+    <wps:ProcessSucceeded>Process succeeded.</wps:ProcessSucceeded>
+  </wps:Status>
+  <wps:ProcessOutputs>
+    <wps:Output>
+      <ows:Identifier>result</ows:Identifier>
+      <ows:Title>Buffered geometry</ows:Title>
+      <wps:Data>
+        <wps:ComplexData mimeType="text/xml; subtype=gml/3.1.1">
+          <gml:Polygon srsDimension="2" xmlns:gml="http://www.opengis.net/gml" xmlns:sch="http://www.ascc.net/xml/schematron">
+            <gml:exterior>
+              <gml:LinearRing srsDimension="2">
+                <gml:posList>2.0 0.0 1.9615705608064609 -0.3901806440322565 1.8477590650225735 -0.7653668647301796 1.6629392246050905 -1.1111404660392044 1.4142135623730951 -1.414213562373095 1.1111404660392046 -1.6629392246050905 0.7653668647301797 -1.8477590650225735 0.39018064403225666 -1.9615705608064609 1.2246467991473532E-16 -2.0 -0.3901806440322564 -1.9615705608064609 -0.7653668647301795 -1.8477590650225735 -1.111140466039204 -1.6629392246050907 -1.414213562373095 -1.4142135623730951 -1.6629392246050907 -1.1111404660392044 -1.8477590650225737 -0.7653668647301789 -1.961570560806461 -0.39018064403225544 -2.0 1.5314274795707798E-15 -1.9615705608064604 0.39018064403225844 -1.8477590650225726 0.7653668647301818 -1.662939224605089 1.1111404660392068 -1.4142135623730927 1.4142135623730974 -1.1111404660392015 1.6629392246050925 -0.7653668647301758 1.847759065022575 -0.3901806440322521 1.9615705608064617 4.961676478456545E-15 2.0 0.3901806440322618 1.9615705608064598 0.7653668647301849 1.8477590650225713 1.1111404660392097 1.662939224605087 1.4142135623730998 1.4142135623730903 1.6629392246050945 1.1111404660391986 1.8477590650225764 0.7653668647301726 1.9615705608064624 0.3901806440322487 2.0 0.0</gml:posList>
+              </gml:LinearRing>
+            </gml:exterior>
+          </gml:Polygon>
+        </wps:ComplexData>
+      </wps:Data>
+    </wps:Output>
+  </wps:ProcessOutputs>
+</wps:ExecuteResponse>

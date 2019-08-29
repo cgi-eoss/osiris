@@ -2,6 +2,7 @@ package com.cgi.eoss.osiris.api.controllers;
 
 import com.cgi.eoss.osiris.catalogue.CatalogueService;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec;
+import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerSpec.GeoServerSpecBuilder;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoServerType;
 import com.cgi.eoss.osiris.catalogue.geoserver.GeoserverService;
 import com.cgi.eoss.osiris.model.Collection;
@@ -248,12 +249,16 @@ public class IncidentsApiExtension {
 		String workspace = "incident" + incidentProcessing.getIncident().getId();
 		String storeName = "processing" + incidentProcessing.getId();
 		geoserverService.createEmptyMosaic(workspace, storeName, p.getId(), InternalModelUtils.platformTimeRegexpToGeoserverTimeRegexp(p.getTimeRegexp()));
-		return GeoServerSpec.builder()
+		GeoServerSpecBuilder geoserverSpecBuilder = GeoServerSpec.builder()
 				.geoserverType(GeoServerType.MOSAIC)
 				.workspace(workspace)
 			    .datastoreName(storeName)
-			    .coverageName(p.getId())
-			    .build();
+			    .coverageName(p.getId());
+			    
+		if (p.getPlatformMetadata().containsKey("geoserverStyle")) {
+			geoserverSpecBuilder.style(p.getPlatformMetadata().get("geoserverStyle"));
+		}
+		return geoserverSpecBuilder.build();
 	}
 		
 

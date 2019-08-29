@@ -8,11 +8,11 @@ import java.net.URI;
 public class UriStringConverter implements AttributeConverter<URI, String> {
     @Override
     public String convertToDatabaseColumn(URI attribute) {
-        return attribute.toString();
+    	return attribute != null? attribute.toString(): null;
     }
 
     @Override
     public URI convertToEntityAttribute(String dbData) {
-        return URI.create(dbData);
+        return dbData != null? URI.create(dbData): null;
     }
 }

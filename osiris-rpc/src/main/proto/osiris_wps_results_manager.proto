@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc.wps.controller";
+
+service OsirisWpsResultsManager {
+	rpc ListOutputFiles (ListWpsOutputFilesParam) returns (WpsOutputFileList);
+    rpc GetFile (GetWpsOutputFileParams) returns (stream FileStream);
+    rpc DeleteFile (DeleteWpsOutputFileParams) returns (DeleteWpsOutputFileResponse);
+}
+
+
+message ListWpsOutputFilesParam {
+    Job job = 1;
+}
+
+message WpsOutputFileList {
+    repeated WpsOutputFileItem items = 1;
+}
+
+message WpsOutputFileItem {
+	string path = 1;
+}
+
+message GetWpsOutputFileParams {
+	Job job = 1;
+    string path = 2;
+}
+
+message DeleteWpsOutputFileParams {
+	Job job = 1;
+    string path = 2;
+}
+
+message DeleteWpsOutputFileResponse {
+
+}

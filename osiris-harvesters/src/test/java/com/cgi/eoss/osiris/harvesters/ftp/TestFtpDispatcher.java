@@ -5,6 +5,25 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.cgi.eoss.osiris.harvesters.HarvestersTestConfig;
+import com.cgi.eoss.osiris.model.DownloaderCredentials;
+import com.cgi.eoss.osiris.persistence.service.DownloaderCredentialsDataService;
+import com.cgi.eoss.osiris.persistence.service.RpcCredentialsService;
+import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
+import com.cgi.eoss.osiris.rpc.CredentialsServiceGrpc;
+import com.cgi.eoss.osiris.rpc.FtpJobSpec;
+import com.cgi.eoss.osiris.rpc.FtpJobStarted;
+import com.cgi.eoss.osiris.rpc.FtpJobStopped;
+import com.cgi.eoss.osiris.rpc.Job;
+import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
+import com.cgi.eoss.osiris.rpc.NoMoreJobFtpFilesAvailable;
+import com.cgi.eoss.osiris.rpc.OsirisServerClient;
+import com.cgi.eoss.osiris.rpc.StopFtpJob;
+import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc;
+import com.cgi.eoss.osiris.rpc.worker.JobError;
+import io.grpc.Server;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,29 +42,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
-
-import com.cgi.eoss.osiris.harvesters.HarvestersConfig;
-import com.cgi.eoss.osiris.model.DownloaderCredentials;
-import com.cgi.eoss.osiris.persistence.service.DownloaderCredentialsDataService;
-import com.cgi.eoss.osiris.persistence.service.RpcCredentialsService;
-import com.cgi.eoss.osiris.queues.service.OsirisQueueService;
-import com.cgi.eoss.osiris.rpc.CredentialsServiceGrpc;
-import com.cgi.eoss.osiris.rpc.OsirisServerClient;
-import com.cgi.eoss.osiris.rpc.FtpJobSpec;
-import com.cgi.eoss.osiris.rpc.FtpJobStarted;
-import com.cgi.eoss.osiris.rpc.FtpJobStopped;
-import com.cgi.eoss.osiris.rpc.Job;
-import com.cgi.eoss.osiris.rpc.JobFtpFileAvailable;
-import com.cgi.eoss.osiris.rpc.NoMoreJobFtpFilesAvailable;
-import com.cgi.eoss.osiris.rpc.StopFtpJob;
-import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc;
-import com.cgi.eoss.osiris.rpc.worker.JobError;
-
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { HarvestersConfig.class })
+@ContextConfiguration(classes = { HarvestersTestConfig.class })
 @TestPropertySource("classpath:test-harvesters.properties")
 public class TestFtpDispatcher {
 

@@ -5,6 +5,7 @@ group 'com.cgi.eoss.osiris'
 version '0.1.0-SNAPSHOT'
 
 // This pattern allows us to override the URLs from init.gradle or gradle.properties
+ext.maven52NorthUrl = project.hasProperty('maven52NorthUrl') ? maven52NorthUrl : 'http://52north.org/maven/repo/releases/'
 ext.mavenCentralUrl = project.hasProperty('mavenCentralUrl') ? mavenCentralUrl : 'https://jcenter.bintray.com'
 ext.mavenGeosolutionsUrl = project.hasProperty('mavenGeosolutionsUrl') ? mavenGeosolutionsUrl : 'http://maven.geo-solutions.it'
 ext.mavenOsgeoUrl = project.hasProperty('mavenOsgeoUrl') ? mavenOsgeoUrl : 'http://download.osgeo.org/webdav/geotools'
@@ -19,6 +20,7 @@ allprojects {
     }
 
     repositories {
+        maven { url maven52NorthUrl }
         maven { url mavenCentralUrl }
         maven { url mavenGeosolutionsUrl }
         maven { url mavenOsgeoUrl }
@@ -96,6 +98,9 @@ allprojects {
                 entry 'protoc-gen-grpc-java'
             }
             dependency 'io.netty:netty-tcnative-boringssl-static:2.0.6.Final'
+            dependency 'io.jsonwebtoken:jjwt-api:0.10.7'
+			dependency 'io.jsonwebtoken:jjwt-impl:0.10.7'
+			dependency 'io.jsonwebtoken:jjwt-jackson:0.10.7'
             dependency 'it.geosolutions:geoserver-manager:1.7.0'
             dependency 'javax.cache:cache-api:1.0.0'
             dependency 'javax.servlet:javax.servlet-api:3.1.0'
@@ -139,7 +144,8 @@ allprojects {
             dependency 'org.apache.jclouds.api:openstack-nova:2.1.0'
             dependency 'org.apache.jclouds.api:openstack-cinder:2.1.0'
             dependency 'org.apache.jclouds.api:openstack-neutron:2.1.0'
-            dependency 'org.postgresql:postgresql:42.1.4'
+            dependency 'org.n52.wps:52n-wps-client-lib:3.6.3'
+            dependency 'org.postgresql:postgresql:42.2.0'
             dependency 'org.projectlombok:lombok:1.16.18'
             dependency 'org.quartz-scheduler:quartz:2.2.3'
             dependency 'org.seleniumhq.selenium:selenium-java:3.6.0'

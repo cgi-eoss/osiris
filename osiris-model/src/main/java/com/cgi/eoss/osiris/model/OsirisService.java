@@ -3,6 +3,7 @@ package com.cgi.eoss.osiris.model;
 import com.cgi.eoss.osiris.model.converters.OsirisServiceDescriptorYamlConverter;
 import com.cgi.eoss.osiris.model.converters.OsirisServiceDockerBuildInfoYamlConverter;
 import com.cgi.eoss.osiris.model.converters.OsirisServiceResourcesYamlConverter;
+import com.cgi.eoss.osiris.model.converters.UriStringConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ComparisonChain;
 import javax.persistence.CascadeType;
@@ -29,6 +30,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -138,6 +141,11 @@ public class OsirisService implements OsirisEntityWithOwner<OsirisService>, Sear
     @Column(name = "required_resources")
     OsirisServiceResources requiredResources;
     
+    
+    @Column(name = "external_uri")
+    @Convert(converter = UriStringConverter.class)
+    private URI externalServiceUri;
+    
     /**
      * <p>Create a new Service with the minimum required parameters.</p>
      *
@@ -165,7 +173,7 @@ public class OsirisService implements OsirisEntityWithOwner<OsirisService>, Sear
     }
 
     public enum Type {
-        PROCESSOR, BULK_PROCESSOR, APPLICATION, PARALLEL_PROCESSOR, FTP_SERVICE
+        PROCESSOR, BULK_PROCESSOR, APPLICATION, PARALLEL_PROCESSOR, FTP_SERVICE, WPS_SERVICE
     }
 
     public enum Status {

@@ -45,6 +45,11 @@ public class InProcessRpcConfig {
     public LocalFtpHarvester localFtpHarvester(ManagedChannelBuilder inProcessChannelBuilder) {
         return new LocalFtpHarvester(inProcessChannelBuilder);
     }
+    
+    @Bean
+    public LocalWpsResultsManager localWpsResultsManager(ManagedChannelBuilder inProcessChannelBuilder) {
+        return new LocalWpsResultsManager(inProcessChannelBuilder);
+    }
 
     private static final class InProcessRpcServer {
 

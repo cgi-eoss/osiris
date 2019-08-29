@@ -8,6 +8,10 @@ public interface OsirisQueueService {
     
     final static String jobUpdatesQueueName = "osiris-jobs-updates";
 
+    final static String wpsJobQueueName = "osiris-wps-jobs";
+    
+    final static String wpsJobUpdatesQueueName = "osiris-wps-jobs-updates";
+
     static final String ftpJobQueueName = "osiris-ftp-jobs";
     
     static final String ftpJobUpdatesQueueName = "osiris-ftp-job-updates";

@@ -44,6 +44,9 @@ public class RpcCredentialsService extends CredentialsServiceGrpc.CredentialsSer
             if (result.getCertificatePath() != null) {
                 credentialsBuilder.setCertificatePath(result.getCertificatePath());
             }
+            if (result.getData() != null) {
+            	credentialsBuilder.setData(result.getData());
+            }
 
             responseObserver.onNext(credentialsBuilder.build());
             responseObserver.onCompleted();

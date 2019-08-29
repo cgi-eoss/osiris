@@ -14,11 +14,14 @@ dependencies {
 	compile project(':osiris-scheduled-jobs')
 
 
+	compile 'io.jsonwebtoken:jjwt-api'
+	runtime 'io.jsonwebtoken:jjwt-impl'
+	runtime 'io.jsonwebtoken:jjwt-jackson'
+	compile 'org.n52.wps:52n-wps-client-lib'
 	compile 'org.springframework:spring-context'
     compile 'org.springframework:spring-context-support'
     compile 'org.springframework.boot:spring-boot-autoconfigure'
     compile 'org.springframework.boot:spring-boot-starter-log4j2'
-    
 	
     testCompile 'com.google.jimfs:jimfs'
     testCompile 'com.squareup.okhttp3:mockwebserver'

@@ -12,6 +12,8 @@ import com.cgi.eoss.osiris.model.Job.Status;
 import com.cgi.eoss.osiris.model.JobConfig;
 import com.cgi.eoss.osiris.model.OsirisService;
 import com.cgi.eoss.osiris.model.OsirisService.Type;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter;
+import com.cgi.eoss.osiris.model.OsirisServiceDescriptor.Parameter.DataNodeType;
 import com.cgi.eoss.osiris.model.OsirisServiceDockerBuildInfo;
 import com.cgi.eoss.osiris.model.OsirisServiceResources;
 import com.cgi.eoss.osiris.model.User;
@@ -43,6 +45,12 @@ import com.cgi.eoss.osiris.rpc.StopServiceResponse;
 import com.cgi.eoss.osiris.rpc.worker.DockerImageConfig;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc;
 import com.cgi.eoss.osiris.rpc.worker.OsirisWorkerGrpc.OsirisWorkerBlockingStub;
+import com.cgi.eoss.osiris.rpc.wps.ComplexDataWpsOutputDefinition;
+import com.cgi.eoss.osiris.rpc.wps.ComplexDataWpsParam;
+import com.cgi.eoss.osiris.rpc.wps.ExecuteWpsParams;
+import com.cgi.eoss.osiris.rpc.wps.LiteralDataWpsParam;
+import com.cgi.eoss.osiris.rpc.wps.StopWpsJob;
+import com.cgi.eoss.osiris.rpc.wps.WpsJobSpec;
 import com.cgi.eoss.osiris.security.OsirisSecurityService;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -58,6 +66,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.logging.log4j.CloseableThreadContext;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,11 +76,13 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -287,8 +299,17 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 	    case FTP_SERVICE:
 	    	stopFtpJob(rpcJob, job);
 	    	return;
-		}
+	    case WPS_SERVICE:
+	    	stopWpsJob(rpcJob, job);
+	    	return;
+	    }
 		throw new IllegalArgumentException(String.format("Unrecognized service type %s for service %s ", service.getType(), service.getName()));
+	}
+
+	private void stopWpsJob(com.cgi.eoss.osiris.rpc.Job rpcJob, Job job) {
+		StopWpsJob stopWpsJob = StopWpsJob.newBuilder().setJob(rpcJob).build();
+		enqueueJobMessage(OsirisQueueService.wpsJobQueueName, job.getId(), stopWpsJob, 1);
+		
 	}
 
 	private void stopFtpJob(com.cgi.eoss.osiris.rpc.Job rpcJob, Job job) {
@@ -552,9 +573,122 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 		case FTP_SERVICE:
 			submitFtpJob(job, rpcJob, rpcInputs, priority);
 			return;
+		case WPS_SERVICE:
+			submitWpsJob(job, rpcJob, rpcInputs, priority);
+			return;
 		}
 	}
 
+	private void submitWpsJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs, int priority) {
+		WpsJobSpec.Builder wpsJobSpecBuilder = WpsJobSpec.newBuilder();
+		ExecuteWpsParams executeWpsParams = createExecuteWpsParams(job.getConfig().getService(), rpcInputs);
+		WpsJobSpec wpsJobSpec = wpsJobSpecBuilder
+				.setExecuteWpsParams(executeWpsParams)
+				.setJob(rpcJob)
+				.build();
+		LocalDateTime jobDate = LocalDateTime.now();
+		job.setStartTime(jobDate);
+		//Temporarily sets the job end time to the start time otherwise output ingestion will fail
+		job.setEndTime(jobDate);
+		jobDataService.save(job);
+		enqueueJobMessage(OsirisQueueService.wpsJobQueueName, job.getId(), wpsJobSpec, priority);
+	}
+
+	private ExecuteWpsParams createExecuteWpsParams(OsirisService service, List<JobParam> rpcInputs) {
+		ExecuteWpsParams.Builder executeWpsParamsBuilder = ExecuteWpsParams.newBuilder();
+		URI serviceUri=service.getExternalServiceUri();
+		String wpsServerUrl;
+		String processId;
+		try {
+			wpsServerUrl = removeQueryParameter(serviceUri.toString(), "processId");
+			processId = getQueryParameter(serviceUri.toString(), "processId");
+		} catch (URISyntaxException e) {
+			throw new ServiceExecutionException("Failed to get wps uri from service");
+		}
+		executeWpsParamsBuilder.setWpsServerUrl(wpsServerUrl);
+		executeWpsParamsBuilder.setProcessId(processId);
+		executeWpsParamsBuilder.setStoreOutputs(true);
+		for (JobParam jobParam: rpcInputs) {
+			String parameterId = jobParam.getParamName();
+			List<String> paramValues = jobParam.getParamValueList();
+			Optional<Parameter> inputParameterOpt = service.getServiceDescriptor().getDataInputs().stream().filter(p -> p.getId().equals(parameterId)).findFirst();
+			if (inputParameterOpt.isPresent()){
+				Parameter inputParameter = inputParameterOpt.get();
+				DataNodeType parameterNodeType = inputParameter.getData();
+				if (parameterNodeType.equals(DataNodeType.LITERAL)) {
+					executeWpsParamsBuilder.addLiteralDataWpsParam(
+							LiteralDataWpsParam.newBuilder()
+							.setParamName(parameterId)
+							.setParamValue(paramValues.get(0))
+							.build()
+					);
+				}
+				else if (parameterNodeType.equals(DataNodeType.COMPLEX)) {
+					String mimeType = inputParameter.getDefaultAttrs().get("mimeType");
+					executeWpsParamsBuilder.addComplexDataWpsParam(
+							ComplexDataWpsParam.newBuilder()
+							.setParamName(parameterId)
+							.setMimeType(mimeType)
+							.setParamValue(paramValues.get(0))
+							.build());
+				}
+				else if (parameterNodeType.equals(DataNodeType.BOUNDING_BOX)) {
+					//TODO Handle bounding box
+				}
+			}
+			else {
+				throw new ServiceExecutionException("Unrecognized input parameter " + parameterId);
+			}
+		}
+		
+		for (Parameter outputParameter: service.getServiceDescriptor().getDataOutputs()) {
+			if (outputParameter.getData().equals(DataNodeType.COMPLEX)) {
+				String mimeType = outputParameter.getDefaultAttrs().get("mimeType");
+				String schema = outputParameter.getDefaultAttrs().get("schema");
+				String encoding = outputParameter.getDefaultAttrs().get("encoding");
+				ComplexDataWpsOutputDefinition.Builder builder = ComplexDataWpsOutputDefinition.newBuilder()
+				.setOutputName(outputParameter.getId());
+				if (mimeType != null) {
+					builder.setMimeType(mimeType);
+				}
+				if (schema != null) {
+					builder.setSchema(schema);
+				}
+				if (encoding != null) {
+					builder.setEncoding(encoding);
+				}
+				executeWpsParamsBuilder.addComplexDataWpsOutputDefinition(builder.build());
+			}
+		}
+		
+		return executeWpsParamsBuilder.build();
+	}
+
+	public String removeQueryParameter(String url, String parameterName) throws URISyntaxException {
+	    URIBuilder uriBuilder = new URIBuilder(url);
+	    List<NameValuePair> queryParameters = uriBuilder.getQueryParams();
+	    for (Iterator<NameValuePair> queryParameterItr = queryParameters.iterator(); queryParameterItr.hasNext();) {
+	        NameValuePair queryParameter = queryParameterItr.next();
+	        if (queryParameter.getName().equals(parameterName)) {
+	            queryParameterItr.remove();
+	        }
+	    }
+	    uriBuilder.setParameters(queryParameters);
+	    return uriBuilder.build().toString();
+	}
+	
+	public String getQueryParameter(String url, String parameterName) throws URISyntaxException {
+	    URIBuilder uriBuilder = new URIBuilder(url);
+	    List<NameValuePair> queryParameters = uriBuilder.getQueryParams();
+	    for (Iterator<NameValuePair> queryParameterItr = queryParameters.iterator(); queryParameterItr.hasNext();) {
+	        NameValuePair queryParameter = queryParameterItr.next();
+	        if (queryParameter.getName().equals(parameterName)) {
+	            return queryParameter.getValue();
+	        }
+	    }
+		return null;
+	}
+	
 	private void submitFtpJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs, int priority) {
 		Builder ftpJobSpecBuilder = FtpJobSpec.newBuilder();
 		ftpJobSpecBuilder.setJob(rpcJob);
@@ -563,6 +697,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 		FtpJobSpec ftpJobSpec = ftpJobSpecBuilder.setFtpRootUri(ftpRootUri).build();
 		LocalDateTime jobDate = LocalDateTime.now();
 		job.setStartTime(jobDate);
+		//Temporarily sets the job end time to the start time otherwise output ingestion will fail
 		job.setEndTime(jobDate);
 		jobDataService.save(job);
 		enqueueJobMessage(OsirisQueueService.ftpJobQueueName, job.getId(), ftpJobSpec, priority);

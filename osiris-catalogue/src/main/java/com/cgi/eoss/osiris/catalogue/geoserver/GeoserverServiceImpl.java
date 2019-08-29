@@ -148,7 +148,7 @@ public class GeoserverServiceImpl implements GeoserverService {
             	return new GeoserverLayer(null, workspace, datastoreName, coverageName, StoreType.GEOTIFF);
             } 
             case MOSAIC: {
-            	ingestCoverageInMosaic(workspace, path, srs, datastoreName, coverageName);
+            	ingestCoverageInMosaic(workspace, path, srs, datastoreName, coverageName, style);
             	return new GeoserverLayer(null, workspace, datastoreName, coverageName, StoreType.MOSAIC);
             }	
             case SHAPEFILE_POSTGIS_IMPORT: { 
@@ -198,7 +198,7 @@ public class GeoserverServiceImpl implements GeoserverService {
         }
     }
     
-    private String ingestCoverageInMosaic(String workspace, Path path, String crs, String datastoreName, String coverageName) {
+    private String ingestCoverageInMosaic(String workspace, Path path, String crs, String datastoreName, String coverageName, String style) {
         Path fileName = path.getFileName();
         if (!geoserverEnabled) {
             LOG.warn("Geoserver is disabled; 'ingested' file: {}:{}", workspace, datastoreName);
@@ -218,6 +218,9 @@ public class GeoserverServiceImpl implements GeoserverService {
             if (coverageName != null) {
                 mosaicManager.createCoverageIfNotExists(workspace, datastoreName, coverageName);
             }
+            if (style != null) {
+            	setLayerStyle(workspace, coverageName, style);
+            }
             LOG.info("Ingested GeoTIFF to geoserver with id: {}:{}", workspace, datastoreName);
             LOG.info("Reloading GeoServer configuration");
             publisher.reload();
@@ -228,7 +231,15 @@ public class GeoserverServiceImpl implements GeoserverService {
         }
     }
 
-    @Override
+    private void setLayerStyle(String workspace, String coverageName, String style) {
+    	final GSLayerEncoder layerEncoder = new GSLayerEncoder();
+        layerEncoder.addStyle(style);
+        layerEncoder.setDefaultStyle(style);
+    	publisher.configureLayer(workspace, coverageName, layerEncoder);
+		
+	}
+
+	@Override
     public boolean isIngestibleFile(String filename) {
         return ingestableFiletypes.stream().anyMatch(ft -> filename.toUpperCase().endsWith("." + ft.toUpperCase()));
     }

@@ -5,7 +5,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.cgi.eoss.osiris.harvesters.HarvestersConfig;
+import com.cgi.eoss.osiris.harvesters.HarvestersTestConfig;
 import com.cgi.eoss.osiris.model.DownloaderCredentials;
 import com.cgi.eoss.osiris.persistence.service.DownloaderCredentialsDataService;
 import com.cgi.eoss.osiris.persistence.service.RpcCredentialsService;
@@ -35,7 +35,7 @@ import java.net.URI;
 import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {HarvestersConfig.class})
+@ContextConfiguration(classes = {HarvestersTestConfig.class})
 @TestPropertySource("classpath:test-harvesters.properties")
 public class TestFtpHarvesterService {
 	

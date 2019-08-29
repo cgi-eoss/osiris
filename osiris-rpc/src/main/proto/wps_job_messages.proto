@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package com.cgi.eoss.osiris;
+
+import "common_messages.proto";
+
+option java_multiple_files = true;
+option java_package = "com.cgi.eoss.osiris.rpc.wps";
+
+
+message WpsJobSpec {
+	Job job = 1;
+	ExecuteWpsParams executeWpsParams = 2;
+}
+
+message StopWpsJob {
+	Job job = 1;
+}
+
+message WpsJobStopped {
+	Job job = 1;
+}
+
+message WpsJobOutputsAvailable {
+	Job job = 1;
+}
+
+message WpsJobStatusUpdate{
+	Job job = 1;
+	WpsJobStatus status = 2;
+}
+
+
+message ExecuteWpsParams {
+    string wpsServerUrl = 1;
+    string processId = 2;
+    repeated LiteralDataWpsParam literalDataWpsParam = 3;
+    repeated ComplexDataWpsParam complexDataWpsParam = 4;
+    repeated BoundingBoxDataWpsParam boundingBoxDataWpsParam = 5;
+    repeated ComplexDataWpsOutputDefinition complexDataWpsOutputDefinition = 6;
+    bool storeOutputs = 7;
+}
+
+message ComplexDataWpsParam {
+    string paramName = 1;
+    string paramValue = 2;
+    string mimeType = 3;
+    string encoding = 4;
+    string schema = 5;
+}
+
+message LiteralDataWpsParam {
+    string paramName = 1;
+    string paramValue = 2;
+    string dataType = 3;
+    string uom = 4;
+}
+
+message BoundingBoxDataWpsParam {
+    string paramName = 1;
+    string lowerCorner = 2;
+    string upperCorner = 3;
+    string crs = 4;
+    int32 dimensions=5;
+}
+
+message ComplexDataWpsOutputDefinition {
+    string outputName = 1;
+    string mimeType = 2;
+    string encoding = 3;
+    string schema = 4;
+}
+message DismissWpsJobParams{
+	string jobId = 1;
+}
+
+message ExecuteWpsProcessResponse{
+	string jobId = 1;
+}
+
+
+message DismissWpsJobResponse{
+	string jobId = 1;
+}
+
+message GetWpsJobStatusParams{
+	string statusLocation = 1;
+}
+
+
+message WpsJobStatusResponse{
+	WpsJobStatus jobStatus = 1;
+}
+
+enum WpsJobStatus{
+	ACCEPTED = 0;
+	STARTED = 1;
+	PAUSED = 2;
+	SUCCEEDED =3;
+	FAILED = 4;
+}

@@ -69,16 +69,16 @@ public class OsirisFtpJobUpdatesDispatcher {
     @JmsListener(containerFactory = "rateLimitedJmsListenerContainerFactory", destination = OsirisQueueService.ftpJobUpdatesQueueName, selector = "messageType = 'FTPFileAvailable'", concurrency = "1-1")
     public void receiveFtpFileAvailable(@Payload ObjectMessage objectMessage, @Headers Map<String, Object> headers){
 		Job job = jobDataService.reload(Long.parseLong((String) headers.get("jobId")));
-        JobFtpFileAvailable jobFtpFileAvailable;
         Object messageObject;
 		try {
 			messageObject = objectMessage.getObject();
 			LOG.debug("Received message of class {} for job {}", messageObject.getClass(), job.getId());
 			if (messageObject instanceof JobFtpFileAvailable) {
-				jobFtpFileAvailable = (JobFtpFileAvailable) messageObject;
+				JobFtpFileAvailable jobFtpFileAvailable = (JobFtpFileAvailable) messageObject;
     			osirisFtpJobUpdatesManager.onJobFtpFileAvailable(job, jobFtpFileAvailable.getFtpRoot(), URI.create(jobFtpFileAvailable.getFileUri()));
 			}
 			else if (messageObject instanceof NoMoreJobFtpFilesAvailable) {
+				LOG.debug("Completing FTP Job {}", job.getId());
 				osirisFtpJobUpdatesManager.onJobCompleted(job);
 			}
 		} catch (JMSException e) {
