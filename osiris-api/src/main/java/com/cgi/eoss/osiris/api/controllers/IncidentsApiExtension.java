@@ -142,7 +142,7 @@ public class IncidentsApiExtension {
         inputs.replaceValues(GEOSERVER_INPUT, Collections.singletonList(objectMapper.writeValueAsString(geoserverSpecMap)));
         
         //Here we launch a job or a systematic processing 
-        if (!Strings.isNullOrEmpty(incidentProcessing.getTemplate().getCronExpression()) || !incidentProcessing.getTemplate().getSearchParameters().isEmpty()) {
+        if (!Strings.isNullOrEmpty(incidentProcessing.getTemplate().getCronExpression()) || !isEmpty(incidentProcessing.getTemplate().getSearchParameters())) {
         	launchSystematicIncidentProcessing(incidentProcessing, inputs);
         }
         else {
@@ -151,6 +151,10 @@ public class IncidentsApiExtension {
         incidentProcessingDataService.save(incidentProcessing);
     }
 	
+	private boolean isEmpty(ListMultimap<String, String> searchParameters) {
+		return (searchParameters == null || searchParameters.isEmpty());
+	}
+
 	private void launchSingleJobIncidentProcessing(IncidentProcessing incidentProcessing,
 			Multimap<String, String> inputs) throws InterruptedException {
 		OsirisServiceParams.Builder serviceParamsBuilder = OsirisServiceParams.newBuilder()
@@ -271,6 +275,9 @@ public class IncidentsApiExtension {
 	}
 
 	private String replacePlaceholder(Incident incident, String value) {
+		if (value == null) {
+			return null;
+		}
 		switch (value) {
 		case "incident.aoi":
 			return incident.getAoi();
