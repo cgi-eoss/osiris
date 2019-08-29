@@ -50,7 +50,9 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
         if(!ftpRoot.endsWith("/")) {
             ftpRoot = ftpRoot + "/";
         }
-        return harvestDirectory(ftpClient, ftpRootUri, ftpRoot, start);
+        List<FileItem> files = harvestDirectory(ftpClient, ftpRootUri, ftpRoot, start);
+        ftpClient.disconnect();
+        return files;
     }
     
     private List<FileItem> harvestDirectory(FTPClient ftpClient, URI ftpRootUri, String directory, Instant start) throws IOException {
@@ -163,6 +165,7 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
             throw new FileNotFoundException ("Cannot find file");
         }
         ftpClient.deleteFile(fileName.toString());
+        ftpClient.disconnect();
         LOG.info("Deleted file {}", fileUri);
     	
     }
