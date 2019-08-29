@@ -1,8 +1,13 @@
 package com.cgi.eoss.osiris.catalogue.util;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+
+import org.geojson.LngLatAlt;
+import org.geojson.Point;
+import org.geojson.Polygon;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -10,19 +15,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import org.apache.commons.io.FilenameUtils;
-import org.geojson.LngLatAlt;
-import org.geojson.Point;
-import org.geojson.Polygon;
-import org.junit.Before;
-import org.junit.Test;
 /**
  */
 public class GeoUtilTest {
@@ -150,9 +147,10 @@ public class GeoUtilTest {
     @Test
     public void testDuplicateShapefileAddAttribute() throws Exception {
         Map<String, Object> newAttributes = new HashMap<>();
-        newAttributes.put("newAttribute", 200);
-        Path duplicateFile = GeoUtil.duplicateShapeFile(shapefilePolygon, "test", newAttributes, true);
-        try (ZipFile zipFile = new ZipFile(shapefilePolygon.toFile()); ZipFile newZipFile = new ZipFile(duplicateFile.toFile())) {
+        newAttributes.put("newAttr", 200);
+        List<Path> duplicateFile = GeoUtil.duplicateShapeFile(shapefilePolygon, "test", newAttributes, true);
+        assertThat(duplicateFile.size(), is (1));
+        try (ZipFile zipFile = new ZipFile(shapefilePolygon.toFile()); ZipFile newZipFile = new ZipFile(duplicateFile.get(0).toFile())) {
             ArrayList<? extends ZipEntry> originalZipEntries = Collections.list(zipFile.entries());
             ArrayList<? extends ZipEntry> newZipEntries = Collections.list(newZipFile.entries());
             Map<String, ZipEntry> originalZipEntriesMap = originalZipEntries.stream().collect(Collectors.toMap(z -> z.getName(), z-> z));

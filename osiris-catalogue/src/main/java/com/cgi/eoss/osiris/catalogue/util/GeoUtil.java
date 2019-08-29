@@ -1,27 +1,22 @@
 package com.cgi.eoss.osiris.catalogue.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.io.Serializable;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPoint;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.PrecisionModel;
+import com.vividsolutions.jts.io.WKTReader;
+import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.geojson.GeoJsonObject;
 import org.geojson.LngLatAlt;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
@@ -50,6 +45,7 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.geometry.text.WKTParser;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.filter.Filter;
@@ -61,20 +57,27 @@ import org.opengis.geometry.primitive.Point;
 import org.opengis.geometry.primitive.Surface;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.MultiPoint;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.io.WKTReader;
-
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  * <p>Utility methods for dealing with geo-spatial data and its various java libraries.</p>
@@ -82,7 +85,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @UtilityClass
 public class GeoUtil {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final int SHAPEFILE_MAX_FIELD_NAME_LENGTH = 10;
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(),4326);
 
@@ -420,85 +425,115 @@ public class GeoUtil {
         throw new UnsupportedOperationException("Could not extract CRS from " + file.toString());
     }
 	
-	public static Path duplicateShapeFile(Path shapeFile, String newName, Map<String, Object> newAttributes, boolean zipResult) throws IOException {
-	    Path targetFolder = Files.createTempDirectory("target");
-	    Path targetShapeFilePath = targetFolder.resolve(newName + ".shp");
+	public static List<Path> duplicateShapeFile(Path shapeFile, String newName, Map<String, Object> newAttributes, boolean zipResult) throws IOException {
 	    if (isZip(shapeFile)) {
 	        Path tmpFolder = Files.createTempDirectory("shape");
 	        Path temp = unzipInTempFolder(shapeFile, tmpFolder);
-	        Optional<Path> shapeFileInFolder = Files.find(temp, 5, (path, attr) -> FilenameUtils.getExtension(path.getFileName().toString()).equalsIgnoreCase("shp")).findFirst();
-	        if (shapeFileInFolder.isPresent()) {
-	            duplicateShapeFile(shapeFileInFolder.get(), targetShapeFilePath, newAttributes);
+	        Stream<Path> shapeFilesInFolder = Files.find(temp, 5, (path, attr) -> FilenameUtils.getExtension(path.getFileName().toString()).equalsIgnoreCase("shp"));
+	        List<Path> results = new ArrayList<>();
+	        try {
+	        	shapeFilesInFolder.forEach(shapeFileInFolder -> results.add(duplicateSingleShapeFile(shapeFileInFolder, newName, newAttributes, zipResult)));
+	        }	
+	        catch (Exception e){
+	        	throw new IOException(e);
 	        }
+	        finally {
+	        	shapeFilesInFolder.close();
+	        }
+	        return results;
+	    }
+	    else {
+	    	Path targetFolder = Files.createTempDirectory("target");
+		    Path targetShapeFilePath = targetFolder.resolve(newName + ".shp");
+		    duplicateShapeFile(shapeFile, targetShapeFilePath, newAttributes);
+	        if (zipResult) {
+		        return ImmutableList.of(zipShapefile(targetFolder, targetShapeFilePath));
+		    }
 	        else {
-	            throw new IOException("Shapefile not found");
+	        	return  ImmutableList.of(targetShapeFilePath);
 	        }
-        }
-	    else {
-	        duplicateShapeFile(shapeFile, targetShapeFilePath, newAttributes);
-	    }
-       
-	    if (zipResult) {
-	        File[] files = targetShapeFilePath.getParent().toFile().listFiles();
-	        File zipFile = new File(targetShapeFilePath.getParent().toFile(), targetFolder.getFileName() + ".zip");
-            FileOutputStream fos = new FileOutputStream(zipFile);
-            ZipOutputStream zos = new ZipOutputStream(fos);
-            for (final File f : files) {
-                try {
-                    ZipEntry zipEntry = new ZipEntry(f.getName());
-                    zos.putNextEntry(zipEntry);
-                    byte[] bytes = new byte[1024];
-                    int length;
-                    FileInputStream fis = new FileInputStream(f);
-                    while ((length = fis.read(bytes)) >= 0) {
-                        zos.write(bytes, 0, length);
-                    }
-                    zos.closeEntry();
-                    fis.close();
-                } catch (Exception e) {
-                    // TODO: handle exception
-                    e.printStackTrace();
-                }
-            }
-            zos.close();
-            fos.close();
-            return zipFile.toPath();
-	    }
-	    else {
-	        return targetShapeFilePath;
 	    }
     }
+	
+	Path duplicateSingleShapeFile(Path shapeFile, String newName, Map<String, Object> newAttributes, boolean zipResult) {
+		Path targetFolder;
+		try {
+			targetFolder = Files.createTempDirectory("target");
+			Path targetShapeFilePath = targetFolder.resolve(newName + ".shp");
+		    duplicateShapeFile(shapeFile, targetShapeFilePath, newAttributes);
+		    if (zipResult) {
+		        return zipShapefile(targetFolder, targetShapeFilePath);
+		    }
+	        else {
+	        	return targetShapeFilePath;
+	        }
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static Path zipShapefile(Path targetFolder, Path targetShapeFilePath)
+			throws FileNotFoundException, IOException {
+		File[] files = targetShapeFilePath.getParent().toFile().listFiles();
+		File zipFile = new File(targetShapeFilePath.getParent().toFile(), targetFolder.getFileName() + ".zip");
+		FileOutputStream fos = new FileOutputStream(zipFile);
+		ZipOutputStream zos = new ZipOutputStream(fos);
+		for (final File f : files) {
+		    try {
+		        ZipEntry zipEntry = new ZipEntry(f.getName());
+		        zos.putNextEntry(zipEntry);
+		        byte[] bytes = new byte[1024];
+		        int length;
+		        FileInputStream fis = new FileInputStream(f);
+		        while ((length = fis.read(bytes)) >= 0) {
+		            zos.write(bytes, 0, length);
+		        }
+		        zos.closeEntry();
+		        fis.close();
+		    } catch (Exception e) {
+		        // TODO: handle exception
+		        e.printStackTrace();
+		    }
+		}
+		zos.close();
+		fos.close();
+		return zipFile.toPath();
+	}
 	
 	public static void duplicateShapeFile(Path shapeFile, Path newShapeFile, Map<String, Object> newAttributes) throws IOException {
         ShapefileDataStore sourceStore = new ShapefileDataStore(shapeFile.toUri().toURL());
         ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        Map<String, Serializable> params = new HashMap<>();
         params.put("url", newShapeFile.toUri().toURL());
         params.put("create spatial index", Boolean.FALSE);
         ShapefileDataStore targetStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
         targetStore.setFidIndexed(false);
-        //FeatureStore featureStore = (FeatureStore) targetStore.getFeatureSource();
-        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-        builder.init(sourceStore.getSchema());
+        SimpleFeatureTypeBuilder featureTypeBuilder = new SimpleFeatureTypeBuilder();
+        featureTypeBuilder.init(sourceStore.getSchema());
         for (Entry<String, Object> newAttribute: newAttributes.entrySet()) {
             if (newAttribute.getValue() instanceof UUID) {
                 AttributeTypeBuilder attributeBuilder = new AttributeTypeBuilder();
                 attributeBuilder.setNillable(true);
                 attributeBuilder.setBinding(String.class);
                 attributeBuilder.setLength(36);
-                builder.add(attributeBuilder.buildDescriptor( newAttribute.getKey()));
+                featureTypeBuilder.add(attributeBuilder.buildDescriptor( newAttribute.getKey()));
             }
             else {
-                builder.add(newAttribute.getKey(), newAttribute.getValue().getClass());
+                featureTypeBuilder.add(newAttribute.getKey(), newAttribute.getValue().getClass());
             }
         }
-        SimpleFeatureType targetFeatureType = builder.buildFeatureType();
+        SimpleFeatureType targetFeatureType = featureTypeBuilder.buildFeatureType();
         targetStore.createSchema(targetFeatureType);
+        //Reload schema, after creation truncation might have happened
+        targetFeatureType = targetStore.getSchema(FilenameUtils.removeExtension(newShapeFile.getFileName().toString()));
         SimpleFeatureIterator sourceFeatures = sourceStore.getFeatureSource().getFeatures().features();
         DefaultFeatureCollection targetCollection = new DefaultFeatureCollection(null,null);
         while (sourceFeatures.hasNext()) {
             SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(targetFeatureType);
-            featureBuilder.init(sourceFeatures.next());
+            SimpleFeature sourceFeature = sourceFeatures.next();
+            for (Property sourceProperty: sourceFeature.getProperties()) {
+            	featureBuilder.set(StringUtils.substring(sourceProperty.getName().getLocalPart(), 0, SHAPEFILE_MAX_FIELD_NAME_LENGTH), sourceProperty.getValue());
+            }
             for (Entry<String, Object> newAttribute: newAttributes.entrySet()) {
                 featureBuilder.set(newAttribute.getKey(), newAttribute.getValue());
             }

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -78,7 +79,7 @@ public class GeoserverServiceImpl implements GeoserverService {
     @Autowired
     public GeoserverServiceImpl(@Value("${osiris.catalogue.geoserver.url:http://osiris-geoserver:9080/geoserver/}") String url,
             @Value("${osiris.catalogue.geoserver.externalUrl:http://osiris-geoserver:9080/geoserver/}") String externalUrl,
-            @Value("#{'${osiris.catalogue.geoserver.ingest-filetypes:TIF}'.split(',')}") Set<String> ingestableFiletypes,
+            @Value("#{'${osiris.catalogue.geoserver.ingest-filetypes:TIF,TIFF}'.split(',')}") Set<String> ingestableFiletypes,
             @Value("${osiris.catalogue.geoserver.username:osirisgeoserver}") String username,
             @Value("${osiris.catalogue.geoserver.password:osirisgeoserverpass}") String password,
             @Value("${osiris.catalogue.geoserver.postgisHost:osirisdb}") String postgisHost,
@@ -313,9 +314,11 @@ public class GeoserverServiceImpl implements GeoserverService {
 			//Add a column to trace back to file (using the id)
 			Map<String, Object> newAttributes = new HashMap<>();
 			newAttributes.put("osiris_id", id);
-			Path transformedShapeFile = GeoUtil.duplicateShapeFile(path, layerName, newAttributes, true);
-			String taskUrl = importer.addShapeFileToImport(transformedShapeFile, importUrl);
-			setTaskUpdateMode(taskUrl, layerName, updateMode);
+			List<Path> transformedShapeFiles = GeoUtil.duplicateShapeFile(path, layerName, newAttributes, true);
+			for (Path transformedShapeFile: transformedShapeFiles) {
+				String taskUrl = importer.addShapeFileToImport(transformedShapeFile, importUrl);
+				setTaskUpdateMode(taskUrl, layerName, updateMode);
+			}
 			importer.runImport(importUrl);
 			return importUrl;
 		} catch (IOException e) {
