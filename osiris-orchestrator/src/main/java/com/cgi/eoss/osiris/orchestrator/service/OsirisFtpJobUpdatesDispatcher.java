@@ -54,6 +54,7 @@ public class OsirisFtpJobUpdatesDispatcher {
         Serializable update = null;
         try {
         	update = objectMessage.getObject();
+        	LOG.debug("Received update of class {} for job {}", update.getClass(), internalJobId);
         	if (update instanceof FtpJobStopped) {
         		osirisFtpJobUpdatesManager.onJobStopped(job);
         	}
@@ -67,11 +68,12 @@ public class OsirisFtpJobUpdatesDispatcher {
     
     @JmsListener(containerFactory = "rateLimitedJmsListenerContainerFactory", destination = OsirisQueueService.ftpJobUpdatesQueueName, selector = "messageType = 'FTPFileAvailable'", concurrency = "1-1")
     public void receiveFtpFileAvailable(@Payload ObjectMessage objectMessage, @Headers Map<String, Object> headers){
-    	Job job = jobDataService.reload(Long.parseLong((String) headers.get("jobId")));
+		Job job = jobDataService.reload(Long.parseLong((String) headers.get("jobId")));
         JobFtpFileAvailable jobFtpFileAvailable;
         Object messageObject;
 		try {
 			messageObject = objectMessage.getObject();
+			LOG.debug("Received message of class {} for job {}", messageObject.getClass(), job.getId());
 			if (messageObject instanceof JobFtpFileAvailable) {
 				jobFtpFileAvailable = (JobFtpFileAvailable) messageObject;
     			osirisFtpJobUpdatesManager.onJobFtpFileAvailable(job, jobFtpFileAvailable.getFtpRoot(), URI.create(jobFtpFileAvailable.getFileUri()));

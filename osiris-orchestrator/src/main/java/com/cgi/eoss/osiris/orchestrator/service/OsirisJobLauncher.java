@@ -219,6 +219,7 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
                     submitSingleJob(userId, rpcInputs, job, rpcJob);
                 }
             }
+            responseObserver.onCompleted();
 
         } catch (Exception e) {
             if (job != null) {
@@ -560,11 +561,11 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 		Multimap<String, String> inputs = GrpcUtil.paramsListToMap(rpcInputs);
 		String ftpRootUri = Iterables.getOnlyElement(inputs.get("ftpRootUri"), null);
 		FtpJobSpec ftpJobSpec = ftpJobSpecBuilder.setFtpRootUri(ftpRootUri).build();
-		enqueueJobMessage(OsirisQueueService.ftpJobQueueName, job.getId(), ftpJobSpec, priority);
 		LocalDateTime jobDate = LocalDateTime.now();
 		job.setStartTime(jobDate);
 		job.setEndTime(jobDate);
 		jobDataService.save(job);
+		enqueueJobMessage(OsirisQueueService.ftpJobQueueName, job.getId(), ftpJobSpec, priority);
 	}
 
 	private void submitApplicationJob(Job job, com.cgi.eoss.osiris.rpc.Job rpcJob, List<JobParam> rpcInputs,

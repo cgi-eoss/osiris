@@ -31,11 +31,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-
-import javax.security.auth.login.FailedLoginException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {HarvestersConfig.class})
@@ -97,7 +94,7 @@ public class TestFtpHarvesterService {
 	}
 	
 	@Test
-	public void testHarvestFiles() throws FailedLoginException, IOException {
+	public void testHarvestFiles() throws FtpHarvesterException {
 		URI ftpRootUri = URI.create("ftp://127.0.0.1:" + fakeFtpServer.getServerControlPort() + "/test_ftp_root");
 		List<FileItem> results = ftpHarvesterService.harvestFiles(ftpRootUri, null);
 		assertThat(results.size(), is(2)); 

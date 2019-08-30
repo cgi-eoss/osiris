@@ -315,9 +315,11 @@ public class GeoserverServiceImpl implements GeoserverService {
 			Map<String, Object> newAttributes = new HashMap<>();
 			newAttributes.put("osiris_id", id);
 			List<Path> transformedShapeFiles = GeoUtil.duplicateShapeFile(path, layerName, newAttributes, true);
+			boolean first = true;
 			for (Path transformedShapeFile: transformedShapeFiles) {
 				String taskUrl = importer.addShapeFileToImport(transformedShapeFile, importUrl);
-				setTaskUpdateMode(taskUrl, layerName, updateMode);
+				setTaskUpdateMode(taskUrl, layerName, updateMode, first);
+				first = false;
 			}
 			importer.runImport(importUrl);
 			return importUrl;
@@ -326,19 +328,19 @@ public class GeoserverServiceImpl implements GeoserverService {
 		}
 	}
 	
-	private void setTaskUpdateMode(String taskUrl, String layerName, UpdateMode updateMode) throws JsonProcessingException {
+	private void setTaskUpdateMode(String taskUrl, String layerName, UpdateMode updateMode, boolean first) throws JsonProcessingException {
     	switch(updateMode) {
     		case CREATE:
     			//Create is the default task update mode
     			return;
     		case REPLACE:
-    			if (importer.existsFeatureType(postgisWorkspace, postgisStore, layerName)) {
+    			if (!first || importer.existsFeatureType(postgisWorkspace, postgisStore, layerName)) {
     				importer.setTaskUpdateMode(taskUrl, GeoserverImportTask.UpdateMode.REPLACE);
     			}
     			return;
     		case APPEND:
     			default:
-    			if (importer.existsFeatureType(postgisWorkspace, postgisStore, layerName)) {
+    			if (!first || importer.existsFeatureType(postgisWorkspace, postgisStore, layerName)) {
     				importer.setTaskUpdateMode(taskUrl, GeoserverImportTask.UpdateMode.APPEND);
     			}
     			return;

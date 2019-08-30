@@ -8,31 +8,30 @@ import com.cgi.eoss.osiris.rpc.ftp.harvester.FileList;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.GetFileParams;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.HarvestFilesParams;
 import com.cgi.eoss.osiris.rpc.ftp.harvester.OsirisFtpHarvesterGrpc;
+import com.cgi.eoss.osiris.rpc.ftp.harvester.OsirisFtpHarvesterGrpc.OsirisFtpHarvesterStub;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 public class LocalFtpHarvester {
-    private final ManagedChannelBuilder inProcessChannelBuilder;
-
-    public LocalFtpHarvester(ManagedChannelBuilder inProcessChannelBuilder) {
-        this.inProcessChannelBuilder = inProcessChannelBuilder;
+	
+	OsirisFtpHarvesterStub ftpHarvester;
+    
+	public LocalFtpHarvester(ManagedChannelBuilder inProcessChannelBuilder) {
+		ftpHarvester = OsirisFtpHarvesterGrpc.newStub(inProcessChannelBuilder.build());
     }
     
     @Async
     public void asyncHarvestFile(HarvestFilesParams harvestFileParams, StreamObserver<FileList> responseObserver) {
-        OsirisFtpHarvesterGrpc.OsirisFtpHarvesterStub ftpHarvester = OsirisFtpHarvesterGrpc.newStub(inProcessChannelBuilder.build());
         ftpHarvester.harvestFiles(harvestFileParams, responseObserver);
     }
     
     @Async
     public void asyncGetFile(GetFileParams getFileParams, StreamObserver<FileStream> responseObserver) {
-        OsirisFtpHarvesterGrpc.OsirisFtpHarvesterStub ftpHarvester = OsirisFtpHarvesterGrpc.newStub(inProcessChannelBuilder.build());
         ftpHarvester.getFile(getFileParams, responseObserver);
     }
     
     @Async
     public void asyncDeleteFile(DeleteFileParams deleteFileParams, StreamObserver<DeleteFileResponse> responseObserver) {
-        OsirisFtpHarvesterGrpc.OsirisFtpHarvesterStub ftpHarvester = OsirisFtpHarvesterGrpc.newStub(inProcessChannelBuilder.build());
         ftpHarvester.deleteFile(deleteFileParams, responseObserver);
     }
 

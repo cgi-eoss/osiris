@@ -1,33 +1,51 @@
 package com.cgi.eoss.osiris.rpc;
 
+import com.cgi.eoss.osiris.rpc.CredentialsServiceGrpc.CredentialsServiceBlockingStub;
+import com.cgi.eoss.osiris.rpc.ServiceContextFilesServiceGrpc.ServiceContextFilesServiceBlockingStub;
 import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc;
-import io.grpc.ManagedChannel;
+import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc.CatalogueServiceBlockingStub;
+import com.cgi.eoss.osiris.rpc.catalogue.CatalogueServiceGrpc.CatalogueServiceStub;
+import io.grpc.Channel;
 
 public class OsirisServerClient {
 	
-	private final ManagedChannelProvider managedChannelProvider;
-
+	private final Channel channel;
+	private ServiceContextFilesServiceBlockingStub serviceContextFilesServiceBlockingStub; 
+	private CredentialsServiceBlockingStub credentialsServiceBlockingStub;
+	private CatalogueServiceBlockingStub catalogueServiceBlockingStub;
+	private CatalogueServiceStub catalogueServiceStub;
+	
+	
     public OsirisServerClient(ManagedChannelProvider managedChannelProvider) {
-        this.managedChannelProvider = managedChannelProvider;
+       channel = managedChannelProvider.getChannel();
     }
 
     public ServiceContextFilesServiceGrpc.ServiceContextFilesServiceBlockingStub serviceContextFilesServiceBlockingStub() {
-        return ServiceContextFilesServiceGrpc.newBlockingStub(getChannel());
+    	if (serviceContextFilesServiceBlockingStub == null) {
+    		serviceContextFilesServiceBlockingStub = ServiceContextFilesServiceGrpc.newBlockingStub(channel);
+        } 	
+		return serviceContextFilesServiceBlockingStub;
     }
 
     public CredentialsServiceGrpc.CredentialsServiceBlockingStub credentialsServiceBlockingStub() {
-        return CredentialsServiceGrpc.newBlockingStub(getChannel());
+        if (credentialsServiceBlockingStub == null) {
+        	credentialsServiceBlockingStub = CredentialsServiceGrpc.newBlockingStub(channel);
+        } 	
+		return credentialsServiceBlockingStub;
     }
 
     public CatalogueServiceGrpc.CatalogueServiceBlockingStub catalogueServiceBlockingStub() {
-        return CatalogueServiceGrpc.newBlockingStub(getChannel());
+    	if (catalogueServiceBlockingStub == null) {
+    		catalogueServiceBlockingStub = CatalogueServiceGrpc.newBlockingStub(channel);
+        } 	
+		return catalogueServiceBlockingStub;
     }
     
     public CatalogueServiceGrpc.CatalogueServiceStub catalogueServiceStub() {
-        return CatalogueServiceGrpc.newStub(getChannel());
+    	if (catalogueServiceStub == null) {
+    		catalogueServiceStub = CatalogueServiceGrpc.newStub(channel);
+        } 	
+		return catalogueServiceStub;
     }
 
-    private ManagedChannel getChannel() {
-    	return managedChannelProvider.getChannel();
-    }
 }

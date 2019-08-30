@@ -1,21 +1,14 @@
 package com.cgi.eoss.osiris.harvesters.ftp;
 
-import com.cgi.eoss.osiris.rpc.Credentials;
-import com.cgi.eoss.osiris.rpc.GetCredentialsParams;
-import com.cgi.eoss.osiris.rpc.OsirisServerClient;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPFile;
-import org.apache.commons.net.ftp.FTPSClient;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.FileNotFoundException;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -23,53 +16,60 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.security.auth.login.FailedLoginException;
 
 @Component
 @Log4j2
 public class FtpHarvesterServiceImpl implements FtpHarvesterService{
     
 	
-	private OsirisServerClient osirisServerClient;
 	private Set<String> excludedExtensions;
-
+	private FtpClientPools ftpClientPools;
+	
 	@Autowired
-	public FtpHarvesterServiceImpl(OsirisServerClient osirisServerClient, @Value("#{'${osiris.harvesters.excludedExtensions:.temp}'.split(',')}") Set<String> excludedExtensions) {
-		this.osirisServerClient = osirisServerClient;
+	public FtpHarvesterServiceImpl(FtpClientPools ftpClientPools, @Value("#{'${osiris.harvesters.excludedExtensions:.temp}'.split(',')}") Set<String> excludedExtensions) {
 		this.excludedExtensions = excludedExtensions;
+		this.ftpClientPools = ftpClientPools;
 	}
 	
 	@Override
-    public List<FileItem> harvestFiles(URI ftpRootUri, Instant start) throws IOException, FailedLoginException {
-    	FTPClient ftpClient = getFtpClient(ftpRootUri);
+    public List<FileItem> harvestFiles(URI ftpRootUri, Instant start) throws FtpHarvesterException {
+    	FTPClient ftpClient = ftpClientPools.getFtpClient(ftpRootUri);
+    	LOG.debug("Got client from pool - is connected: {}", ftpClient.isConnected());
     	String ftpRoot = ftpRootUri.getPath();
         if(!ftpRoot.endsWith("/")) {
             ftpRoot = ftpRoot + "/";
         }
-        List<FileItem> files = harvestDirectory(ftpClient, ftpRootUri, ftpRoot, start);
-        ftpClient.disconnect();
-        return files;
+		try {
+			 return harvestDirectory(ftpClient, ftpRootUri, ftpRoot, start);
+		} catch (IOException e) {
+			throw new FtpHarvesterException(e);
+		}
+		finally {
+			ftpClientPools.releaseFtpClient(ftpRootUri, ftpClient);
+		}
+       
     }
     
     private List<FileItem> harvestDirectory(FTPClient ftpClient, URI ftpRootUri, String directory, Instant start) throws IOException {
-        boolean cwd = ftpClient.changeWorkingDirectory(directory);
+    	 LOG.debug("Changing ftp directory: {}", directory);
+     	boolean cwd = ftpClient.changeWorkingDirectory(directory);
         if (!cwd) {
-            throw new IOException("Cannot change FTP directory");
+        	LOG.error("Could not change root directory: {}", directory);
+        	throw new IOException("Cannot change FTP directory");
         }
-        
+       	LOG.trace("Reply code and message: {} {} ", ftpClient.getReplyCode(), ftpClient.getReplyString());
         FTPFile[] ftpFiles;
-        
-        if (ftpClient.listHelp().contains("MLSD")) {
-        	ftpFiles = ftpClient.mlistDir(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
+        LOG.debug("Listing ftp directory: {}", directory);
+        String helpString = ftpClient.listHelp();
+        LOG.debug("Help: {}", helpString);
+        if (helpString.contains("MLSD")) {
+    		ftpFiles = ftpClient.mlistDir(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
         }
         else {
         	ftpFiles = ftpClient.listFiles(null, new TimeAndExtensionFtpFileFilter(start, excludedExtensions));
         }
-        
+    	LOG.trace("Reply code and message: {} {} ", ftpClient.getReplyCode(), ftpClient.getReplyString());
         List<FileItem> result = new ArrayList<>();
         for (FTPFile ftpFile: ftpFiles) {
         	if (ftpFile.isDirectory()){
@@ -98,33 +98,21 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
     	return URI.create(builder.toString());
    }
 
-	private FTPClient getFtpClient(URI ftpUri) throws IOException, FailedLoginException {
-		FTPClient ftpClient = "ftps".equals(ftpUri.getScheme()) ? new FTPSClient() : new FTPClient();
-        if(ftpUri.getPort() != -1) {
-        	ftpClient.connect(ftpUri.getHost(), ftpUri.getPort());
-        }
-        else {
-        	ftpClient.connect(ftpUri.getHost());
-        }
-        Map<String, String> params = URLEncodedUtils.parse(ftpUri, "UTF-8").stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
-        String timezone = params.getOrDefault("timezone", "UTC");
-        
-        FTPClientConfig conf = new FTPClientConfig();
-        conf.setServerTimeZoneId(timezone);
-        ftpClient.configure(conf);
-        
-        Credentials creds = osirisServerClient.credentialsServiceBlockingStub().getCredentials(GetCredentialsParams.newBuilder().setHost(ftpUri.getHost()).build());
-        if (creds.getType() != Credentials.Type.BASIC || !ftpClient.login(creds.getUsername(), creds.getPassword())) {
-        	throw new FailedLoginException();
-        }
-        ftpClient.enterLocalPassiveMode();
-        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-        return ftpClient; 
-    }
+	
 
     @Override
-    public FtpFileMeta getFile(URI fileUri) throws IOException, FailedLoginException {
-        LOG.info("Received request for file {}", fileUri);
+    public FtpFileMeta getFile(URI fileUri) throws FtpHarvesterException {
+    	FTPClient ftpClient = ftpClientPools.getFtpClient(fileUri);
+		try {
+			return getFileFromFtp(ftpClient, fileUri);
+		} catch (IOException e) {
+			ftpClientPools.releaseFtpClient(fileUri, ftpClient);
+			throw new FtpHarvesterException(e);
+		}
+    }
+
+	private FtpFileMeta getFileFromFtp(FTPClient ftpClient, URI fileUri) throws IOException, FtpHarvesterException {
+		LOG.info("Received request for file {}", fileUri);
     	
         Path fullFilePath = Paths.get(fileUri.getPath());
         LOG.debug("Full path {}", fullFilePath.toString());
@@ -132,8 +120,7 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
     	LOG.debug("File name {}", fileName.toString());
     	Path workDir = fullFilePath.getParent();
     	LOG.debug("Work dir {}", workDir.toString());
-    	FTPClient ftpClient = getFtpClient(fileUri);
-        boolean changeWD = ftpClient.changeWorkingDirectory(workDir.toString());
+    	boolean changeWD = ftpClient.changeWorkingDirectory(workDir.toString());
         if (!changeWD) {
             throw new IOException("Cannot change working directory");
         }
@@ -145,14 +132,31 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
         return FtpFileMeta.builder()
         		.fileName(file.getName())
         		.fileSize(file.getSize())
-        		.fileInputStream(ftpClient.retrieveFileStream(fileName.toString()))
+        		.fileInputStream(new FilterInputStream(ftpClient.retrieveFileStream(fileName.toString())) {
+        			@Override
+        			public void close() throws IOException {
+        				ftpClient.completePendingCommand();
+        				ftpClientPools.releaseFtpClient(fileUri, ftpClient);
+        			}
+        		})
         		.build();
-    }
+	}
 
 
-    @Override
-    public void deleteFile(URI fileUri) throws IOException, FailedLoginException {
-    	FTPClient ftpClient = getFtpClient(fileUri);
+	@Override
+    public void deleteFile(URI fileUri) throws FtpHarvesterException {
+		FTPClient ftpClient = ftpClientPools.getFtpClient(fileUri);
+		try {
+			deleteFileFromFtp(ftpClient, fileUri);
+		} catch (IOException e) {
+			throw new FtpHarvesterException(e);
+		}
+		finally {
+			ftpClientPools.releaseFtpClient(fileUri, ftpClient);
+		}
+	}
+    
+	private void deleteFileFromFtp(FTPClient ftpClient, URI fileUri) throws IOException {
     	Path fullFilePath = Paths.get(fileUri.getPath());
         Path fileName = fullFilePath.getFileName();
         Path workDir = fullFilePath.getParent();
@@ -165,7 +169,7 @@ public class FtpHarvesterServiceImpl implements FtpHarvesterService{
             throw new FileNotFoundException ("Cannot find file");
         }
         ftpClient.deleteFile(fileName.toString());
-        ftpClient.disconnect();
+        
         LOG.info("Deleted file {}", fileUri);
     	
     }

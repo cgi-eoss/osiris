@@ -58,7 +58,7 @@ public class GeoserverImporter extends GeoServerRESTAbstractManager {
 
 	public void setTaskUpdateMode(String taskUrl, UpdateMode updateMode) throws JsonProcessingException {
 		GeoserverImportTask task = new GeoserverImportTask();
-		task.getTask().setUpdateMode(UpdateMode.APPEND);
+		task.getTask().setUpdateMode(updateMode);
 		String result = HttpUtils.put(taskUrl, OBJECT_MAPPER.writeValueAsString(task), "application/json", gsuser, gspass);
 		if (result == null) {
             		throw new IngestionException("Unsuccessful change to task update mode");

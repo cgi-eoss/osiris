@@ -12,7 +12,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
@@ -20,8 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.security.auth.login.FailedLoginException;
 
 @Component
 @Log4j2
@@ -47,7 +44,7 @@ public class FtpScheduledJob extends PersistentScheduledJob {
 	@SuppressWarnings("unchecked")
 	private void harvestFtp(Map<String, Object> jobContext) {
 		Job job = (Job) jobContext.get("job");
-        LOG.debug("FTP Harvest started for job {}", job.getIntJobId());
+        LOG.info("FTP Harvest started for job {}", job.getIntJobId());
         String ftpRootUriStr = (String) jobContext.get("ftpRootUri");
         Instant start = (Instant) jobContext.get("start");
         Set<String> latestTimestampHarvested = (Set<String>) jobContext.getOrDefault(LATEST_TIMESTAMP_HARVESTED_FILES, new HashSet<>());
@@ -72,13 +69,14 @@ public class FtpScheduledJob extends PersistentScheduledJob {
                     	headers.put("jobId", job.getIntJobId());
                     	headers.put("messageType", "FTPFileAvailable");
                     	queueService.sendObject(OsirisQueueService.ftpJobUpdatesQueueName, headers, jobFtpFileAvailable);
+                    	LOG.info("New ftp file available for job {} {}", job.getIntJobId(), fileItemByTimestamp.getUri());
                     	latestTimestampHarvested.add(fileItemByTimestamp.getUri());
                     	jobContext.put("start", nextStart);
                         jobContext.put(LATEST_TIMESTAMP_HARVESTED_FILES, latestTimestampHarvested);
             		}
             	}
             }
-        } catch (IOException | FailedLoginException e) {
+        } catch (FtpHarvesterException e) {
             LOG.error("Error in job {}: ", job.getIntJobId(), e);
             Map<String, Object> headers = new HashMap<>();
         	headers.put("jobId", job.getIntJobId());

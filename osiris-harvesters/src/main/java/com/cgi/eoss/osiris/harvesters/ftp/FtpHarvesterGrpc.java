@@ -26,8 +26,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.security.auth.login.FailedLoginException;
-
 @GRpcService
 @Log4j2
 public class FtpHarvesterGrpc extends OsirisFtpHarvesterGrpc.OsirisFtpHarvesterImplBase {
@@ -45,7 +43,7 @@ public class FtpHarvesterGrpc extends OsirisFtpHarvesterGrpc.OsirisFtpHarvesterI
 			List<com.cgi.eoss.osiris.harvesters.ftp.FileItem> fileUris = ftpHarvesterService.harvestFiles(URI.create(harvestFilesParams.getFtpRootUri()), Instant.now());
 			responseObserver.onNext(FileList.newBuilder().addAllItems(fileUris.stream().map(f -> FileItem.newBuilder().setFileUri(f.getUri()).setTimestamp(GrpcUtil.timestampFromInstant(f.getTimestamp())).build()).collect(Collectors.toList())).build());
 			responseObserver.onCompleted();
-		} catch (IOException | FailedLoginException e) {
+		} catch (FtpHarvesterException e) {
 			responseObserver.onError(new StatusRuntimeException(Status.fromCode(Status.Code.ABORTED).withCause(e)));
 		}
 	}
@@ -55,7 +53,7 @@ public class FtpHarvesterGrpc extends OsirisFtpHarvesterGrpc.OsirisFtpHarvesterI
 		try {
 			final FtpFileMeta ftpMeta = ftpHarvesterService.getFile(URI.create(getFileParams.getFileUri()));
 			serveFtpFile(getFileParams.getFileUri(), responseObserver, ftpMeta);
-		} catch (IOException | FailedLoginException e) {
+		} catch (FtpHarvesterException e) {
 			responseObserver.onError(new StatusRuntimeException(Status.fromCode(Status.Code.ABORTED).withCause(e)));
 		}
 	}
@@ -66,7 +64,7 @@ public class FtpHarvesterGrpc extends OsirisFtpHarvesterGrpc.OsirisFtpHarvesterI
 			ftpHarvesterService.deleteFile(URI.create(deleteFileParams.getFileUri()));
 			responseObserver.onNext(DeleteFileResponse.newBuilder().build());
 			responseObserver.onCompleted();
-		} catch (IOException | FailedLoginException e) {
+		} catch (FtpHarvesterException e) {
 			responseObserver.onError(new StatusRuntimeException(Status.fromCode(Status.Code.ABORTED).withCause(e)));
 		}
 	}
