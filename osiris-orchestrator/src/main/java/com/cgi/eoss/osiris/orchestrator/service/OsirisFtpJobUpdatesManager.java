@@ -106,14 +106,14 @@ public class OsirisFtpJobUpdatesManager {
 		else {
 			Set<String> expectedServiceOutputIds = service.getServiceDescriptor().getDataOutputs().stream()
 					.map(OsirisServiceDescriptor.Parameter::getId).collect(toSet());
-			Path pathRoot = relativePath.getParent();
-			if (pathRoot != null && expectedServiceOutputIds.contains(pathRoot.toString())) {
-				outputId = pathRoot.toString();
-				relativePath = relativePath.relativize(pathRoot); 
+			Path relativePathRoot = relativePath.getParent();
+			if (relativePathRoot != null && expectedServiceOutputIds.contains(relativePathRoot.toString())) {
+				outputId = relativePathRoot.toString();
 			}
 			else {
-				//Fall back to first service output
+				//The FTP relative path is not starting with a known output id path - fall back to first service output
 				outputId = service.getServiceDescriptor().getDataOutputs().get(0).getId();
+				relativePath = Paths.get(outputId).resolve(relativePath);
 			}
 		}
 		// Repatriate output file
