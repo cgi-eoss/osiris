@@ -6,6 +6,8 @@ import com.cgi.eoss.osiris.security.OsirisAccess;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.rest.core.config.Projection;
 import org.springframework.hateoas.Identifiable;
+
+import java.net.URI;
 import java.util.Map;
 
 /**
@@ -20,6 +22,7 @@ public interface DetailedOsirisService extends Identifiable<Long> {
     ShortUser getOwner();
     OsirisService.Type getType();
     String getDockerTag();
+    URI getExternalServiceUri();
     OsirisService.Licence getLicence();
     OsirisService.Status getStatus();
     OsirisServiceDescriptor getServiceDescriptor();
