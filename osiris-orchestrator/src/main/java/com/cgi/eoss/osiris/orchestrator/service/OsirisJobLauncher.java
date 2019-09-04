@@ -610,6 +610,9 @@ public class OsirisJobLauncher extends OsirisJobLauncherGrpc.OsirisJobLauncherIm
 		executeWpsParamsBuilder.setStoreOutputs(true);
 		for (JobParam jobParam: rpcInputs) {
 			String parameterId = jobParam.getParamName();
+			if(PlatformParameterExtractor.isPlatformParameter(parameterId)){
+				continue;
+			}
 			List<String> paramValues = jobParam.getParamValueList();
 			Optional<Parameter> inputParameterOpt = service.getServiceDescriptor().getDataInputs().stream().filter(p -> p.getId().equals(parameterId)).findFirst();
 			if (inputParameterOpt.isPresent()){

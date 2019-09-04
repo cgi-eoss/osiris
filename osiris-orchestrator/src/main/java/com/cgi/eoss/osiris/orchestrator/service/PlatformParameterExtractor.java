@@ -100,4 +100,8 @@ public class PlatformParameterExtractor {
 			return ((LocalDate) temporalAccessor).atTime(defaultTime).atOffset(ZoneOffset.UTC);
 		}
 	}
+
+	public static boolean isPlatformParameter(String parameterId) {
+		return parameterId.equals(COLLECTION_PARAM)|| parameterId.equals(GEO_SERVER_SPEC_PARAM)|| parameterId.equals(TIMEOUT_PARAM);
+	}
 }
