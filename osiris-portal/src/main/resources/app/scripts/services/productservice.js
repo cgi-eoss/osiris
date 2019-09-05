@@ -28,7 +28,8 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             APPLICATION: { name: 'Application', value: 'APPLICATION'},
             PROCESSOR: { name: 'Processor', value: 'PROCESSOR'},
             PARALLEL_PROCESSOR: { name: 'Parallel Processor', value: 'PARALLEL_PROCESSOR'},
-            FTP_HARVESTER: { name: 'FTP Harvester', value: 'FTP_SERVICE'}
+            FTP_HARVESTER: { name: 'FTP Harvester', value: 'FTP_SERVICE'},
+            WPS_SERVICE: { name: 'WPS Service', value: 'WPS_SERVICE'}
         }
 
         this.serviceTypeFilters = {
@@ -36,7 +37,8 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             APPLICATION: { id: 1, name: 'Application Services', value: 'APPLICATION' },
             PROCESSOR: { id: 2, name: 'Processor Services', value: 'PROCESSOR' },
             PARALLEL_PROCESSOR: { id: 4, name: 'Parallel Processor Services', value: 'PARALLEL_PROCESSOR' },
-            FTP_HARVESTER: { id: 5, name: 'FTP Harvester Services', value: 'FTP_SERVICE'}
+            FTP_HARVESTER: { id: 5, name: 'FTP Harvester Services', value: 'FTP_SERVICE'},
+            WPS_SERVICE: { id: 5, name: 'WPS Services', value: 'WPS_SERVICE'}
         };
 
         this.servicePublicationFilters = {
@@ -71,6 +73,9 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
             }, {
                 title: 'Detected wind',
                 value: 'DETECTED_WIND'
+            }, {
+                title: 'Detected waves',
+                value: 'DETECTED_WAVES'
             }, {
                 title: 'Predicted oildrift',
                 value: 'PREDICTED_OILSPILL'
@@ -533,6 +538,10 @@ define(['../osirismodules', 'traversonHal'], function (osirismodules, TraversonJ
                 serviceDescriptor: selectedService.serviceDescriptor,
                 type: selectedService.type
             };
+
+            if (selectedService.externalServiceUri) {
+                editService.externalServiceUri = selectedService.externalServiceUri;
+            }
 
             var additionalMounts = {};
             for (var i = 0; i < selectedService.additionalMounts.length; ++i) {

@@ -36,10 +36,16 @@
                         <input ng-model="serviceParams.selectedService.dockerTag" type="text" placeholder="Docker Tag" aria-label="Docker Tag" disabled>
                     </md-input-container>
                 </div>
-                <div class="col-md-7 service-field no-padding">
+                <div class="col-md-2 service-field no-padding">
                     <md-input-container id="service-summary" md-no-float>
                         <label>Title</label>
                         <input ng-model="serviceParams.selectedService.serviceDescriptor.title" type="text" placeholder="Title" aria-label="Title">
+                    </md-input-container>
+                </div>
+                <div class="col-md-4 service-field no-padding" ng-if="!isTemplate && serviceParams.selectedService.type === 'WPS_SERVICE'">
+                    <md-input-container id="service-summary" md-no-float>
+                        <label>WPS service endpoint</label>
+                        <input ng-model="serviceParams.selectedService.externalServiceUri" type="text" placeholder="WPS URL" aria-label="WPS URL" required>
                     </md-input-container>
                 </div>
                 <div class="col-md-1 service-field no-padding">
@@ -71,7 +77,7 @@
                 <div class="col-md-1 service-field no-padding">
                 </div>
             </div>
-            <div class="row build-status" ng-if="!isTemplate && serviceParams.selectedService.type !== 'FTP_SERVICE'">
+            <div class="row build-status" ng-if="!isTemplate && serviceParams.selectedService.type !== 'FTP_SERVICE' && serviceParams.selectedService.type !== 'WPS_SERVICE'">
                 <label >Container build status:</label>
                 <md-content layout="row" layout-align="start center" flex="50">
                     <md-content ng-if="serviceParams.selectedService.buildStatus.status == 'ERROR'" layout="row" layout-align="start center" flex style="{{getColorForStatus('ERROR')}}">
@@ -221,6 +227,7 @@
                     <th>Default Value</th>
                     <th ng-if="key === 'dataOutputs'">Format</th>
                     <th ng-if="key === 'dataOutputs'">Data type</th>
+                    <th ng-if="key === 'dataOutputs'">Geoserver style</th>
                     <th ng-if="key === 'dataOutputs'" ng-show="serviceParams.selectedService.serviceDescriptor[key].length > 1">Relations</th>
                     <th>Min Occurs</th>
                     <th>Max Occurs</th>
@@ -297,6 +304,11 @@
                                     {{dataType.title}}
                                 </md-option>
                             </md-select>
+                        </md-input-container>
+                    </td>
+                    <td ng-if="key === 'dataOutputs'">
+                        <md-input-container md-no-float>
+                            <input ng-model="input.platformMetadata.geoserverStyle" type="text" placeholder="Geoserver style" aria-label="Geoserver style"/>
                         </md-input-container>
                     </td>
                     <td ng-if="key === 'dataOutputs'" ng-show="enableOutputRelation(input)">

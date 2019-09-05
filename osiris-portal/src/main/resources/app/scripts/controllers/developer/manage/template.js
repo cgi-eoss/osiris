@@ -18,9 +18,12 @@ define(['../../../osirismodules'], function (osirismodules) {
         $scope.serviceTypes = ProductService.serviceTypes;
 
         $scope.$watch( function() {
-            return $scope.serviceParams.selectedService.type;
+            return $scope.serviceParams.selectedService ? $scope.serviceParams.selectedService.type : undefined;
         }, function( type ) {
-            if (type !== ProductService.serviceTypes.FTP_HARVESTER.value) {
+            if (!type) {
+                return;
+            }
+            if (type !== ProductService.serviceTypes.FTP_HARVESTER.value && type !== ProductService.serviceTypes.WPS_SERVICE.value) {
                 $scope.serviceForms = {
                     files: {title: 'Files'},
                     dataInputs: {title: 'Input Definitions'},
