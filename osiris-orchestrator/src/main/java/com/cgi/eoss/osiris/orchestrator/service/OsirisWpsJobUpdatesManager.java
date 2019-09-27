@@ -62,7 +62,7 @@ public class OsirisWpsJobUpdatesManager {
 				job.setStartTime(LocalDateTime.now());
 			}
 			job.setStatus(Job.Status.RUNNING);
-			job.setStage(JobStep.PROCESSING.toString());
+			job.setStage(JobStep.PROCESSING.getText());
 			break;
 		case FAILED:
 			job.setEndTime(LocalDateTime.now());
