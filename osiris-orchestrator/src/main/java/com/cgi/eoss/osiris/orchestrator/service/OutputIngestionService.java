@@ -232,6 +232,9 @@ public class OutputIngestionService {
 	}
 	
 	private List<OsirisFile> findJobOutputFilesById(Job job, String outputId) {
+		if(job.getOutputs() == null || job.getOutputs().get(outputId) == null) {
+			return Collections.emptyList();
+		}
 		return job.getOutputs().get(outputId).stream()
 				.map(output-> getFileByUri(job, output)).filter(Optional::isPresent)
 				  .map(Optional::get)
