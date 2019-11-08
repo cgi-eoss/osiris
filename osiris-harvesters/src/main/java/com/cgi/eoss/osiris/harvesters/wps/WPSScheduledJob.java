@@ -96,10 +96,16 @@ public class WPSScheduledJob extends PersistentScheduledJob{
 	}
 
 	private WpsJobStatus getCustomWpsJobStatus(String jobStatusWpsUrl) throws WpsException {
-		ExecuteResponseDocument executeResponse = wpsExecutionController.executeViaGET(jobStatusWpsUrl);
-		ProcessOutputs outputs = executeResponse.getExecuteResponse().getProcessOutputs();
-		String status = getOutput(outputs.getOutputArray(), "output.message");
-		return WpsUtils.getWpsJobStatusFromClsJobStatus(status);
+		try {
+			ExecuteResponseDocument executeResponse = wpsExecutionController.executeViaGET(jobStatusWpsUrl);
+			ProcessOutputs outputs = executeResponse.getExecuteResponse().getProcessOutputs();
+			String status = getOutput(outputs.getOutputArray(), "output.message");
+			return WpsUtils.getWpsJobStatusFromClsJobStatus(status);
+		}
+		catch (WpsException e) {
+			LOG.error("Error in WPS invocation to URL {}", jobStatusWpsUrl);
+			throw e;
+		}
 	}
 	
 	private String getOutput(OutputDataType[] outputs, String identifier) {
