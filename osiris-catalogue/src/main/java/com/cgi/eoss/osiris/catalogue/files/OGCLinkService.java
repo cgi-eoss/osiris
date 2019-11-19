@@ -38,7 +38,7 @@ public class OGCLinkService {
                     links.add(new Link(getWMSLinkToLayer(geoserverLayer), "wms"));
                     break;
                 case POSTGIS:
-                    links.add(new Link(getWMSLinkToLayer(geoserverLayer), "wms"));
+                    links.add(new Link(getWMSLinkToLayer(osirisFile, geoserverLayer), "wms"));
                     links.add(new Link(getWFSLinkToLayer(osirisFile, geoserverLayer), "wfs"));
                     break;
             }
@@ -62,6 +62,14 @@ public class OGCLinkService {
         return geoserver.getExternalUrl().newBuilder().addPathSegment(geoserverLayer.getWorkspace()).addPathSegment("wms")
                         .addQueryParameter(OGC_SERVICE_PARAMETER, "WMS").addQueryParameter(OGC_VERSION_PARAMETER, "1.1.0")
                         .addQueryParameter("layers", geoserverLayer.getWorkspace() + ":" + geoserverLayer.getLayer())
+                        .build().toString();
+    }
+    
+    private String getWMSLinkToLayer(OsirisFile osirisFile, GeoserverLayer geoserverLayer) {
+        return geoserver.getExternalUrl().newBuilder().addPathSegment(geoserverLayer.getWorkspace()).addPathSegment("wms")
+                        .addQueryParameter(OGC_SERVICE_PARAMETER, "WMS").addQueryParameter(OGC_VERSION_PARAMETER, "1.1.0")
+                        .addQueryParameter("layers", geoserverLayer.getWorkspace() + ":" + geoserverLayer.getLayer())
+                        .addQueryParameter("cql_filter", "(osiris_id  = '" + osirisFile.getRestoId() + "')")
                         .build().toString();
     }
 
